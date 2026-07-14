@@ -26,9 +26,10 @@ export default tseslint.config(
     },
   },
 
-  // Build/config files that run under Node (e.g. vite.config.ts, this file).
+  // Build/config/script files that run under Node (vite.config.ts, this file,
+  // scripts/*).
   {
-    files: ["*.{js,ts}"],
+    files: ["*.{js,ts}", "scripts/**/*.{js,mjs,cjs,ts}"],
     languageOptions: { globals: globals.node },
   },
 

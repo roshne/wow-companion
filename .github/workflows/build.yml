@@ -1,0 +1,40 @@
+name: Build app
+
+# Deliver a current wow-companion.exe on every push to main (and on demand).
+# Download it from the run's "Artifacts" section. Signed installers + updater
+# are a separate, later concern (M5); this is the raw executable only.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-exe:
+    name: Windows exe
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      # tauri build runs the frontend build (tsc + vite) then a release
+      # cargo build; --no-bundle skips the MSI/NSIS installers.
+      - run: npm run build:exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wow-companion-windows
+          path: src-tauri/target/release/wow-companion.exe
+          if-no-files-found: error
