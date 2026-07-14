@@ -30,6 +30,15 @@ React webview  ──invoke("get_access_token")──►  Rust (Tauri)
 - **Types**: [`src/vendor/battlenet-wow-client/`](src/vendor/battlenet-wow-client/) is a vendored copy
   of the foundation's typed client (see its `VENDORED.md` for how to refresh it).
 
+## Features
+
+- **WoW Token** — the current token price.
+- **Realm Status** — every connected realm's status (UP/DOWN), population, and login queue, with a filter.
+- **Character** — look up a character's profile summary (level, race/class/spec, faction, guild, item
+  level, achievements) plus avatar, by realm + name.
+
+All requests are typed by the vendored client, and the region (US/EU/KR/TW) is switchable in the header.
+
 ## Run it
 
 ```bash
@@ -37,8 +46,9 @@ npm install
 npm run tauri dev        # launches the desktop app (needs Rust + WebView2)
 ```
 
-Then, in the app: paste a **Client ID / Secret** (create one at
-`develop.battle.net/access/clients`) → *Save to keychain* → *Test token* / *Load WoW Token price*.
+Then, in the app: paste a **Client ID / Secret** (see *Getting a Client ID & Secret* below) →
+*Save to keychain* → pick a **region** → explore the **WoW Token**, **Realm Status**, and
+**Character** tabs.
 
 Build a distributable:
 
@@ -46,12 +56,31 @@ Build a distributable:
 npm run tauri build
 ```
 
+## Getting a Client ID & Secret
+
+1. Go to **[develop.battle.net](https://develop.battle.net/)** and log in with your Battle.net account.
+2. Ensure your account has an **Authenticator** attached — two-factor auth is required for API access.
+3. Accept the **Blizzard Developer API Terms of Use** if prompted.
+4. Open **[API Access → Clients](https://develop.battle.net/access/clients)** and click **Create Client**.
+5. Fill in:
+   - **Client Name** — anything, e.g. `wow-companion`.
+   - **Redirect URLs** — required by the form but unused by this app (it uses client-credentials only);
+     enter `https://localhost`.
+   - **Intended Use / Service URL** — optional; describe it (e.g. "personal WoW dashboard").
+6. Click **Create**, then open the client to copy its **Client ID** and **Client Secret**.
+7. In WoW Companion, paste both and click **Save to keychain** — the secret is stored by Rust in your OS
+   keychain and never leaves your machine.
+
+> Only ever paste the secret into the app's own field. You can regenerate it anytime from the same page.
+
 ## Layout
 
 ```
 src/                     # React frontend
-  App.tsx                # settings + demo UI
+  App.tsx                # app shell: credentials gate, region picker, tab nav
+  components/            # TokenPrice, RealmStatus, CharacterLookup
   lib/bnet.ts            # builds the typed client (token from Rust, fetch via Tauri HTTP)
+  lib/types.ts           # local response shapes (the spec omits response schemas)
   vendor/battlenet-wow-client/   # vendored typed client (generated types + auth + factory)
 src-tauri/               # Rust backend
   src/lib.rs             # keychain + OAuth token commands
@@ -60,6 +89,7 @@ src-tauri/               # Rust backend
 
 ## Status
 
-Scaffold: compiles end-to-end (`cargo check` + `tsc` + `vite build` all pass). Response bodies are
-typed `unknown` until response schemas are added upstream to the OpenAPI spec. A real run needs your
-Battle.net credentials.
+Compiles end-to-end (`cargo check` + `tsc` + `vite build` all pass) and the UI renders. Response
+bodies are cast from local types (`lib/types.ts`) because the OpenAPI spec omits response schemas —
+once those are captured upstream and re-vendored, responses become fully typed with no UI changes.
+Exercising the live data views needs your Battle.net credentials (see above).
