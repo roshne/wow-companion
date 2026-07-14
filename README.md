@@ -43,14 +43,36 @@ All requests are typed by the vendored client, and the region (US/EU/KR/TW) is s
 
 ```bash
 npm install
-npm run tauri dev        # launches the desktop app (needs Rust + WebView2)
+```
+
+**As a standalone app** (recommended) — build a release executable and launch it, with no dev
+server or terminal attached:
+
+```bash
+npm run app          # build the exe, then launch it
+# or run the two steps separately:
+npm run build:exe    # -> src-tauri/target/release/wow-companion.exe
+npm run launch       # start the last-built exe (detached)
+```
+
+Start it with `npm run app` (or by double-clicking `src-tauri/target/release/wow-companion.exe`);
+stop it by closing its window. **WebView2** is required — it ships with Windows 11.
+
+**Don't want to build locally?** Every push to `main` builds the executable in CI. Download the
+latest from the [**Build app**](../../actions/workflows/build.yml) workflow → newest run →
+**Artifacts → `wow-companion-windows`**. No toolchain needed.
+
+**Dev mode** (hot reload while hacking on the UI; needs the Rust toolchain + WebView2):
+
+```bash
+npm run tauri dev
 ```
 
 Then, in the app: paste a **Client ID / Secret** (see _Getting a Client ID & Secret_ below) →
 _Save to keychain_ → pick a **region** → explore the **WoW Token**, **Realm Status**, and
 **Character** tabs.
 
-Build a distributable:
+Build the full installers (MSI/NSIS):
 
 ```bash
 npm run tauri build
