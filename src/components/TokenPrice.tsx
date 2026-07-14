@@ -19,12 +19,12 @@ export function TokenPrice({ bnet }: { bnet: BlizzardClient }) {
         setSub(`Failed (HTTP ${response.status}).`);
         return;
       }
-      const d = data as unknown as { price?: number; last_updated_timestamp?: number };
-      if (typeof d.price === "number") {
-        setPrice(`${Math.floor(d.price / 10000).toLocaleString()} g`);
+      // `data` is now fully typed from the captured response schema — no cast needed.
+      if (typeof data?.price === "number") {
+        setPrice(`${Math.floor(data.price / 10000).toLocaleString()} g`);
         setSub(
-          d.last_updated_timestamp
-            ? `Updated ${new Date(d.last_updated_timestamp).toLocaleString()}`
+          data.last_updated_timestamp
+            ? `Updated ${new Date(data.last_updated_timestamp).toLocaleString()}`
             : "",
         );
       } else {

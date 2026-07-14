@@ -12206,12 +12206,22 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        last_updated_timestamp?: number;
+                        price?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
