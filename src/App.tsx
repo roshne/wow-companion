@@ -5,10 +5,11 @@ import type { Region } from "./vendor/battlenet-wow-client";
 import { TokenPrice } from "./components/TokenPrice";
 import { RealmStatus } from "./components/RealmStatus";
 import { CharacterLookup } from "./components/CharacterLookup";
+import { Warband } from "./components/Warband";
 import "./App.css";
 
 const REGIONS: Region[] = ["us", "eu", "kr", "tw"];
-type Tab = "token" | "realms" | "character";
+type Tab = "token" | "realms" | "character" | "warband";
 
 function App() {
   const [hasCreds, setHasCreds] = useState<boolean | null>(null);
@@ -112,11 +113,15 @@ function App() {
         <button className={tab === "character" ? "active" : ""} onClick={() => setTab("character")}>
           Character
         </button>
+        <button className={tab === "warband" ? "active" : ""} onClick={() => setTab("warband")}>
+          Warband
+        </button>
       </nav>
 
       {tab === "token" && <TokenPrice bnet={bnet} />}
       {tab === "realms" && <RealmStatus bnet={bnet} />}
       {tab === "character" && <CharacterLookup bnet={bnet} />}
+      {tab === "warband" && <Warband />}
     </main>
   );
 }

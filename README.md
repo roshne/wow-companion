@@ -36,8 +36,20 @@ React webview  ──invoke("get_access_token")──►  Rust (Tauri)
 - **Realm Status** — every connected realm's status (UP/DOWN), population, and login queue, with a filter.
 - **Character** — look up a character's profile summary (level, race/class/spec, faction, guild, item
   level, achievements) plus avatar, by realm + name.
+- **Warband** — a warband-wide roster (name, class colour, level, item level, spec, professions for
+  every alt) read locally from the [Warbandeer](https://github.com/nazumods/wow) addon — no API call.
 
-All requests are typed by the vendored client, and the region (US/EU/KR/TW) is switchable in the header.
+The first three tabs are typed by the vendored Web API client, and the region (US/EU/KR/TW) is
+switchable in the header.
+
+### Warband tab — local addon data
+
+The Warband tab reads the `Warbandeer_Characters` addon's SavedVariables
+(`…\_retail_\WTF\Account\<ACCOUNT>\SavedVariables\Warbandeer_Characters.lua`) — a Lua table the addon
+rewrites each login. The Rust backend locates the newest such file across installed accounts and
+parses it in a sandboxed embedded Lua VM (`mlua`). It needs the
+[Warbandeer](https://github.com/nazumods/wow) addon installed and logged into at least once; no
+Battle.net credentials are involved.
 
 ## Run it
 

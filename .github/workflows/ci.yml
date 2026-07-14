@@ -31,7 +31,7 @@ jobs:
       - run: npx vite build
 
   rust:
-    name: Rust (fmt · clippy · check)
+    name: Rust (fmt · clippy · check · test)
     # Windows-native app: keyring uses the windows-native backend and the
     # webview is WebView2, so we gate on the real target platform. This also
     # avoids installing the Linux webkit2gtk stack just to compile Tauri.
@@ -50,3 +50,4 @@ jobs:
       - run: cargo fmt --check
       - run: cargo clippy -- -D warnings
       - run: cargo check
+      - run: cargo test
