@@ -10,6 +10,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use serde::Deserialize;
 use tauri::State;
 
+mod warband;
+
 const KEYRING_SERVICE: &str = "wow-companion";
 const KEYRING_ACCOUNT: &str = "battlenet-oauth-client";
 const TOKEN_URL: &str = "https://oauth.battle.net/token";
@@ -136,7 +138,8 @@ pub fn run() {
             save_credentials,
             has_credentials,
             clear_credentials,
-            get_access_token
+            get_access_token,
+            warband::get_warband
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -29,3 +29,6 @@ reqwest = { version = "0.12", features = ["json"] }
 # OS-native secret storage (Windows Credential Manager). For macOS/Linux builds, also enable
 # the "apple-native" / "sync-secret-service" features respectively.
 keyring = { version = "3", features = ["windows-native"] }
+# Read the Warbandeer addon's SavedVariables (a Lua table literal) via an embedded, sandboxed
+# Lua VM. `vendored` builds Lua from source (no system Lua needed).
+mlua = { version = "0.10", features = ["lua54", "vendored"] }
