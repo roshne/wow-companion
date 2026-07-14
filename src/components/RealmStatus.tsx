@@ -49,7 +49,13 @@ export function RealmStatus({ bnet }: { bnet: BlizzardClient }) {
 
   const q = filter.trim().toLowerCase();
   const view = rows
-    .map((cr) => ({ cr, names: (cr.realms ?? []).map((r) => loc(r.name)).filter(Boolean).join(", ") }))
+    .map((cr) => ({
+      cr,
+      names: (cr.realms ?? [])
+        .map((r) => loc(r.name))
+        .filter(Boolean)
+        .join(", "),
+    }))
     .filter((x) => !q || x.names.toLowerCase().includes(q));
 
   return (
@@ -57,7 +63,11 @@ export function RealmStatus({ bnet }: { bnet: BlizzardClient }) {
       <div className="row" style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
         <h2 style={{ margin: 0 }}>Realm Status</h2>
         <div className="row">
-          <input placeholder="Filter…" value={filter} onChange={(e) => setFilter(e.currentTarget.value)} />
+          <input
+            placeholder="Filter…"
+            value={filter}
+            onChange={(e) => setFilter(e.currentTarget.value)}
+          />
           <button onClick={() => void load()} disabled={busy}>
             {busy ? "…" : "Refresh"}
           </button>
@@ -80,7 +90,9 @@ export function RealmStatus({ bnet }: { bnet: BlizzardClient }) {
               return (
                 <tr key={cr.id}>
                   <td>{names || `#${cr.id}`}</td>
-                  <td className={up ? "up" : "down"}>{loc(cr.status?.name) || cr.status?.type || "?"}</td>
+                  <td className={up ? "up" : "down"}>
+                    {loc(cr.status?.name) || cr.status?.type || "?"}
+                  </td>
                   <td>{loc(cr.population?.name) || cr.population?.type || "—"}</td>
                   <td>{cr.has_queue ? "Yes" : "No"}</td>
                 </tr>

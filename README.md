@@ -1,7 +1,7 @@
 # WoW Companion
 
 A small **desktop app** (Tauri v2 + React/TypeScript) for the Battle.net → World of Warcraft
-**Web REST API**. It's the downstream *consumer* of
+**Web REST API**. It's the downstream _consumer_ of
 [`battlenet-api-research`](https://github.com/roshne/battlenet-api-research) — that repo is the
 reusable foundation (docs + OpenAPI spec + typed client); this repo is the actual application.
 
@@ -46,8 +46,8 @@ npm install
 npm run tauri dev        # launches the desktop app (needs Rust + WebView2)
 ```
 
-Then, in the app: paste a **Client ID / Secret** (see *Getting a Client ID & Secret* below) →
-*Save to keychain* → pick a **region** → explore the **WoW Token**, **Realm Status**, and
+Then, in the app: paste a **Client ID / Secret** (see _Getting a Client ID & Secret_ below) →
+_Save to keychain_ → pick a **region** → explore the **WoW Token**, **Realm Status**, and
 **Character** tabs.
 
 Build a distributable:

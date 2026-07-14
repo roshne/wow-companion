@@ -22,7 +22,9 @@ function App() {
   const bnet = useMemo(() => makeClient(region), [region]);
 
   useEffect(() => {
-    invoke<boolean>("has_credentials").then(setHasCreds).catch(() => setHasCreds(false));
+    invoke<boolean>("has_credentials")
+      .then(setHasCreds)
+      .catch(() => setHasCreds(false));
   }, []);
 
   async function saveCreds(e: FormEvent) {
@@ -59,10 +61,14 @@ function App() {
         <form className="card" onSubmit={saveCreds} style={{ maxWidth: 460, marginTop: "1rem" }}>
           <h2 style={{ marginTop: 0 }}>Connect your Battle.net client</h2>
           <p className="muted">
-            Create one at <code>develop.battle.net/access/clients</code>. The secret is stored in your
-            OS keychain — never in the app.
+            Create one at <code>develop.battle.net/access/clients</code>. The secret is stored in
+            your OS keychain — never in the app.
           </p>
-          <input placeholder="Client ID" value={clientId} onChange={(e) => setClientId(e.currentTarget.value)} />
+          <input
+            placeholder="Client ID"
+            value={clientId}
+            onChange={(e) => setClientId(e.currentTarget.value)}
+          />
           <input
             type="password"
             placeholder="Client Secret"

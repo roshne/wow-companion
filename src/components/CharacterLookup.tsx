@@ -61,9 +61,21 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
   return (
     <section className="card">
       <h2 style={{ marginTop: 0 }}>Character Lookup</h2>
-      <form className="row" onSubmit={lookup} style={{ flexWrap: "wrap", justifyContent: "flex-start" }}>
-        <input placeholder="Realm (e.g. Tichondrius)" value={realm} onChange={(e) => setRealm(e.currentTarget.value)} />
-        <input placeholder="Character name" value={name} onChange={(e) => setName(e.currentTarget.value)} />
+      <form
+        className="row"
+        onSubmit={lookup}
+        style={{ flexWrap: "wrap", justifyContent: "flex-start" }}
+      >
+        <input
+          placeholder="Realm (e.g. Tichondrius)"
+          value={realm}
+          onChange={(e) => setRealm(e.currentTarget.value)}
+        />
+        <input
+          placeholder="Character name"
+          value={name}
+          onChange={(e) => setName(e.currentTarget.value)}
+        />
         <button type="submit" disabled={busy}>
           {busy ? "…" : "Look up"}
         </button>
@@ -82,7 +94,9 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
               {char.active_spec?.name ? ` · ${loc(char.active_spec.name)}` : ""}
             </p>
             {char.guild?.name ? (
-              <p className="muted" style={{ margin: ".1rem 0" }}>&lt;{loc(char.guild.name)}&gt;</p>
+              <p className="muted" style={{ margin: ".1rem 0" }}>
+                &lt;{loc(char.guild.name)}&gt;
+              </p>
             ) : null}
             <dl className="stats">
               <div>

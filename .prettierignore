@@ -1,0 +1,13 @@
+# Build output
+dist
+
+# Dependencies
+node_modules
+
+# Vendored / generated
+src/vendor
+src-tauri/gen
+src-tauri/target
+
+# Lockfiles
+package-lock.json
