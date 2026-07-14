@@ -6,7 +6,7 @@ import prettier from "eslint-config-prettier";
 
 // Flat config. `src/vendor/**` is generated/vendored and is never linted.
 export default tseslint.config(
-  { ignores: ["dist", "node_modules", "src/vendor", "src-tauri"] },
+  { ignores: ["dist", "node_modules", "src/vendor", "src-tauri", ".claude", "**/.claude"] },
 
   js.configs.recommended,
   tseslint.configs.recommended,
