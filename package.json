@@ -13,7 +13,8 @@
     "app": "npm run build:exe && npm run launch",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "re-vendor": "node scripts/re-vendor.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",

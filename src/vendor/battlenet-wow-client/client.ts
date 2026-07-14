@@ -19,7 +19,8 @@ export interface BlizzardClientOptions {
   /**
    * Supply access tokens yourself — e.g. from a Tauri Rust command that holds the client secret in
    * the OS keychain. When set, no secret is needed in this layer and `clientId`/`clientSecret` are
-   * ignored. Recommended for desktop/browser apps where the secret must not ship in the bundle.
+   * ignored. This is the recommended path for desktop/browser apps where the secret must not ship
+   * in the frontend bundle.
    */
   getToken?: () => string | Promise<string>;
   /**
@@ -49,7 +50,21 @@ export interface BlizzardClient {
 
 /**
  * Create a typed, auto-authenticated Battle.net / WoW Web API client.
- * Provide tokens via `getToken` (recommended for apps) or `clientId` + `clientSecret`.
+ *
+ * Provide tokens one of two ways:
+ * - `getToken` — a provider you control (e.g. a Tauri Rust command). Recommended for apps.
+ * - `clientId` + `clientSecret` — the client does the client-credentials exchange itself
+ *   (fine for servers/scripts; never ship a secret in a frontend bundle).
+ *
+ * Requests are strongly typed for path, query, header, and body parameters (response bodies are
+ * `unknown` — the source spec omits response schemas).
+ *
+ * @example
+ * // App: token comes from Rust, requests go through the Tauri HTTP plugin.
+ * const bnet = createBlizzardClient({ region: "us", getToken, fetch: tauriFetch });
+ * @example
+ * // Server/script: built-in client-credentials flow.
+ * const bnet = createBlizzardClient({ clientId, clientSecret, region: "us" });
  */
 export function createBlizzardClient(opts: BlizzardClientOptions): BlizzardClient {
   const region = opts.region ?? "us";
@@ -73,6 +88,8 @@ export function createBlizzardClient(opts: BlizzardClientOptions): BlizzardClien
   }
 
   const api = createClient<paths>({ baseUrl, fetch: opts.fetch });
+
+  // Inject a fresh bearer token on every request.
   api.use({
     async onRequest({ request }) {
       request.headers.set("Authorization", `Bearer ${await getToken!()}`);
@@ -80,5 +97,10 @@ export function createBlizzardClient(opts: BlizzardClientOptions): BlizzardClien
     },
   });
 
-  return { api, region, tokens, namespace: (category) => `${category}-${region}` };
+  return {
+    api,
+    region,
+    tokens,
+    namespace: (category) => `${category}-${region}`,
+  };
 }
