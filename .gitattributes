@@ -1,0 +1,16 @@
+# Normalize line endings across platforms.
+#
+# Text files are stored in Git as LF and checked out as LF everywhere,
+# overriding each contributor's core.autocrlf. On Windows (where
+# autocrlf=true would otherwise leave CRLF in the working tree) this keeps
+# the working copy LF, so Prettier's LF-based `format:check` stays in sync
+# with what CI (Linux) sees instead of failing on line endings alone.
+#
+# `text=auto` still lets Git auto-detect text vs. binary; the explicit
+# rules below keep binary assets safe regardless of that detection.
+* text=auto eol=lf
+
+# Binary assets — never apply EOL conversion.
+*.png binary
+*.ico binary
+*.icns binary
