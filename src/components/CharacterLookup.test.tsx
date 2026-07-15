@@ -151,4 +151,19 @@ describe("CharacterLookup", () => {
     fireEvent.click(screen.getByRole("button", { name: "Remove asmon from favorites" }));
     expect(screen.queryByRole("button", { name: "★ Asmon · Tichondrius" })).toBeNull();
   });
+
+  it("renders the character detail sub-tabs on a successful lookup", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({
+      data: { name: "Asmon", level: 70, faction: { name: "Horde" } },
+      response: mockResponse(200),
+    });
+    renderWithClient(<CharacterLookup bnet={bnet} />);
+
+    fillAndSubmit("Tichondrius", "Asmon");
+    await screen.findByRole("heading", { name: /Asmon/ });
+    expect(screen.getByRole("button", { name: "Overview" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Gear" })).toBeInTheDocument();
+    expect(screen.getByText("Horde")).toBeInTheDocument();
+  });
 });

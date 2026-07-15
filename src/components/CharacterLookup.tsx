@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { BlizzardClient } from "../vendor/battlenet-wow-client";
 import { loc } from "../lib/types";
 import { toRealmSlug, toCharacterName } from "../lib/slug";
+import { CharacterDetail } from "./CharacterDetail";
 import {
   BnetError,
   characterQuery,
@@ -203,29 +204,12 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
                 &lt;{loc(char.guild.name)}&gt;
               </p>
             ) : null}
-            <dl className="stats">
-              <div>
-                <dt>Faction</dt>
-                <dd>{loc(char.faction?.name) || "—"}</dd>
-              </div>
-              <div>
-                <dt>Item level</dt>
-                <dd>
-                  {char.equipped_item_level ?? "—"}{" "}
-                  <span className="muted">(avg {char.average_item_level ?? "—"})</span>
-                </dd>
-              </div>
-              <div>
-                <dt>Achievements</dt>
-                <dd>{char.achievement_points?.toLocaleString() ?? "—"}</dd>
-              </div>
-              {char.last_login_timestamp ? (
-                <div>
-                  <dt>Last login</dt>
-                  <dd>{new Date(char.last_login_timestamp).toLocaleDateString()}</dd>
-                </div>
-              ) : null}
-            </dl>
+            <CharacterDetail
+              bnet={bnet}
+              realmSlug={realmSlug}
+              characterName={characterName}
+              summary={char}
+            />
           </div>
         </div>
       )}
