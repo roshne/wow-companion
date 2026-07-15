@@ -45,12 +45,19 @@ export class BnetError extends Error {
   }
 }
 
-/** Parse a `Retry-After` header as delta-seconds (HTTP-date form is deferred to #20). */
+/**
+ * Parse a `Retry-After` header into seconds. Handles both RFC 9110 forms: delta-seconds
+ * (`Retry-After: 12`) and an HTTP-date (`Retry-After: Wed, 21 Oct 2015 07:28:00 GMT`), the latter
+ * converted to seconds-from-now and clamped to ≥ 0. Returns null when the header is absent or unparseable.
+ */
 function parseRetryAfter(response: Response): number | null {
   const raw = response.headers.get("retry-after");
   if (!raw) return null;
   const seconds = Number(raw);
-  return Number.isFinite(seconds) ? seconds : null;
+  if (Number.isFinite(seconds)) return Math.max(0, seconds);
+  const date = Date.parse(raw);
+  if (Number.isNaN(date)) return null;
+  return Math.max(0, Math.round((date - Date.now()) / 1000));
 }
 
 /**

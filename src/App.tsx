@@ -6,6 +6,7 @@ import { TokenPrice } from "./components/TokenPrice";
 import { RealmStatus } from "./components/RealmStatus";
 import { CharacterLookup } from "./components/CharacterLookup";
 import { Warband } from "./components/Warband";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import "./App.css";
 
 const REGIONS: Region[] = ["us", "eu", "kr", "tw"];
@@ -118,10 +119,12 @@ function App() {
         </button>
       </nav>
 
-      {tab === "token" && <TokenPrice bnet={bnet} />}
-      {tab === "realms" && <RealmStatus bnet={bnet} />}
-      {tab === "character" && <CharacterLookup bnet={bnet} />}
-      {tab === "warband" && <Warband />}
+      <ErrorBoundary resetKeys={[tab, region]}>
+        {tab === "token" && <TokenPrice bnet={bnet} />}
+        {tab === "realms" && <RealmStatus bnet={bnet} />}
+        {tab === "character" && <CharacterLookup bnet={bnet} />}
+        {tab === "warband" && <Warband />}
+      </ErrorBoundary>
     </main>
   );
 }

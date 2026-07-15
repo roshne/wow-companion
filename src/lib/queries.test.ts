@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   BnetError,
   unwrap,
@@ -48,9 +48,34 @@ describe("unwrap", () => {
     }
   });
 
-  it("leaves retryAfter null for a non-numeric (HTTP-date) Retry-After", () => {
+  it("parses an HTTP-date Retry-After to seconds-from-now", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2015-10-21T07:00:00Z"));
     try {
       unwrap(undefined, mockResponse(429, { "Retry-After": "Wed, 21 Oct 2015 07:28:00 GMT" }));
+      expect.unreachable("should have thrown");
+    } catch (e) {
+      expect((e as BnetError).retryAfter).toBe(28 * 60);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("clamps a past HTTP-date Retry-After to 0", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2015-10-21T07:30:00Z"));
+    try {
+      unwrap(undefined, mockResponse(429, { "Retry-After": "Wed, 21 Oct 2015 07:28:00 GMT" }));
+    } catch (e) {
+      expect((e as BnetError).retryAfter).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("leaves retryAfter null for an unparseable Retry-After", () => {
+    try {
+      unwrap(undefined, mockResponse(429, { "Retry-After": "soon-ish" }));
     } catch (e) {
       expect((e as BnetError).retryAfter).toBeNull();
     }
