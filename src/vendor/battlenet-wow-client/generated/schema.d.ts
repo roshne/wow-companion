@@ -4987,12 +4987,46 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        connected_realm?: {
+                            href?: string;
+                        };
+                        auctions?: {
+                            id?: number;
+                            item?: {
+                                id?: number;
+                                context?: number;
+                                modifiers?: {
+                                    type?: number;
+                                    value?: number;
+                                }[];
+                                bonus_lists?: number[];
+                                pet_breed_id?: number;
+                                pet_level?: number;
+                                pet_quality_id?: number;
+                                pet_species_id?: number;
+                            };
+                            buyout?: number;
+                            quantity?: number;
+                            time_left?: string;
+                            bid?: number;
+                        }[];
+                        commodities?: {
+                            href?: string;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
