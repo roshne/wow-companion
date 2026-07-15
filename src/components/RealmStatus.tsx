@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
-import type { BlizzardClient } from "../vendor/battlenet-wow-client";
-import { loc, type ConnectedRealm, type ConnectedRealmSearch } from "../lib/types";
+import type { BlizzardClient, paths } from "../vendor/battlenet-wow-client";
+import { loc } from "../lib/types";
+
+/** The `data` payload of one connected-realm search result (dynamic namespace, names as objects). */
+type ConnectedRealm = NonNullable<
+  NonNullable<
+    paths["/data/wow/search/connected-realm"]["get"]["responses"][200]["content"]["application/json"]["results"]
+  >[number]["data"]
+>;
 
 /**
  * Realm status via the connected-realm search (dynamic namespace). The endpoint takes no `locale`,
@@ -28,9 +35,8 @@ export function RealmStatus({ bnet }: { bnet: BlizzardClient }) {
           setSub(`Failed (HTTP ${response.status}).`);
           return;
         }
-        const s = data as unknown as ConnectedRealmSearch;
-        pageCount = s.pageCount ?? 1;
-        for (const r of s.results ?? []) if (r.data) all.push(r.data);
+        pageCount = data?.pageCount ?? 1;
+        for (const r of data?.results ?? []) if (r.data) all.push(r.data);
         page++;
       } while (page <= pageCount && page <= 20);
       setRows(all);

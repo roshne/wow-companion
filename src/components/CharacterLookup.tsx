@@ -1,6 +1,10 @@
 import { useState, type FormEvent } from "react";
-import type { BlizzardClient } from "../vendor/battlenet-wow-client";
-import { loc, type CharacterSummary, type CharacterMedia } from "../lib/types";
+import type { BlizzardClient, paths } from "../vendor/battlenet-wow-client";
+import { loc } from "../lib/types";
+
+/** Character profile summary (profile namespace, `locale=en_US` — localized names come flattened). */
+type CharacterSummary =
+  paths["/profile/wow/character/{realmSlug}/{characterName}"]["get"]["responses"][200]["content"]["application/json"];
 
 /** Look up a character's profile summary (+ avatar) by realm slug and name (profile namespace). */
 export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
@@ -38,7 +42,7 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
         );
         return;
       }
-      setChar(data as unknown as CharacterSummary);
+      setChar(data ?? null);
       setSub("");
 
       // Best-effort avatar (separate media document).
@@ -47,8 +51,7 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
         { params: { path, query: { namespace, locale: "en_US" } } },
       );
       if (media.response.ok) {
-        const m = media.data as unknown as CharacterMedia;
-        const a = m.assets?.find((x) => x.key === "avatar")?.value;
+        const a = media.data?.assets?.find((x) => x.key === "avatar")?.value;
         if (a) setAvatar(a);
       }
     } catch (err) {
