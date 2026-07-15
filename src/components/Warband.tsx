@@ -1,28 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-
-export interface WarbandCharacter {
-  name: string;
-  realm: string;
-  guid: string | null;
-  classId: number | null;
-  classKey: string | null;
-  className: string | null;
-  level: number | null;
-  itemLevel: number | null;
-  spec: string | null;
-  role: string | null;
-  professionPrimary: string | null;
-  professionSecondary: string | null;
-  guild: string | null;
-  faction: string | null;
-}
-
-interface WarbandData {
-  account: string;
-  source: string;
-  characters: WarbandCharacter[];
-}
+import type { WarbandCharacter, WarbandData } from "../lib/warband";
 
 // Blizzard class colours, keyed by the class file key (`classKey`).
 const CLASS_COLORS: Record<string, string> = {
