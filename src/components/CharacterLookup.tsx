@@ -10,7 +10,16 @@ import {
   describeError,
   realmIndexQuery,
 } from "../lib/queries";
-import { addRecentCharacter, loadRecentCharacters, type RecentCharacter } from "../lib/persist";
+import {
+  addRecentCharacter,
+  loadRecentCharacters,
+  loadFavoriteCharacters,
+  toggleFavoriteCharacter,
+  removeFavoriteCharacter,
+  isFavoriteCharacter,
+  type RecentCharacter,
+  type FavoriteCharacter,
+} from "../lib/persist";
 
 interface Submitted {
   realmSlug: string;
@@ -30,6 +39,7 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
   const [formError, setFormError] = useState("");
   const [brokenAvatar, setBrokenAvatar] = useState("");
   const [recents, setRecents] = useState<RecentCharacter[]>(loadRecentCharacters);
+  const [favorites, setFavorites] = useState<FavoriteCharacter[]>(loadFavoriteCharacters);
 
   const realmSlug = submitted?.realmSlug ?? "";
   const characterName = submitted?.characterName ?? "";
@@ -68,8 +78,8 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
     setSubmitted({ realmSlug: slug, characterName: character });
   }
 
-  // Re-run a lookup from a recent-characters chip.
-  function pickRecent(r: RecentCharacter) {
+  // Re-run a lookup from a recent or favorite chip.
+  function pickCharacter(r: { realmSlug: string; characterName: string }) {
     setRealm(r.realmSlug);
     setName(r.characterName);
     setFormError("");
@@ -78,6 +88,17 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
   }
 
   const regionRecents = recents.filter((r) => r.region === bnet.region);
+  const regionFavorites = favorites.filter((f) => f.region === bnet.region);
+  const currentFavorite: FavoriteCharacter | null = submitted
+    ? {
+        region: bnet.region,
+        realmSlug: submitted.realmSlug,
+        characterName: submitted.characterName,
+      }
+    : null;
+  const currentIsFavorited = currentFavorite
+    ? isFavoriteCharacter(favorites, currentFavorite)
+    : false;
 
   const sub = formError
     ? formError
@@ -117,6 +138,26 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
           {charQuery.isFetching ? "…" : "Look up"}
         </button>
       </form>
+      {regionFavorites.length > 0 && (
+        <div className="row" style={{ flexWrap: "wrap", gap: ".4rem", alignItems: "center" }}>
+          <span className="muted">Favorites:</span>
+          {regionFavorites.map((f) => (
+            <span key={`${f.realmSlug}/${f.characterName}`} className="row" style={{ gap: 0 }}>
+              <button type="button" className="ghost" onClick={() => pickCharacter(f)}>
+                {`★ ${titleCase(f.characterName)} · ${titleCase(f.realmSlug)}`}
+              </button>
+              <button
+                type="button"
+                className="ghost"
+                aria-label={`Remove ${f.characterName} from favorites`}
+                onClick={() => setFavorites(removeFavoriteCharacter(f))}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
       {regionRecents.length > 0 && (
         <div className="row" style={{ flexWrap: "wrap", gap: ".4rem" }}>
           <span className="muted">Recent:</span>
@@ -125,7 +166,7 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
               key={`${r.realmSlug}/${r.characterName}`}
               type="button"
               className="ghost"
-              onClick={() => pickRecent(r)}
+              onClick={() => pickCharacter(r)}
             >
               {`${titleCase(r.characterName)} · ${titleCase(r.realmSlug)}`}
             </button>
@@ -143,6 +184,16 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
               {char.name}
               {char.realm?.name ? <span className="muted"> — {loc(char.realm.name)}</span> : null}
             </h3>
+            <button
+              type="button"
+              className="ghost"
+              style={{ marginBottom: ".25rem" }}
+              onClick={() =>
+                currentFavorite && setFavorites(toggleFavoriteCharacter(currentFavorite))
+              }
+            >
+              {currentIsFavorited ? "★ Favorited" : "☆ Favorite"}
+            </button>
             <p style={{ margin: ".1rem 0" }}>
               Level {char.level} {loc(char.race?.name)} {loc(char.character_class?.name)}
               {char.active_spec?.name ? ` · ${loc(char.active_spec.name)}` : ""}

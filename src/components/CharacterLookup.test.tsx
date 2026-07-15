@@ -3,7 +3,7 @@ import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { CharacterLookup } from "./CharacterLookup";
 import { renderWithClient } from "../test/utils";
 import { mockBnet, mockResponse } from "../test/mocks";
-import { addRecentCharacter } from "../lib/persist";
+import { addRecentCharacter, toggleFavoriteCharacter } from "../lib/persist";
 
 const MEDIA_PATH = "/profile/wow/character/{realmSlug}/{characterName}/character-media";
 
@@ -127,5 +127,28 @@ describe("CharacterLookup", () => {
     ).map((o) => o.value);
     expect(values).toEqual(["Area 52", "Tichondrius"]);
     expect(screen.getByPlaceholderText(/Realm/).getAttribute("list")).toBe("realm-options");
+  });
+
+  it("stars a looked-up character into the favorites strip", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: { name: "Asmon", level: 70 }, response: mockResponse(200) });
+    renderWithClient(<CharacterLookup bnet={bnet} />);
+
+    fillAndSubmit("Tichondrius", "Asmon");
+    fireEvent.click(await screen.findByRole("button", { name: /☆ Favorite/ }));
+
+    expect(screen.getByRole("button", { name: /★ Favorited/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "★ Asmon · Tichondrius" })).toBeInTheDocument();
+  });
+
+  it("removes a favorite from the strip", () => {
+    toggleFavoriteCharacter({ region: "us", realmSlug: "tichondrius", characterName: "asmon" });
+    const { bnet, get } = mockBnet("us");
+    get.mockResolvedValue({ data: { realms: [] }, response: mockResponse(200) });
+    renderWithClient(<CharacterLookup bnet={bnet} />);
+
+    expect(screen.getByRole("button", { name: "★ Asmon · Tichondrius" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Remove asmon from favorites" }));
+    expect(screen.queryByRole("button", { name: "★ Asmon · Tichondrius" })).toBeNull();
   });
 });
