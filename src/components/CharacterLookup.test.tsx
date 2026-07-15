@@ -1,8 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { CharacterLookup } from "./CharacterLookup";
 import { renderWithClient } from "../test/utils";
 import { mockBnet, mockResponse } from "../test/mocks";
+import { addRecentCharacter } from "../lib/persist";
 
 const MEDIA_PATH = "/profile/wow/character/{realmSlug}/{characterName}/character-media";
 
@@ -13,6 +14,8 @@ function fillAndSubmit(realm: string, name: string) {
 }
 
 describe("CharacterLookup", () => {
+  beforeEach(() => localStorage.clear());
+
   it("validates empty input without hitting the API", () => {
     const { bnet, get } = mockBnet();
     renderWithClient(<CharacterLookup bnet={bnet} />);
@@ -59,5 +62,42 @@ describe("CharacterLookup", () => {
         screen.getByText("Character not found — check the realm slug and name."),
       ).toBeInTheDocument(),
     );
+  });
+
+  it("records a successful lookup in the recents list", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: { name: "Asmon", level: 70 }, response: mockResponse(200) });
+    renderWithClient(<CharacterLookup bnet={bnet} />);
+
+    fillAndSubmit("Tichondrius", "Asmon");
+    await screen.findByRole("button", { name: "Asmon · Tichondrius" });
+  });
+
+  it("re-runs the lookup when a recent chip is clicked", async () => {
+    addRecentCharacter({ region: "us", realmSlug: "tichondrius", characterName: "asmon" });
+    const { bnet, get } = mockBnet("us");
+    get.mockResolvedValue({ data: { name: "Asmon", level: 70 }, response: mockResponse(200) });
+    renderWithClient(<CharacterLookup bnet={bnet} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Asmon · Tichondrius" }));
+    await waitFor(() =>
+      expect(get).toHaveBeenCalledWith(
+        "/profile/wow/character/{realmSlug}/{characterName}",
+        expect.objectContaining({
+          params: expect.objectContaining({
+            path: { realmSlug: "tichondrius", characterName: "asmon" },
+          }),
+        }),
+      ),
+    );
+    await screen.findByRole("heading", { name: /Asmon/ });
+  });
+
+  it("shows only recents for the current region", () => {
+    addRecentCharacter({ region: "eu", realmSlug: "silvermoon", characterName: "bob" });
+    const { bnet } = mockBnet("us");
+    renderWithClient(<CharacterLookup bnet={bnet} />);
+
+    expect(screen.queryByRole("button", { name: /Bob/ })).toBeNull();
   });
 });
