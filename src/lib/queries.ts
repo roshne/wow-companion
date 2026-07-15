@@ -29,6 +29,10 @@ export type ConnectedRealm = NonNullable<
 export type CharacterSummary =
   paths["/profile/wow/character/{realmSlug}/{characterName}"]["get"]["responses"][200]["content"]["application/json"];
 
+/** Character equipment document (per-slot items, quality, item level, enchants, sockets). */
+export type CharacterEquipment =
+  paths["/profile/wow/character/{realmSlug}/{characterName}/equipment"]["get"]["responses"][200]["content"]["application/json"];
+
 /** One realm from the realm index (name + slug), used for slug autocomplete. */
 export interface RealmIndexEntry {
   name: string;
@@ -96,6 +100,8 @@ export const queryKeys = {
   characterMedia: (region: Region, realmSlug: string, characterName: string) =>
     ["character-media", region, realmSlug, characterName] as const,
   realmIndex: (region: Region) => ["realm-index", region] as const,
+  characterEquipment: (region: Region, realmSlug: string, characterName: string) =>
+    ["character-equipment", region, realmSlug, characterName] as const,
 };
 
 /** Fetch the current WoW Token price document. */
@@ -157,6 +163,24 @@ export async function fetchCharacter(
   return unwrap(data, response);
 }
 
+/** Fetch a character's equipment document (per-slot items). */
+export async function fetchCharacterEquipment(
+  bnet: BlizzardClient,
+  realmSlug: string,
+  characterName: string,
+): Promise<CharacterEquipment> {
+  const { data, response } = await bnet.api.GET(
+    "/profile/wow/character/{realmSlug}/{characterName}/equipment",
+    {
+      params: {
+        path: { realmSlug, characterName },
+        query: { namespace: bnet.namespace("profile"), locale: "en_US" },
+      },
+    },
+  );
+  return unwrap(data, response);
+}
+
 /** Best-effort character avatar URL from the media document. Returns `null` when unavailable. */
 export async function fetchCharacterAvatar(
   bnet: BlizzardClient,
@@ -200,6 +224,17 @@ export const realmIndexQuery = (bnet: BlizzardClient) =>
     queryKey: queryKeys.realmIndex(bnet.region),
     queryFn: () => fetchRealmIndex(bnet),
     staleTime: 60 * MINUTE,
+  });
+
+export const characterEquipmentQuery = (
+  bnet: BlizzardClient,
+  realmSlug: string,
+  characterName: string,
+) =>
+  queryOptions({
+    queryKey: queryKeys.characterEquipment(bnet.region, realmSlug, characterName),
+    queryFn: () => fetchCharacterEquipment(bnet, realmSlug, characterName),
+    staleTime: 2 * MINUTE,
   });
 
 export const characterQuery = (bnet: BlizzardClient, realmSlug: string, characterName: string) =>

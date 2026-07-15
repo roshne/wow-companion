@@ -14,6 +14,8 @@ import {
   characterAvatarQuery,
   fetchRealmIndex,
   realmIndexQuery,
+  fetchCharacterEquipment,
+  characterEquipmentQuery,
 } from "./queries";
 import { mockBnet, mockResponse } from "../test/mocks";
 
@@ -242,6 +244,33 @@ describe("fetchRealmIndex", () => {
   });
 });
 
+describe("fetchCharacterEquipment", () => {
+  it("requests the profile namespace with the path params and returns the body", async () => {
+    const { bnet, get } = mockBnet("us");
+    get.mockResolvedValue({
+      data: { equipped_items: [{ name: "Helm of Testing" }] },
+      response: mockResponse(200),
+    });
+    const data = await fetchCharacterEquipment(bnet, "tichondrius", "asmon");
+    expect(data.equipped_items?.[0].name).toBe("Helm of Testing");
+    expect(get).toHaveBeenCalledWith(
+      "/profile/wow/character/{realmSlug}/{characterName}/equipment",
+      {
+        params: {
+          path: { realmSlug: "tichondrius", characterName: "asmon" },
+          query: { namespace: "profile-us", locale: "en_US" },
+        },
+      },
+    );
+  });
+
+  it("throws on a non-OK response", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: undefined, response: mockResponse(500) });
+    await expect(fetchCharacterEquipment(bnet, "r", "n")).rejects.toBeInstanceOf(BnetError);
+  });
+});
+
 describe("query-option factories", () => {
   it("carry the region-scoped key and per-endpoint staleTime", () => {
     const { bnet } = mockBnet("kr");
@@ -260,6 +289,13 @@ describe("query-option factories", () => {
     expect(characterAvatarQuery(bnet, "r", "n").staleTime).toBe(30 * 60_000);
     expect(realmIndexQuery(bnet).queryKey).toEqual(["realm-index", "kr"]);
     expect(realmIndexQuery(bnet).staleTime).toBe(60 * 60_000);
+    expect(characterEquipmentQuery(bnet, "r", "n").queryKey).toEqual([
+      "character-equipment",
+      "kr",
+      "r",
+      "n",
+    ]);
+    expect(characterEquipmentQuery(bnet, "r", "n").staleTime).toBe(2 * 60_000);
   });
 
   it("wire a queryFn that hits the client", async () => {
