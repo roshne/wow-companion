@@ -1,7 +1,7 @@
 # Vendored: battlenet-wow-client
 
 This directory is a **vendored copy** of the `client/` package from
-[`roshne/battlenet-api-research`](https://github.com/roshne/battlenet-api-research) (commit `16e9630`).
+[`roshne/battlenet-api-research`](https://github.com/roshne/battlenet-api-research) (commit `30a0e18`).
 
 Only the import specifiers were changed (extensionless, for Vite/bundler resolution). Do not hand-edit
 the logic here — update it upstream in `battlenet-api-research`, then re-vendor:
