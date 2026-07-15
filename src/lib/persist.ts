@@ -16,9 +16,13 @@ const RECENTS_KEY = "wow-companion:recent-characters";
 const FAVORITE_CHARACTERS_KEY = "wow-companion:favorite-characters";
 const FAVORITE_REALMS_KEY = "wow-companion:favorite-realms";
 const WARBAND_SEEDED_KEY = "wow-companion:warband-seeded-regions";
+const TOKEN_HISTORY_PREFIX = "wow-companion:token-history:";
 
 /** How many recently viewed characters to keep. */
 export const RECENTS_CAP = 8;
+
+/** How many token price points to keep per region (~a week at the ~20-min update cadence). */
+export const TOKEN_HISTORY_CAP = 500;
 
 /** A recently viewed character's identity — enough to re-run the lookup (the profile is re-fetched). */
 export interface RecentCharacter {
@@ -248,4 +252,45 @@ export function markWarbandSeeded(region: Region): void {
     regions.push(region);
     writeRaw(WARBAND_SEEDED_KEY, JSON.stringify(regions));
   }
+}
+
+// --- Token price history: self-accumulated per region (the API only returns the current price). -----
+
+/** One WoW Token price sample. `t` is the server's `last_updated_timestamp`; `price` is in copper. */
+export interface TokenPricePoint {
+  t: number;
+  price: number;
+}
+
+function isTokenPricePoint(value: unknown): value is TokenPricePoint {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.t === "number" && Number.isFinite(v.t) && typeof v.price === "number" && v.price >= 0
+  );
+}
+
+/** The persisted token price series for a region (validated, capped), oldest first. */
+export function loadTokenHistory(region: Region): TokenPricePoint[] {
+  const raw = readRaw(TOKEN_HISTORY_PREFIX + region);
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter(isTokenPricePoint).slice(-TOKEN_HISTORY_CAP) : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Append a price sample, deduped on the server timestamp (a repeat within the ~20-min window is a
+ * no-op), capped as a ring buffer. Persists and returns the new series.
+ */
+export function appendTokenPrice(region: Region, point: TokenPricePoint): TokenPricePoint[] {
+  const history = loadTokenHistory(region);
+  const last = history[history.length - 1];
+  if (last && last.t === point.t) return history;
+  const next = [...history, point].slice(-TOKEN_HISTORY_CAP);
+  writeRaw(TOKEN_HISTORY_PREFIX + region, JSON.stringify(next));
+  return next;
 }
