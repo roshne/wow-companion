@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { makeClient } from "./lib/bnet";
 import { onUnauthorized } from "./lib/auth";
+import { useTokenHistory } from "./lib/useTokenHistory";
 import { loadRegion, saveRegion } from "./lib/persist";
 import type { Region } from "./vendor/battlenet-wow-client";
 import { TokenPrice } from "./components/TokenPrice";
@@ -24,6 +25,9 @@ function App() {
 
   // Rebuilt when the region changes; children re-fetch against the new region.
   const bnet = useMemo(() => makeClient(region), [region]);
+
+  // Capture the token price app-wide (not just on the Token tab) so history accrues off-tab.
+  const token = useTokenHistory(bnet, hasCreds === true);
 
   // Remember the selected region so the app reopens on it.
   useEffect(() => saveRegion(region), [region]);
@@ -138,7 +142,7 @@ function App() {
       </nav>
 
       <ErrorBoundary resetKeys={[tab, region]}>
-        {tab === "token" && <TokenPrice bnet={bnet} />}
+        {tab === "token" && <TokenPrice token={token} />}
         {tab === "realms" && <RealmStatus bnet={bnet} />}
         {tab === "character" && <CharacterLookup bnet={bnet} />}
         {tab === "warband" && <Warband />}
