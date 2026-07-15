@@ -1,57 +1,23 @@
-import { useEffect, useState } from "react";
-import type { BlizzardClient, paths } from "../vendor/battlenet-wow-client";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { BlizzardClient } from "../vendor/battlenet-wow-client";
 import { loc } from "../lib/types";
-
-/** The `data` payload of one connected-realm search result (dynamic namespace, names as objects). */
-type ConnectedRealm = NonNullable<
-  NonNullable<
-    paths["/data/wow/search/connected-realm"]["get"]["responses"][200]["content"]["application/json"]["results"]
-  >[number]["data"]
->;
+import { connectedRealmsQuery, describeError } from "../lib/queries";
 
 /**
- * Realm status via the connected-realm search (dynamic namespace). The endpoint takes no `locale`,
- * so names come back localized — we read them with `loc()`. Paginates with `_page`.
+ * Realm status via the connected-realm search (dynamic namespace). Auto-fetches on mount and whenever
+ * the region changes (region is in the queryKey). Names come back localized — read with `loc()`.
  */
 export function RealmStatus({ bnet }: { bnet: BlizzardClient }) {
-  const [rows, setRows] = useState<ConnectedRealm[]>([]);
-  const [sub, setSub] = useState("");
-  const [busy, setBusy] = useState(false);
   const [filter, setFilter] = useState("");
+  const { data, isFetching, isError, error, refetch } = useQuery(connectedRealmsQuery(bnet));
+  const rows = data ?? [];
 
-  async function load() {
-    setBusy(true);
-    setRows([]);
-    setSub("Loading realms…");
-    try {
-      const all: ConnectedRealm[] = [];
-      let page = 1;
-      let pageCount = 1;
-      do {
-        const { data, response } = await bnet.api.GET("/data/wow/search/connected-realm", {
-          params: { query: { namespace: bnet.namespace("dynamic"), orderby: "id", _page: page } },
-        });
-        if (!response.ok) {
-          setSub(`Failed (HTTP ${response.status}).`);
-          return;
-        }
-        pageCount = data?.pageCount ?? 1;
-        for (const r of data?.results ?? []) if (r.data) all.push(r.data);
-        page++;
-      } while (page <= pageCount && page <= 20);
-      setRows(all);
-      setSub(`${all.length} connected realms · ${bnet.region.toUpperCase()}`);
-    } catch (e) {
-      setSub(`Error: ${String(e)}`);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bnet]);
+  const sub = isError
+    ? describeError(error)
+    : isFetching && rows.length === 0
+      ? "Loading realms…"
+      : `${rows.length} connected realms · ${bnet.region.toUpperCase()}`;
 
   const q = filter.trim().toLowerCase();
   const view = rows
@@ -74,8 +40,8 @@ export function RealmStatus({ bnet }: { bnet: BlizzardClient }) {
             value={filter}
             onChange={(e) => setFilter(e.currentTarget.value)}
           />
-          <button onClick={() => void load()} disabled={busy}>
-            {busy ? "…" : "Refresh"}
+          <button onClick={() => void refetch()} disabled={isFetching}>
+            {isFetching ? "…" : "Refresh"}
           </button>
         </div>
       </div>
