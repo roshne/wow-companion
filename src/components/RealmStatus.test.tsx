@@ -27,6 +27,34 @@ describe("RealmStatus", () => {
     expect(screen.getByText("Tichondrius")).toBeInTheDocument();
   });
 
+  it("surfaces realm type, category, and timezone", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue(
+      page([
+        {
+          data: {
+            id: 1,
+            realms: [
+              {
+                name: { en_US: "Tichondrius" },
+                type: { name: { en_US: "Normal" }, type: "NORMAL" },
+                category: { en_US: "United States" },
+                timezone: "America/New_York",
+              },
+            ],
+            status: { type: "UP" },
+          },
+        },
+      ]),
+    );
+    renderWithClient(<RealmStatus bnet={bnet} />);
+
+    await screen.findByText("Tichondrius");
+    expect(screen.getByText("Normal")).toBeInTheDocument();
+    expect(screen.getByText("United States")).toBeInTheDocument();
+    expect(screen.getByText("America/New_York")).toBeInTheDocument();
+  });
+
   it("shows an error message when the search fails", async () => {
     const { bnet, get } = mockBnet();
     get.mockResolvedValue({ data: undefined, response: mockResponse(503) });

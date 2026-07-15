@@ -4,6 +4,11 @@ import type { BlizzardClient } from "../vendor/battlenet-wow-client";
 import { loc } from "../lib/types";
 import { connectedRealmsQuery, describeError } from "../lib/queries";
 
+/** Join the distinct, non-empty values across a connected realm's constituent realms. */
+function distinctJoin(values: (string | undefined)[]): string {
+  return [...new Set(values.filter((v): v is string => Boolean(v)))].join(", ");
+}
+
 /**
  * Realm status via the connected-realm search (dynamic namespace). Auto-fetches on mount and whenever
  * the region changes (region is in the queryKey). Names come back localized — read with `loc()`.
@@ -21,13 +26,19 @@ export function RealmStatus({ bnet }: { bnet: BlizzardClient }) {
 
   const q = filter.trim().toLowerCase();
   const view = rows
-    .map((cr) => ({
-      cr,
-      names: (cr.realms ?? [])
-        .map((r) => loc(r.name))
-        .filter(Boolean)
-        .join(", "),
-    }))
+    .map((cr) => {
+      const realms = cr.realms ?? [];
+      return {
+        cr,
+        names: realms
+          .map((r) => loc(r.name))
+          .filter(Boolean)
+          .join(", "),
+        type: distinctJoin(realms.map((r) => loc(r.type?.name) || r.type?.type)),
+        category: distinctJoin(realms.map((r) => loc(r.category))),
+        timezone: distinctJoin(realms.map((r) => r.timezone)),
+      };
+    })
     .filter((x) => !q || x.names.toLowerCase().includes(q));
 
   return (
@@ -51,21 +62,27 @@ export function RealmStatus({ bnet }: { bnet: BlizzardClient }) {
           <thead>
             <tr>
               <th>Realm(s)</th>
+              <th>Type</th>
+              <th>Category</th>
               <th>Status</th>
               <th>Population</th>
+              <th>Timezone</th>
               <th>Queue</th>
             </tr>
           </thead>
           <tbody>
-            {view.map(({ cr, names }) => {
+            {view.map(({ cr, names, type, category, timezone }) => {
               const up = (cr.status?.type ?? "").toUpperCase() === "UP";
               return (
                 <tr key={cr.id}>
                   <td>{names || `#${cr.id}`}</td>
+                  <td>{type || "—"}</td>
+                  <td>{category || "—"}</td>
                   <td className={up ? "up" : "down"}>
                     {loc(cr.status?.name) || cr.status?.type || "?"}
                   </td>
                   <td>{loc(cr.population?.name) || cr.population?.type || "—"}</td>
+                  <td>{timezone || "—"}</td>
                   <td>{cr.has_queue ? "Yes" : "No"}</td>
                 </tr>
               );
