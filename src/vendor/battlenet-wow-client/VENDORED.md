@@ -1,7 +1,7 @@
 # Vendored: battlenet-wow-client
 
 This directory is a **vendored copy** of the `client/` package from
-[`roshne/battlenet-api-research`](https://github.com/roshne/battlenet-api-research) (commit `8178976`).
+[`roshne/battlenet-api-research`](https://github.com/roshne/battlenet-api-research) (commit `489d258`).
 
 Only the import specifiers were changed (extensionless, for Vite/bundler resolution). Do not hand-edit
 the logic here — update it upstream in `battlenet-api-research`, then re-vendor:
@@ -16,6 +16,6 @@ rewrites relative imports to extensionless (`./auth`, `./client`, `./generated/s
 
 `generated/schema.d.ts` is itself generated from the repo's OpenAPI spec
 (`openapi/battlenet-wow.openapi.json`). Response bodies are typed where a live sample was captured
-(most capturable GET endpoints, as of `8178976`); the rest remain `unknown`. Captured schemas are
+(most capturable GET endpoints, as of `489d258`); the rest remain `unknown`. Captured schemas are
 single-sample-inferred — all fields optional, nested shapes from the first array element — so treat
 them as best-effort.
