@@ -1,8 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { BlizzardClient } from "../vendor/battlenet-wow-client";
 import { loc } from "../lib/types";
+import { toRealmSlug } from "../lib/slug";
 import { connectedRealmsQuery, describeError } from "../lib/queries";
+import { warbandQuery } from "../lib/warband";
+import {
+  loadFavoriteRealms,
+  toggleFavoriteRealmRow,
+  ensureRealmFavorites,
+  hasSeededWarband,
+  markWarbandSeeded,
+  type FavoriteRealm,
+} from "../lib/persist";
 
 /** Join the distinct, non-empty values across a connected realm's constituent realms. */
 function distinctJoin(values: (string | undefined)[]): string {
@@ -15,8 +25,29 @@ function distinctJoin(values: (string | undefined)[]): string {
  */
 export function RealmStatus({ bnet }: { bnet: BlizzardClient }) {
   const [filter, setFilter] = useState("");
+  const [realmFavorites, setRealmFavorites] = useState<FavoriteRealm[]>(loadFavoriteRealms);
   const { data, isFetching, isError, error, refetch } = useQuery(connectedRealmsQuery(bnet));
+  const warband = useQuery(warbandQuery());
   const rows = data ?? [];
+
+  // One-time per region: pin the realms where the user's warband characters live. Intersecting the
+  // warband's realm slugs with the realms that actually exist in this region means a warband from a
+  // different region seeds nothing (no cross-region false pins).
+  useEffect(() => {
+    if (!data || !warband.data || hasSeededWarband(bnet.region)) return;
+    const realmSlugsInRegion = new Set(
+      data.flatMap((cr) => (cr.realms ?? []).map((r) => r.slug).filter((s): s is string => !!s)),
+    );
+    const warbandSlugs = [
+      ...new Set(warband.data.characters.map((c) => toRealmSlug(c.realm))),
+    ].filter((slug) => realmSlugsInRegion.has(slug));
+    if (warbandSlugs.length) setRealmFavorites(ensureRealmFavorites(bnet.region, warbandSlugs));
+    markWarbandSeeded(bnet.region);
+  }, [data, warband.data, bnet.region]);
+
+  const favSlugs = new Set(
+    realmFavorites.filter((f) => f.region === bnet.region).map((f) => f.realmSlug),
+  );
 
   const sub = isError
     ? describeError(error)
@@ -28,8 +59,11 @@ export function RealmStatus({ bnet }: { bnet: BlizzardClient }) {
   const view = rows
     .map((cr) => {
       const realms = cr.realms ?? [];
+      const slugs = realms.map((r) => r.slug).filter((s): s is string => !!s);
       return {
         cr,
+        slugs,
+        favorited: slugs.some((s) => favSlugs.has(s)),
         names: realms
           .map((r) => loc(r.name))
           .filter(Boolean)
@@ -39,7 +73,8 @@ export function RealmStatus({ bnet }: { bnet: BlizzardClient }) {
         timezone: distinctJoin(realms.map((r) => r.timezone)),
       };
     })
-    .filter((x) => !q || x.names.toLowerCase().includes(q));
+    .filter((x) => !q || x.names.toLowerCase().includes(q))
+    .sort((a, b) => Number(b.favorited) - Number(a.favorited));
 
   return (
     <section className="card">
@@ -61,6 +96,7 @@ export function RealmStatus({ bnet }: { bnet: BlizzardClient }) {
         <table className="grid">
           <thead>
             <tr>
+              <th aria-label="Favorite"></th>
               <th>Realm(s)</th>
               <th>Type</th>
               <th>Category</th>
@@ -71,10 +107,21 @@ export function RealmStatus({ bnet }: { bnet: BlizzardClient }) {
             </tr>
           </thead>
           <tbody>
-            {view.map(({ cr, names, type, category, timezone }) => {
+            {view.map(({ cr, slugs, favorited, names, type, category, timezone }) => {
               const up = (cr.status?.type ?? "").toUpperCase() === "UP";
               return (
                 <tr key={cr.id}>
+                  <td>
+                    <button
+                      type="button"
+                      className="ghost"
+                      aria-label={favorited ? "Unpin realm" : "Pin realm"}
+                      aria-pressed={favorited}
+                      onClick={() => setRealmFavorites(toggleFavoriteRealmRow(bnet.region, slugs))}
+                    >
+                      {favorited ? "★" : "☆"}
+                    </button>
+                  </td>
                   <td>{names || `#${cr.id}`}</td>
                   <td>{type || "—"}</td>
                   <td>{category || "—"}</td>
