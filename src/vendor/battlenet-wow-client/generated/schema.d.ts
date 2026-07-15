@@ -4615,12 +4615,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        achievements?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -4664,12 +4679,51 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        category?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        name?: string;
+                        description?: string;
+                        points?: number;
+                        is_account_wide?: boolean;
+                        criteria?: {
+                            id?: number;
+                            description?: string;
+                            amount?: number;
+                        };
+                        next_achievement?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        media?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                        display_order?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -4713,12 +4767,26 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        assets?: {
+                            key?: string;
+                            value?: string;
+                            file_data_id?: number;
+                        }[];
+                        id?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -4756,12 +4824,41 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        categories?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                        root_categories?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                        guild_categories?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -4805,12 +4902,48 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        achievements?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                        subcategories?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                        is_guild_category?: boolean;
+                        aggregates_by_faction?: {
+                            alliance?: {
+                                quantity?: number;
+                                points?: number;
+                            };
+                            horde?: {
+                                quantity?: number;
+                                points?: number;
+                            };
+                        };
+                        display_order?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -4897,12 +5030,29 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        auctions?: {
+                            id?: number;
+                            item?: {
+                                id?: number;
+                            };
+                            quantity?: number;
+                            unit_price?: number;
+                            time_left?: string;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -4940,12 +5090,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        azerite_essences?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -4989,12 +5154,53 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        allowed_specializations?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                        powers?: {
+                            id?: number;
+                            rank?: number;
+                            main_power_spell?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            passive_power_spell?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                        }[];
+                        media?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -5042,12 +5248,57 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        page?: number;
+                        pageSize?: number;
+                        maxPageSize?: number;
+                        pageCount?: number;
+                        results?: {
+                            key?: {
+                                href?: string;
+                            };
+                            data?: {
+                                allowed_specializations?: {
+                                    name?: {
+                                        it_IT?: string;
+                                        ru_RU?: string;
+                                        en_GB?: string;
+                                        zh_TW?: string;
+                                        ko_KR?: string;
+                                        en_US?: string;
+                                        es_MX?: string;
+                                        pt_BR?: string;
+                                        es_ES?: string;
+                                        zh_CN?: string;
+                                        fr_FR?: string;
+                                        de_DE?: string;
+                                    };
+                                    id?: number;
+                                }[];
+                                name?: {
+                                    it_IT?: string;
+                                    ru_RU?: string;
+                                    en_GB?: string;
+                                    zh_TW?: string;
+                                    ko_KR?: string;
+                                    en_US?: string;
+                                    es_MX?: string;
+                                    pt_BR?: string;
+                                    es_ES?: string;
+                                    zh_CN?: string;
+                                    fr_FR?: string;
+                                    de_DE?: string;
+                                };
+                            };
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -5091,12 +5342,26 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        assets?: {
+                            key?: string;
+                            value?: string;
+                            file_data_id?: number;
+                        }[];
+                        id?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -5134,12 +5399,23 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        connected_realms?: {
+                            href?: string;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -5183,12 +5459,59 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        has_queue?: boolean;
+                        status?: {
+                            type?: string;
+                            name?: string;
+                        };
+                        population?: {
+                            type?: string;
+                            name?: string;
+                        };
+                        realms?: {
+                            id?: number;
+                            region?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            connected_realm?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            category?: string;
+                            locale?: string;
+                            timezone?: string;
+                            type?: {
+                                type?: string;
+                                name?: string;
+                            };
+                            is_tournament?: boolean;
+                            slug?: string;
+                        }[];
+                        mythic_leaderboards?: {
+                            href?: string;
+                        };
+                        auctions?: {
+                            href?: string;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -5403,12 +5726,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        covenants?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -5452,12 +5790,85 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        description?: string;
+                        signature_ability?: {
+                            id?: number;
+                            spell_tooltip?: {
+                                spell?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    name?: string;
+                                    id?: number;
+                                };
+                                description?: string;
+                                cast_time?: string;
+                                cooldown?: string;
+                            };
+                        };
+                        class_abilities?: {
+                            id?: number;
+                            playable_class?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            spell_tooltip?: {
+                                spell?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    name?: string;
+                                    id?: number;
+                                };
+                                description?: string;
+                                cast_time?: string;
+                                range?: string;
+                                cooldown?: string;
+                                power_cost?: ((((string | null) | string) | string) | string) | string;
+                            };
+                        }[];
+                        soulbinds?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                        renown_rewards?: {
+                            level?: number;
+                            reward?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                        }[];
+                        media?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -5501,12 +5912,25 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        assets?: {
+                            key?: string;
+                            value?: string;
+                            file_data_id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -5544,12 +5968,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        soulbinds?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -5593,12 +6032,47 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        covenant?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        creature?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        follower?: {
+                            name?: string;
+                            id?: number;
+                        };
+                        talent_tree?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -5636,12 +6110,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        conduits?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -5734,12 +6223,43 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        type?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        family?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        creature_displays?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        }[];
+                        is_tameable?: boolean;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -5787,12 +6307,80 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        page?: number;
+                        pageSize?: number;
+                        maxPageSize?: number;
+                        pageCount?: number;
+                        resultCountCapped?: boolean;
+                        results?: {
+                            key?: {
+                                href?: string;
+                            };
+                            data?: {
+                                creature_displays?: {
+                                    id?: number;
+                                }[];
+                                is_tameable?: boolean;
+                                name?: {
+                                    it_IT?: string;
+                                    ru_RU?: string;
+                                    en_GB?: string;
+                                    zh_TW?: string;
+                                    ko_KR?: string;
+                                    en_US?: string;
+                                    es_MX?: string;
+                                    pt_BR?: string;
+                                    es_ES?: string;
+                                    zh_CN?: string;
+                                    fr_FR?: string;
+                                    de_DE?: string;
+                                };
+                                id?: number;
+                                type?: {
+                                    name?: {
+                                        it_IT?: string;
+                                        ru_RU?: string;
+                                        en_GB?: string;
+                                        zh_TW?: string;
+                                        ko_KR?: string;
+                                        en_US?: string;
+                                        es_MX?: string;
+                                        pt_BR?: string;
+                                        es_ES?: string;
+                                        zh_CN?: string;
+                                        fr_FR?: string;
+                                        de_DE?: string;
+                                    };
+                                    id?: number;
+                                };
+                                family?: {
+                                    name?: {
+                                        it_IT?: string;
+                                        ru_RU?: string;
+                                        en_GB?: string;
+                                        zh_TW?: string;
+                                        ko_KR?: string;
+                                        en_US?: string;
+                                        es_MX?: string;
+                                        pt_BR?: string;
+                                        es_ES?: string;
+                                        zh_CN?: string;
+                                        fr_FR?: string;
+                                        de_DE?: string;
+                                    };
+                                    id?: number;
+                                };
+                            };
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -5836,12 +6424,25 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        assets?: {
+                            key?: string;
+                            value?: string;
+                        }[];
+                        id?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -5879,12 +6480,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        creature_families?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -5928,12 +6544,35 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        specialization?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        media?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -5977,12 +6616,26 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        assets?: {
+                            key?: string;
+                            value?: string;
+                            file_data_id?: number;
+                        }[];
+                        id?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -6020,12 +6673,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        creature_types?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -6069,12 +6737,22 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -6112,12 +6790,67 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        emblems?: {
+                            id?: number;
+                            media?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                id?: number;
+                            };
+                        }[];
+                        borders?: {
+                            id?: number;
+                            media?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                id?: number;
+                            };
+                        }[];
+                        colors?: {
+                            emblems?: {
+                                id?: number;
+                                rgba?: {
+                                    r?: number;
+                                    g?: number;
+                                    b?: number;
+                                    a?: number;
+                                };
+                            }[];
+                            borders?: {
+                                id?: number;
+                                rgba?: {
+                                    r?: number;
+                                    g?: number;
+                                    b?: number;
+                                    a?: number;
+                                };
+                            }[];
+                            backgrounds?: {
+                                id?: number;
+                                rgba?: {
+                                    r?: number;
+                                    g?: number;
+                                    b?: number;
+                                    a?: number;
+                                };
+                            }[];
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -6161,12 +6894,25 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        assets?: {
+                            key?: string;
+                            value?: string;
+                        }[];
+                        id?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -6210,12 +6956,25 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        assets?: {
+                            key?: string;
+                            value?: string;
+                        }[];
+                        id?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -6253,12 +7012,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        heirlooms?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -6302,12 +7076,135 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        item?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        source?: {
+                            type?: string;
+                            name?: string;
+                        };
+                        source_description?: string;
+                        upgrades?: {
+                            item?: {
+                                item?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    id?: number;
+                                };
+                                context?: number;
+                                bonus_list?: number[];
+                                quality?: {
+                                    type?: string;
+                                    name?: string;
+                                };
+                                name?: string;
+                                media?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    id?: number;
+                                };
+                                item_class?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    name?: string;
+                                    id?: number;
+                                };
+                                item_subclass?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    name?: string;
+                                    id?: number;
+                                };
+                                inventory_type?: {
+                                    type?: string;
+                                    name?: string;
+                                };
+                                binding?: {
+                                    type?: string;
+                                    name?: string;
+                                };
+                                weapon?: {
+                                    damage?: {
+                                        min_value?: number;
+                                        max_value?: number;
+                                        display_string?: string;
+                                        damage_class?: {
+                                            type?: string;
+                                            name?: string;
+                                        };
+                                    };
+                                    attack_speed?: {
+                                        value?: number;
+                                        display_string?: string;
+                                    };
+                                    dps?: {
+                                        value?: number;
+                                        display_string?: string;
+                                    };
+                                };
+                                stats?: {
+                                    type?: {
+                                        type?: string;
+                                        name?: string;
+                                    };
+                                    value?: number;
+                                    display?: {
+                                        display_string?: string;
+                                        color?: {
+                                            r?: number;
+                                            g?: number;
+                                            b?: number;
+                                            a?: number;
+                                        };
+                                    };
+                                    is_equip_bonus?: boolean;
+                                }[];
+                                upgrades?: {
+                                    value?: number;
+                                    max_value?: number;
+                                    display_string?: string;
+                                };
+                                requirements?: {
+                                    level?: {
+                                        display_string?: string;
+                                    };
+                                };
+                                level?: {
+                                    value?: number;
+                                    display_string?: string;
+                                };
+                            };
+                            level?: number;
+                        }[];
+                        media?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -6345,12 +7242,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        decor_items?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -6394,12 +7306,34 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        items?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        name?: string;
+                        dye_slots?: {
+                            slot_index?: number;
+                            dye_color_category?: string;
+                        }[];
+                        default_collection_count?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -6447,12 +7381,59 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        page?: number;
+                        pageSize?: number;
+                        maxPageSize?: number;
+                        pageCount?: number;
+                        resultCountCapped?: boolean;
+                        results?: {
+                            key?: {
+                                href?: string;
+                            };
+                            data?: {
+                                item?: {
+                                    name?: {
+                                        it_IT?: string;
+                                        ru_RU?: string;
+                                        en_GB?: string;
+                                        zh_TW?: string;
+                                        ko_KR?: string;
+                                        en_US?: string;
+                                        es_MX?: string;
+                                        pt_BR?: string;
+                                        es_ES?: string;
+                                        zh_CN?: string;
+                                        fr_FR?: string;
+                                        de_DE?: string;
+                                    };
+                                    id?: number;
+                                };
+                                name?: {
+                                    it_IT?: string;
+                                    ru_RU?: string;
+                                    en_GB?: string;
+                                    zh_TW?: string;
+                                    ko_KR?: string;
+                                    en_US?: string;
+                                    es_MX?: string;
+                                    pt_BR?: string;
+                                    es_ES?: string;
+                                    zh_CN?: string;
+                                    fr_FR?: string;
+                                    de_DE?: string;
+                                };
+                                id?: number;
+                            };
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -6490,12 +7471,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        fixtures?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -6589,12 +7585,41 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        page?: number;
+                        pageSize?: number;
+                        maxPageSize?: number;
+                        pageCount?: number;
+                        results?: {
+                            key?: {
+                                href?: string;
+                            };
+                            data?: {
+                                name?: {
+                                    it_IT?: string;
+                                    ru_RU?: string;
+                                    en_GB?: string;
+                                    zh_TW?: string;
+                                    ko_KR?: string;
+                                    en_US?: string;
+                                    es_MX?: string;
+                                    pt_BR?: string;
+                                    es_ES?: string;
+                                    zh_CN?: string;
+                                    fr_FR?: string;
+                                    de_DE?: string;
+                                };
+                                id?: number;
+                            };
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -6632,12 +7657,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        fixture_hooks?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -6681,12 +7721,29 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        type_name?: string;
+                        parent_fixture?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -6729,12 +7786,28 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        page?: number;
+                        pageSize?: number;
+                        maxPageSize?: number;
+                        pageCount?: number;
+                        resultCountCapped?: boolean;
+                        results?: {
+                            key?: {
+                                href?: string;
+                            };
+                            data?: {
+                                id?: number;
+                            };
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -6772,12 +7845,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        rooms?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -6821,12 +7909,22 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -6874,12 +7972,41 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        page?: number;
+                        pageSize?: number;
+                        maxPageSize?: number;
+                        pageCount?: number;
+                        results?: {
+                            key?: {
+                                href?: string;
+                            };
+                            data?: {
+                                name?: {
+                                    it_IT?: string;
+                                    ru_RU?: string;
+                                    en_GB?: string;
+                                    zh_TW?: string;
+                                    ko_KR?: string;
+                                    en_US?: string;
+                                    es_MX?: string;
+                                    pt_BR?: string;
+                                    es_ES?: string;
+                                    zh_CN?: string;
+                                    fr_FR?: string;
+                                    de_DE?: string;
+                                };
+                                id?: number;
+                            };
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -6923,12 +8050,168 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        quality?: {
+                            type?: string;
+                            name?: string;
+                        };
+                        level?: number;
+                        required_level?: number;
+                        media?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                        item_class?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        item_subclass?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        inventory_type?: {
+                            type?: string;
+                            name?: string;
+                        };
+                        purchase_price?: number;
+                        sell_price?: number;
+                        max_count?: number;
+                        is_equippable?: boolean;
+                        is_stackable?: boolean;
+                        preview_item?: {
+                            item?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                id?: number;
+                            };
+                            context?: number;
+                            bonus_list?: number[];
+                            quality?: {
+                                type?: string;
+                                name?: string;
+                            };
+                            name?: string;
+                            media?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                id?: number;
+                            };
+                            item_class?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            item_subclass?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            inventory_type?: {
+                                type?: string;
+                                name?: string;
+                            };
+                            binding?: {
+                                type?: string;
+                                name?: string;
+                            };
+                            unique_equipped?: string;
+                            weapon?: {
+                                damage?: {
+                                    min_value?: number;
+                                    max_value?: number;
+                                    display_string?: string;
+                                    damage_class?: {
+                                        type?: string;
+                                        name?: string;
+                                    };
+                                };
+                                attack_speed?: {
+                                    value?: number;
+                                    display_string?: string;
+                                };
+                                dps?: {
+                                    value?: number;
+                                    display_string?: string;
+                                };
+                            };
+                            stats?: {
+                                type?: {
+                                    type?: string;
+                                    name?: string;
+                                };
+                                value?: number;
+                                is_negated?: boolean;
+                                display?: {
+                                    display_string?: string;
+                                    color?: {
+                                        r?: number;
+                                        g?: number;
+                                        b?: number;
+                                        a?: number;
+                                    };
+                                };
+                            }[];
+                            spells?: {
+                                spell?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    name?: string;
+                                    id?: number;
+                                };
+                                description?: string;
+                            }[];
+                            requirements?: {
+                                level?: {
+                                    value?: number;
+                                    display_string?: string;
+                                };
+                            };
+                            level?: {
+                                value?: number;
+                                display_string?: string;
+                            };
+                            durability?: {
+                                value?: number;
+                                display_string?: string;
+                            };
+                        };
+                        purchase_quantity?: number;
+                        appearances?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -6976,12 +8259,124 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        page?: number;
+                        pageSize?: number;
+                        maxPageSize?: number;
+                        pageCount?: number;
+                        resultCountCapped?: boolean;
+                        results?: {
+                            key?: {
+                                href?: string;
+                            };
+                            data?: {
+                                level?: number;
+                                required_level?: number;
+                                sell_price?: number;
+                                item_subclass?: {
+                                    name?: {
+                                        it_IT?: string;
+                                        ru_RU?: string;
+                                        en_GB?: string;
+                                        zh_TW?: string;
+                                        ko_KR?: string;
+                                        en_US?: string;
+                                        es_MX?: string;
+                                        pt_BR?: string;
+                                        es_ES?: string;
+                                        zh_CN?: string;
+                                        fr_FR?: string;
+                                        de_DE?: string;
+                                    };
+                                    id?: number;
+                                };
+                                is_equippable?: boolean;
+                                purchase_quantity?: number;
+                                media?: {
+                                    id?: number;
+                                };
+                                item_class?: {
+                                    name?: {
+                                        it_IT?: string;
+                                        ru_RU?: string;
+                                        en_GB?: string;
+                                        zh_TW?: string;
+                                        ko_KR?: string;
+                                        en_US?: string;
+                                        es_MX?: string;
+                                        pt_BR?: string;
+                                        es_ES?: string;
+                                        zh_CN?: string;
+                                        fr_FR?: string;
+                                        de_DE?: string;
+                                    };
+                                    id?: number;
+                                };
+                                quality?: {
+                                    name?: {
+                                        it_IT?: string;
+                                        ru_RU?: string;
+                                        en_GB?: string;
+                                        zh_TW?: string;
+                                        ko_KR?: string;
+                                        en_US?: string;
+                                        es_MX?: string;
+                                        pt_BR?: string;
+                                        es_ES?: string;
+                                        zh_CN?: string;
+                                        fr_FR?: string;
+                                        de_DE?: string;
+                                    };
+                                    type?: string;
+                                };
+                                max_count?: number;
+                                is_stackable?: boolean;
+                                appearances?: {
+                                    id?: number;
+                                }[];
+                                name?: {
+                                    it_IT?: string;
+                                    ru_RU?: string;
+                                    en_GB?: string;
+                                    zh_TW?: string;
+                                    ko_KR?: string;
+                                    en_US?: string;
+                                    es_MX?: string;
+                                    pt_BR?: string;
+                                    es_ES?: string;
+                                    zh_CN?: string;
+                                    fr_FR?: string;
+                                    de_DE?: string;
+                                };
+                                purchase_price?: number;
+                                id?: number;
+                                inventory_type?: {
+                                    name?: {
+                                        it_IT?: string;
+                                        ru_RU?: string;
+                                        en_GB?: string;
+                                        zh_TW?: string;
+                                        ko_KR?: string;
+                                        en_US?: string;
+                                        es_MX?: string;
+                                        pt_BR?: string;
+                                        es_ES?: string;
+                                        zh_CN?: string;
+                                        fr_FR?: string;
+                                        de_DE?: string;
+                                    };
+                                    type?: string;
+                                };
+                            };
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -7025,12 +8420,26 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        assets?: {
+                            key?: string;
+                            value?: string;
+                            file_data_id?: number;
+                        }[];
+                        id?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -7068,12 +8477,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        item_classes?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -7117,12 +8541,29 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        class_id?: number;
+                        name?: string;
+                        item_subclasses?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -7160,12 +8601,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        item_sets?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -7209,12 +8665,34 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        items?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                        effects?: {
+                            display_string?: string;
+                            required_count?: number;
+                        }[];
+                        is_effect_active?: boolean;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -7263,12 +8741,24 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        class_id?: number;
+                        subclass_id?: number;
+                        display_name?: string;
+                        hide_subclass_in_tooltips?: boolean;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -7312,12 +8802,53 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        slot?: {
+                            type?: string;
+                            name?: string;
+                        };
+                        item_class?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        item_subclass?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        item_display_info_id?: number;
+                        items?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                        media?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -7365,12 +8896,46 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        page?: number;
+                        pageSize?: number;
+                        maxPageSize?: number;
+                        pageCount?: number;
+                        resultCountCapped?: boolean;
+                        results?: {
+                            key?: {
+                                href?: string;
+                            };
+                            data?: {
+                                item_display_info_id?: number;
+                                id?: number;
+                                slot?: {
+                                    name?: {
+                                        it_IT?: string;
+                                        ru_RU?: string;
+                                        en_GB?: string;
+                                        zh_TW?: string;
+                                        ko_KR?: string;
+                                        en_US?: string;
+                                        es_MX?: string;
+                                        pt_BR?: string;
+                                        es_ES?: string;
+                                        zh_CN?: string;
+                                        fr_FR?: string;
+                                        de_DE?: string;
+                                    };
+                                    type?: string;
+                                };
+                            };
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -7408,12 +8973,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        appearance_sets?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -7457,12 +9037,28 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        set_name?: string;
+                        appearances?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -7500,12 +9096,25 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        slots?: {
+                            key?: {
+                                href?: string;
+                            };
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -7549,12 +9158,26 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        appearances?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -7592,12 +9215,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        tiers?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -7641,12 +9279,36 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        dungeons?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                        raids?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -7684,12 +9346,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        encounters?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -7733,12 +9410,78 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        description?: string;
+                        creatures?: {
+                            id?: number;
+                            name?: string;
+                            creature_display?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                id?: number;
+                            };
+                        }[];
+                        items?: {
+                            id?: number;
+                            item?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                        }[];
+                        sections?: {
+                            id?: number;
+                            title?: string;
+                            sections?: {
+                                id?: number;
+                                title?: string;
+                                body_text?: string;
+                                sections?: {
+                                    id?: number;
+                                    title?: string;
+                                    body_text?: string;
+                                    creature_display?: {
+                                        key?: {
+                                            href?: string;
+                                        };
+                                        id?: number;
+                                    };
+                                }[];
+                            }[];
+                            body_text?: string;
+                        }[];
+                        instance?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        category?: {
+                            type?: string;
+                        };
+                        modes?: {
+                            type?: string;
+                            name?: string;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -7786,12 +9529,233 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        page?: number;
+                        pageSize?: number;
+                        maxPageSize?: number;
+                        pageCount?: number;
+                        resultCountCapped?: boolean;
+                        results?: {
+                            key?: {
+                                href?: string;
+                            };
+                            data?: {
+                                instance?: {
+                                    name?: {
+                                        it_IT?: string;
+                                        ru_RU?: string;
+                                        en_GB?: string;
+                                        zh_TW?: string;
+                                        ko_KR?: string;
+                                        en_US?: string;
+                                        es_MX?: string;
+                                        pt_BR?: string;
+                                        es_ES?: string;
+                                        zh_CN?: string;
+                                        fr_FR?: string;
+                                        de_DE?: string;
+                                    };
+                                    id?: number;
+                                };
+                                modes?: {
+                                    name?: {
+                                        it_IT?: string;
+                                        ru_RU?: string;
+                                        en_GB?: string;
+                                        zh_TW?: string;
+                                        ko_KR?: string;
+                                        en_US?: string;
+                                        es_MX?: string;
+                                        pt_BR?: string;
+                                        es_ES?: string;
+                                        zh_CN?: string;
+                                        fr_FR?: string;
+                                        de_DE?: string;
+                                    };
+                                    type?: string;
+                                }[];
+                                creatures?: {
+                                    creature_display?: {
+                                        id?: number;
+                                    };
+                                    name?: {
+                                        it_IT?: string;
+                                        ru_RU?: string;
+                                        en_GB?: string;
+                                        zh_TW?: string;
+                                        ko_KR?: string;
+                                        en_US?: string;
+                                        es_MX?: string;
+                                        pt_BR?: string;
+                                        es_ES?: string;
+                                        zh_CN?: string;
+                                        fr_FR?: string;
+                                        de_DE?: string;
+                                    };
+                                    id?: number;
+                                }[];
+                                name?: {
+                                    it_IT?: string;
+                                    ru_RU?: string;
+                                    en_GB?: string;
+                                    zh_TW?: string;
+                                    ko_KR?: string;
+                                    en_US?: string;
+                                    es_MX?: string;
+                                    pt_BR?: string;
+                                    es_ES?: string;
+                                    zh_CN?: string;
+                                    fr_FR?: string;
+                                    de_DE?: string;
+                                };
+                                id?: number;
+                                category?: {
+                                    type?: string;
+                                };
+                                items?: {
+                                    item?: {
+                                        name?: {
+                                            it_IT?: string;
+                                            ru_RU?: string;
+                                            en_GB?: string;
+                                            zh_TW?: string;
+                                            ko_KR?: string;
+                                            en_US?: string;
+                                            es_MX?: string;
+                                            pt_BR?: string;
+                                            es_ES?: string;
+                                            zh_CN?: string;
+                                            fr_FR?: string;
+                                            de_DE?: string;
+                                        };
+                                        id?: number;
+                                    };
+                                    id?: number;
+                                }[];
+                                sections?: {
+                                    id?: number;
+                                    title?: {
+                                        it_IT?: string;
+                                        ru_RU?: string;
+                                        en_GB?: string;
+                                        zh_TW?: string;
+                                        ko_KR?: string;
+                                        en_US?: string;
+                                        es_MX?: string;
+                                        pt_BR?: string;
+                                        es_ES?: string;
+                                        zh_CN?: string;
+                                        fr_FR?: string;
+                                        de_DE?: string;
+                                    };
+                                    sections?: {
+                                        id?: number;
+                                        title?: {
+                                            it_IT?: string;
+                                            ru_RU?: string;
+                                            en_GB?: string;
+                                            zh_TW?: string;
+                                            ko_KR?: string;
+                                            en_US?: string;
+                                            es_MX?: string;
+                                            pt_BR?: string;
+                                            es_ES?: string;
+                                            zh_CN?: string;
+                                            fr_FR?: string;
+                                            de_DE?: string;
+                                        };
+                                        sections?: {
+                                            creature_display?: {
+                                                id?: number;
+                                            };
+                                            id?: number;
+                                            title?: {
+                                                it_IT?: string;
+                                                ru_RU?: string;
+                                                en_GB?: string;
+                                                zh_TW?: string;
+                                                ko_KR?: string;
+                                                en_US?: string;
+                                                es_MX?: string;
+                                                pt_BR?: string;
+                                                es_ES?: string;
+                                                zh_CN?: string;
+                                                fr_FR?: string;
+                                                de_DE?: string;
+                                            };
+                                            sections?: {
+                                                creature_display?: {
+                                                    id?: number;
+                                                };
+                                                id?: number;
+                                                title?: {
+                                                    it_IT?: string;
+                                                    ru_RU?: string;
+                                                    en_GB?: string;
+                                                    zh_TW?: string;
+                                                    ko_KR?: string;
+                                                    en_US?: string;
+                                                    es_MX?: string;
+                                                    pt_BR?: string;
+                                                    es_ES?: string;
+                                                    zh_CN?: string;
+                                                    fr_FR?: string;
+                                                    de_DE?: string;
+                                                };
+                                                sections?: {
+                                                    id?: number;
+                                                    title?: {
+                                                        it_IT?: string;
+                                                        ru_RU?: string;
+                                                        en_GB?: string;
+                                                        zh_TW?: string;
+                                                        ko_KR?: string;
+                                                        en_US?: string;
+                                                        es_MX?: string;
+                                                        pt_BR?: string;
+                                                        es_ES?: string;
+                                                        zh_CN?: string;
+                                                        fr_FR?: string;
+                                                        de_DE?: string;
+                                                    };
+                                                    sections?: {
+                                                        id?: number;
+                                                        title?: {
+                                                            it_IT?: string;
+                                                            ru_RU?: string;
+                                                            en_GB?: string;
+                                                            zh_TW?: string;
+                                                            ko_KR?: string;
+                                                            en_US?: string;
+                                                            es_MX?: string;
+                                                            pt_BR?: string;
+                                                            es_ES?: string;
+                                                            zh_CN?: string;
+                                                            fr_FR?: string;
+                                                            de_DE?: string;
+                                                        };
+                                                    }[];
+                                                }[];
+                                            }[];
+                                        }[];
+                                        creature_display?: {
+                                            id?: number;
+                                        };
+                                    }[];
+                                    creature_display?: {
+                                        id?: number;
+                                    };
+                                }[];
+                            };
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -7829,12 +9793,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        instances?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -7878,12 +9857,68 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        map?: {
+                            name?: string;
+                            id?: number;
+                        };
+                        area?: {
+                            name?: string;
+                            id?: number;
+                        };
+                        description?: string;
+                        encounters?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                        expansion?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        location?: {
+                            name?: string;
+                            id?: number;
+                        };
+                        modes?: {
+                            mode?: {
+                                type?: string;
+                                name?: string;
+                            };
+                            players?: number;
+                            is_tracked?: boolean;
+                        }[];
+                        media?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                        minimum_level?: number;
+                        category?: {
+                            type?: string;
+                        };
+                        order_index?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -7927,12 +9962,24 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        assets?: {
+                            key?: string;
+                            value?: string;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -7980,12 +10027,33 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        page?: number;
+                        pageSize?: number;
+                        maxPageSize?: number;
+                        pageCount?: number;
+                        resultCountCapped?: boolean;
+                        results?: {
+                            key?: {
+                                href?: string;
+                            };
+                            data?: {
+                                assets?: {
+                                    value?: string;
+                                    key?: string;
+                                    file_data_id?: number;
+                                }[];
+                                id?: number;
+                            };
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -8023,12 +10091,26 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        categories?: {
+                            href?: string;
+                        };
+                        slot_types?: {
+                            href?: string;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -8066,12 +10148,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        categories?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -8115,12 +10212,22 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -8158,12 +10265,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        slot_types?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -8207,12 +10329,29 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        description?: string;
+                        compatible_categories?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -8250,12 +10389,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        mounts?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -8299,12 +10453,43 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        creature_displays?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        }[];
+                        description?: string;
+                        source?: {
+                            type?: string;
+                            name?: string;
+                        };
+                        faction?: {
+                            type?: string;
+                            name?: string;
+                        };
+                        requirements?: {
+                            faction?: {
+                                type?: string;
+                                name?: string;
+                            };
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -8352,12 +10537,79 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        page?: number;
+                        pageSize?: number;
+                        maxPageSize?: number;
+                        pageCount?: number;
+                        resultCountCapped?: boolean;
+                        results?: {
+                            key?: {
+                                href?: string;
+                            };
+                            data?: {
+                                creature_displays?: {
+                                    id?: number;
+                                }[];
+                                faction?: {
+                                    name?: {
+                                        it_IT?: string;
+                                        ru_RU?: string;
+                                        en_GB?: string;
+                                        zh_TW?: string;
+                                        ko_KR?: string;
+                                        en_US?: string;
+                                        es_MX?: string;
+                                        pt_BR?: string;
+                                        es_ES?: string;
+                                        zh_CN?: string;
+                                        fr_FR?: string;
+                                        de_DE?: string;
+                                    };
+                                    type?: string;
+                                };
+                                name?: {
+                                    it_IT?: string;
+                                    ru_RU?: string;
+                                    en_GB?: string;
+                                    zh_TW?: string;
+                                    ko_KR?: string;
+                                    en_US?: string;
+                                    es_MX?: string;
+                                    pt_BR?: string;
+                                    es_ES?: string;
+                                    zh_CN?: string;
+                                    fr_FR?: string;
+                                    de_DE?: string;
+                                };
+                                id?: number;
+                                source?: {
+                                    name?: {
+                                        it_IT?: string;
+                                        ru_RU?: string;
+                                        en_GB?: string;
+                                        zh_TW?: string;
+                                        ko_KR?: string;
+                                        en_US?: string;
+                                        es_MX?: string;
+                                        pt_BR?: string;
+                                        es_ES?: string;
+                                        zh_CN?: string;
+                                        fr_FR?: string;
+                                        de_DE?: string;
+                                    };
+                                    type?: string;
+                                };
+                            };
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -8395,12 +10647,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        affixes?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string | null;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -8444,12 +10711,29 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        description?: string;
+                        media?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -8493,12 +10777,26 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        assets?: {
+                            key?: string;
+                            value?: string;
+                            file_data_id?: number;
+                        }[];
+                        id?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -8536,12 +10834,26 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        seasons?: {
+                            href?: string;
+                        };
+                        dungeons?: {
+                            href?: string;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -8579,12 +10891,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        dungeons?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -8628,12 +10955,41 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        map?: {
+                            name?: string;
+                            id?: number;
+                        };
+                        zone?: {
+                            slug?: string;
+                        };
+                        dungeon?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        keystone_upgrades?: {
+                            upgrade_level?: number;
+                            qualifying_duration?: number;
+                        }[];
+                        is_tracked?: boolean;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -8671,12 +11027,32 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        periods?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        }[];
+                        current_period?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -8720,12 +11096,23 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        start_timestamp?: number;
+                        end_timestamp?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -8763,12 +11150,32 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        seasons?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        }[];
+                        current_season?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -8812,12 +11219,30 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        start_timestamp?: number;
+                        end_timestamp?: number;
+                        periods?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        }[];
+                        season_name?: string;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -8861,12 +11286,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        current_leaderboards?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -8920,12 +11360,70 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        map?: {
+                            name?: string;
+                            id?: number;
+                        };
+                        period?: number;
+                        period_start_timestamp?: number;
+                        period_end_timestamp?: number;
+                        connected_realm?: {
+                            href?: string;
+                        };
+                        leading_groups?: {
+                            ranking?: number;
+                            duration?: number;
+                            completed_timestamp?: number;
+                            keystone_level?: number;
+                            members?: {
+                                profile?: {
+                                    name?: string;
+                                    id?: number;
+                                    realm?: {
+                                        key?: {
+                                            href?: string;
+                                        };
+                                        id?: number;
+                                        slug?: string;
+                                    };
+                                };
+                                faction?: {
+                                    type?: string;
+                                };
+                                specialization?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    id?: number;
+                                };
+                            }[];
+                        }[];
+                        keystone_affixes?: {
+                            keystone_affix?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            starting_level?: number;
+                        }[];
+                        map_challenge_mode_id?: number;
+                        name?: string;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -8974,12 +11472,46 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        slug?: string;
+                        criteria_type?: string;
+                        entries?: {
+                            guild?: {
+                                name?: string;
+                                id?: number;
+                                realm?: {
+                                    name?: string;
+                                    id?: number;
+                                    slug?: string;
+                                };
+                            };
+                            faction?: {
+                                type?: string;
+                            };
+                            timestamp?: number;
+                            region?: string;
+                            rank?: number;
+                        }[];
+                        journal_instance?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -9017,12 +11549,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        maps?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -9066,12 +11613,22 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -9120,12 +11677,29 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        neighborhood_map?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        neighborhood_name?: string;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -9163,12 +11737,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        pets?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -9212,12 +11801,63 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        battle_pet_type?: {
+                            id?: number;
+                            type?: string;
+                            name?: string;
+                        };
+                        description?: string;
+                        is_capturable?: boolean;
+                        is_tradable?: boolean;
+                        is_battlepet?: boolean;
+                        is_alliance_only?: boolean;
+                        is_horde_only?: boolean;
+                        abilities?: {
+                            ability?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            slot?: number;
+                            required_level?: number;
+                        }[];
+                        source?: {
+                            type?: string;
+                            name?: string;
+                        };
+                        icon?: string;
+                        creature?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        is_random_creature_display?: boolean;
+                        media?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -9261,12 +11901,26 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        assets?: {
+                            key?: string;
+                            value?: string;
+                            file_data_id?: number;
+                        }[];
+                        id?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -9304,12 +11958,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        abilities?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -9353,12 +12022,34 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        battle_pet_type?: {
+                            id?: number;
+                            type?: string;
+                            name?: string;
+                        };
+                        rounds?: number;
+                        media?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -9402,12 +12093,26 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        assets?: {
+                            key?: string;
+                            value?: string;
+                            file_data_id?: number;
+                        }[];
+                        id?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -9445,12 +12150,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        classes?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -9494,12 +12214,63 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        gender_name?: {
+                            male?: string;
+                            female?: string;
+                        };
+                        power_type?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        specializations?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                        media?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                        pvp_talent_slots?: {
+                            href?: string;
+                        };
+                        playable_races?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                        additional_power_types?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -9543,12 +12314,26 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        assets?: {
+                            key?: string;
+                            value?: string;
+                            file_data_id?: number;
+                        }[];
+                        id?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -9592,12 +12377,24 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        talent_slots?: {
+                            slot_number?: number;
+                            unlock_player_level?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -9635,12 +12432,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        races?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -9684,12 +12496,46 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        gender_name?: {
+                            male?: string;
+                            female?: string;
+                        };
+                        faction?: {
+                            type?: string;
+                            name?: string;
+                        };
+                        is_selectable?: boolean;
+                        is_allied_race?: boolean;
+                        playable_classes?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                        racial_spells?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -9727,12 +12573,34 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        character_specializations?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                        pet_specializations?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -9776,12 +12644,83 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        playable_class?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        name?: string;
+                        gender_description?: {
+                            male?: string;
+                            female?: string;
+                        };
+                        media?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                        role?: {
+                            type?: string;
+                            name?: string;
+                        };
+                        pvp_talents?: {
+                            talent?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            spell_tooltip?: {
+                                description?: string;
+                                cast_time?: string;
+                                power_cost?: string;
+                                range?: string;
+                                cooldown?: string;
+                            };
+                        }[];
+                        spec_talent_tree?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                        };
+                        power_type?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        primary_stat_type?: {
+                            type?: string;
+                            name?: string;
+                        };
+                        hero_talent_trees?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -9825,12 +12764,26 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        assets?: {
+                            key?: string;
+                            value?: string;
+                            file_data_id?: number;
+                        }[];
+                        id?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -9868,12 +12821,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        power_types?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -9917,12 +12885,22 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -9960,12 +12938,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        professions?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -10009,12 +13002,40 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        description?: string;
+                        type?: {
+                            type?: string;
+                            name?: string;
+                        };
+                        media?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                        skill_tiers?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -10058,12 +13079,26 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        assets?: {
+                            key?: string;
+                            value?: string;
+                            file_data_id?: number;
+                        }[];
+                        id?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -10112,12 +13147,34 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        minimum_skill_level?: number;
+                        maximum_skill_level?: number;
+                        categories?: {
+                            name?: string;
+                            recipes?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            }[];
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -10161,12 +13218,48 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        media?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                        crafted_item?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        reagents?: {
+                            reagent?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            quantity?: number;
+                        }[];
+                        crafted_quantity?: {
+                            value?: number;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -10210,12 +13303,26 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        assets?: {
+                            key?: string;
+                            value?: string;
+                            file_data_id?: number;
+                        }[];
+                        id?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -10253,12 +13360,32 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        seasons?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        }[];
+                        current_season?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -10302,12 +13429,29 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        leaderboards?: {
+                            href?: string;
+                        };
+                        rewards?: {
+                            href?: string;
+                        };
+                        season_start_timestamp?: number;
+                        season_end_timestamp?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -10351,12 +13495,33 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        season?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                        leaderboards?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -10405,12 +13570,60 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        season?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                        name?: string;
+                        bracket?: {
+                            id?: number;
+                            type?: string;
+                        };
+                        entries?: {
+                            character?: {
+                                name?: string;
+                                id?: number;
+                                realm?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    id?: number;
+                                    slug?: string;
+                                };
+                            };
+                            faction?: {
+                                type?: string;
+                            };
+                            rank?: number;
+                            rating?: number;
+                            season_match_statistics?: {
+                                played?: number;
+                                won?: number;
+                                lost?: number;
+                            };
+                            tier?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                id?: number;
+                            };
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -10454,12 +13667,44 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        season?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                        rewards?: {
+                            bracket?: {
+                                id?: number;
+                                type?: string;
+                            };
+                            achievement?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            rating_cutoff?: number;
+                            faction?: {
+                                type?: string;
+                                name?: string;
+                            };
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -10497,12 +13742,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        tiers?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -10546,12 +13806,35 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        min_rating?: number;
+                        max_rating?: number;
+                        media?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                        bracket?: {
+                            id?: number;
+                            type?: string;
+                        };
+                        rating_type?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -10595,12 +13878,26 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        assets?: {
+                            key?: string;
+                            value?: string;
+                            file_data_id?: number;
+                        }[];
+                        id?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -10638,12 +13935,29 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        categories?: {
+                            href?: string;
+                        };
+                        areas?: {
+                            href?: string;
+                        };
+                        types?: {
+                            href?: string;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -10687,12 +14001,59 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        title?: string;
+                        area?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        description?: string;
+                        requirements?: {
+                            min_character_level?: number;
+                            max_character_level?: number;
+                            faction?: {
+                                type?: string;
+                                name?: string;
+                            };
+                        };
+                        rewards?: {
+                            experience?: number;
+                            reputations?: {
+                                reward?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    name?: string;
+                                    id?: number;
+                                };
+                                value?: number;
+                            }[];
+                            money?: {
+                                value?: number;
+                                units?: {
+                                    gold?: number;
+                                    silver?: number;
+                                    copper?: number;
+                                };
+                            };
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -10730,12 +14091,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        categories?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -10779,12 +14155,29 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        category?: string;
+                        quests?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -10822,12 +14215,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        areas?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -10871,12 +14279,29 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        area?: string;
+                        quests?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -10914,12 +14339,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        types?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -10963,12 +14403,29 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        type?: string;
+                        quests?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -11006,12 +14463,28 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        realms?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            slug?: string;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -11055,12 +14528,41 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        region?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        connected_realm?: {
+                            href?: string;
+                        };
+                        name?: string;
+                        category?: string;
+                        locale?: string;
+                        timezone?: string;
+                        type?: {
+                            type?: string;
+                            name?: string;
+                        };
+                        is_tournament?: boolean;
+                        slug?: string;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -11108,12 +14610,93 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        page?: number;
+                        pageSize?: number;
+                        maxPageSize?: number;
+                        pageCount?: number;
+                        results?: {
+                            key?: {
+                                href?: string;
+                            };
+                            data?: {
+                                is_tournament?: boolean;
+                                timezone?: string;
+                                name?: {
+                                    it_IT?: string;
+                                    ru_RU?: string;
+                                    en_GB?: string;
+                                    zh_TW?: string;
+                                    ko_KR?: string;
+                                    en_US?: string;
+                                    es_MX?: string;
+                                    pt_BR?: string;
+                                    es_ES?: string;
+                                    zh_CN?: string;
+                                    fr_FR?: string;
+                                    de_DE?: string;
+                                };
+                                id?: number;
+                                region?: {
+                                    name?: {
+                                        it_IT?: string;
+                                        ru_RU?: string;
+                                        en_GB?: string;
+                                        zh_TW?: string;
+                                        ko_KR?: string;
+                                        en_US?: string;
+                                        es_MX?: string;
+                                        pt_BR?: string;
+                                        es_ES?: string;
+                                        zh_CN?: string;
+                                        fr_FR?: string;
+                                        de_DE?: string;
+                                    };
+                                    id?: number;
+                                };
+                                category?: {
+                                    it_IT?: string;
+                                    ru_RU?: string;
+                                    en_GB?: string;
+                                    zh_TW?: string;
+                                    ko_KR?: string;
+                                    en_US?: string;
+                                    es_MX?: string;
+                                    pt_BR?: string;
+                                    es_ES?: string;
+                                    zh_CN?: string;
+                                    fr_FR?: string;
+                                    de_DE?: string;
+                                };
+                                locale?: string;
+                                type?: {
+                                    name?: {
+                                        it_IT?: string;
+                                        ru_RU?: string;
+                                        en_GB?: string;
+                                        zh_TW?: string;
+                                        ko_KR?: string;
+                                        en_US?: string;
+                                        es_MX?: string;
+                                        pt_BR?: string;
+                                        es_ES?: string;
+                                        zh_CN?: string;
+                                        fr_FR?: string;
+                                        de_DE?: string;
+                                    };
+                                    type?: string;
+                                };
+                                slug?: string;
+                            };
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -11151,12 +14734,23 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        regions?: {
+                            href?: string;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -11200,12 +14794,24 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        tag?: string;
+                        patch_string?: string;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -11243,12 +14849,34 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        factions?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                        root_factions?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -11292,12 +14920,29 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        description?: string;
+                        reputation_tiers?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -11335,12 +14980,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        reputation_tiers?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                            name?: string;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -11384,12 +15044,34 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        tiers?: {
+                            name?: string;
+                            min_value?: number;
+                            max_value?: number;
+                            id?: number;
+                        }[];
+                        faction?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -11433,12 +15115,29 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        description?: string;
+                        media?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -11482,12 +15181,26 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        assets?: {
+                            key?: string;
+                            value?: string;
+                            file_data_id?: number;
+                        }[];
+                        id?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -11535,12 +15248,45 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        page?: number;
+                        pageSize?: number;
+                        maxPageSize?: number;
+                        pageCount?: number;
+                        resultCountCapped?: boolean;
+                        results?: {
+                            key?: {
+                                href?: string;
+                            };
+                            data?: {
+                                name?: {
+                                    it_IT?: string;
+                                    ru_RU?: string;
+                                    en_GB?: string;
+                                    zh_TW?: string;
+                                    ko_KR?: string;
+                                    en_US?: string;
+                                    es_MX?: string;
+                                    pt_BR?: string;
+                                    es_ES?: string;
+                                    zh_CN?: string;
+                                    fr_FR?: string;
+                                    de_DE?: string;
+                                };
+                                id?: number;
+                                media?: {
+                                    id?: number;
+                                };
+                            };
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -11578,12 +15324,39 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        spec_talent_trees?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                        }[];
+                        class_talent_trees?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                        }[];
+                        hero_talent_trees?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -11632,12 +15405,254 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        playable_class?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        playable_specialization?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        name?: string;
+                        media?: {
+                            key?: {
+                                href?: string;
+                            };
+                        };
+                        restriction_lines?: {
+                            required_points?: number;
+                            restricted_row?: number;
+                            is_for_class?: boolean;
+                        }[];
+                        class_talent_nodes?: {
+                            id?: number;
+                            node_type?: {
+                                id?: number;
+                                type?: string;
+                            };
+                            ranks?: {
+                                rank?: number;
+                                tooltip?: {
+                                    talent?: {
+                                        key?: {
+                                            href?: string;
+                                        };
+                                        name?: string;
+                                        id?: number;
+                                    };
+                                    spell_tooltip?: {
+                                        spell?: {
+                                            key?: {
+                                                href?: string;
+                                            };
+                                            name?: string;
+                                            id?: number;
+                                        };
+                                        description?: string;
+                                        cast_time?: string;
+                                        power_cost?: (((((((((null | string) | string) | null) | string) | null) | string) | string) | string) | string) | string;
+                                        range?: string;
+                                        cooldown?: string;
+                                    };
+                                };
+                                default_points?: number;
+                                choice_of_tooltips?: {
+                                    talent?: {
+                                        key?: {
+                                            href?: string;
+                                        };
+                                        name?: string;
+                                        id?: number;
+                                    };
+                                    spell_tooltip?: {
+                                        spell?: {
+                                            key?: {
+                                                href?: string;
+                                            };
+                                            name?: string;
+                                            id?: number;
+                                        };
+                                        description?: string;
+                                        cast_time?: string;
+                                        cooldown?: string;
+                                        power_cost?: null | string;
+                                        range?: string;
+                                    };
+                                }[];
+                            }[];
+                            display_row?: number;
+                            display_col?: number;
+                            raw_position_x?: number;
+                            raw_position_y?: number;
+                            unlocks?: number[];
+                            locked_by?: number[];
+                        }[];
+                        spec_talent_nodes?: {
+                            id?: number;
+                            unlocks?: number[];
+                            node_type?: {
+                                id?: number;
+                                type?: string;
+                            };
+                            ranks?: {
+                                rank?: number;
+                                tooltip?: {
+                                    talent?: {
+                                        key?: {
+                                            href?: string;
+                                        };
+                                        name?: string;
+                                        id?: number;
+                                    };
+                                    spell_tooltip?: {
+                                        spell?: {
+                                            key?: {
+                                                href?: string;
+                                            };
+                                            name?: string;
+                                            id?: number;
+                                        };
+                                        description?: string;
+                                        cast_time?: string;
+                                        cooldown?: string;
+                                        range?: string;
+                                        power_cost?: string;
+                                    };
+                                };
+                                choice_of_tooltips?: {
+                                    talent?: {
+                                        key?: {
+                                            href?: string;
+                                        };
+                                        name?: string;
+                                        id?: number;
+                                    };
+                                    spell_tooltip?: {
+                                        spell?: {
+                                            key?: {
+                                                href?: string;
+                                            };
+                                            name?: string;
+                                            id?: number;
+                                        };
+                                        description?: string;
+                                        cast_time?: string;
+                                        power_cost?: (string | null) | string;
+                                        range?: string;
+                                    };
+                                }[];
+                            }[];
+                            display_row?: number;
+                            display_col?: number;
+                            raw_position_x?: number;
+                            raw_position_y?: number;
+                            locked_by?: number[];
+                        }[];
+                        hero_talent_trees?: {
+                            id?: number;
+                            name?: string;
+                            media?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                id?: number;
+                            };
+                            hero_talent_nodes?: {
+                                id?: number;
+                                locked_by?: number[];
+                                unlocks?: number[];
+                                node_type?: {
+                                    id?: number;
+                                    type?: string;
+                                };
+                                ranks?: {
+                                    rank?: number;
+                                    choice_of_tooltips?: {
+                                        talent?: {
+                                            key?: {
+                                                href?: string;
+                                            };
+                                            name?: string;
+                                            id?: number;
+                                        };
+                                        spell_tooltip?: {
+                                            spell?: {
+                                                key?: {
+                                                    href?: string;
+                                                };
+                                                name?: string;
+                                                id?: number;
+                                            };
+                                            description?: string;
+                                            cast_time?: string;
+                                        };
+                                    }[];
+                                    tooltip?: {
+                                        talent?: {
+                                            key?: {
+                                                href?: string;
+                                            };
+                                            name?: string;
+                                            id?: number;
+                                        };
+                                        spell_tooltip?: {
+                                            spell?: {
+                                                key?: {
+                                                    href?: string;
+                                                };
+                                                name?: string;
+                                                id?: number;
+                                            };
+                                            description?: string;
+                                            cast_time?: string;
+                                            power_cost?: null;
+                                            range?: string;
+                                            cooldown?: string;
+                                        };
+                                    };
+                                    default_points?: number;
+                                }[];
+                                display_row?: number;
+                                display_col?: number;
+                                raw_position_x?: number;
+                                raw_position_y?: number;
+                            }[];
+                            playable_class?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            playable_specializations?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            }[];
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -11681,12 +15696,90 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        spec_talent_trees?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                        }[];
+                        talent_nodes?: {
+                            id?: number;
+                            node_type?: {
+                                id?: number;
+                                type?: string;
+                            };
+                            ranks?: {
+                                rank?: number;
+                                tooltip?: {
+                                    talent?: {
+                                        key?: {
+                                            href?: string;
+                                        };
+                                        name?: string;
+                                        id?: number;
+                                    };
+                                    spell_tooltip?: {
+                                        spell?: {
+                                            key?: {
+                                                href?: string;
+                                            };
+                                            name?: string;
+                                            id?: number;
+                                        };
+                                        description?: string;
+                                        cast_time?: string;
+                                        power_cost?: (((((((((((((((((string | null) | string) | string) | string) | string) | null) | string) | string) | string) | null) | null) | null) | string) | string) | string) | string) | string) | string;
+                                        range?: string;
+                                        cooldown?: string;
+                                    };
+                                };
+                                choice_of_tooltips?: {
+                                    talent?: {
+                                        key?: {
+                                            href?: string;
+                                        };
+                                        name?: string;
+                                        id?: number;
+                                    };
+                                    spell_tooltip?: {
+                                        spell?: {
+                                            key?: {
+                                                href?: string;
+                                            };
+                                            name?: string;
+                                            id?: number;
+                                        };
+                                        description?: string;
+                                        cast_time?: string;
+                                        power_cost?: ((((string | null) | string) | string) | string) | null;
+                                        range?: string;
+                                        cooldown?: string;
+                                    };
+                                }[];
+                                default_points?: number;
+                            }[];
+                            display_row?: number;
+                            display_col?: number;
+                            raw_position_x?: number;
+                            raw_position_y?: number;
+                            locked_by?: number[];
+                            unlocks?: number[];
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -11724,12 +15817,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        talents?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -11773,12 +15881,46 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        rank_descriptions?: {
+                            rank?: number;
+                            description?: string;
+                        }[];
+                        spell?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        playable_class?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        playable_specialization?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -11816,12 +15958,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        pvp_talents?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -11865,12 +16022,38 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        spell?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        playable_specialization?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        description?: string;
+                        unlock_player_level?: number;
+                        compatible_slots?: number[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -11908,12 +16091,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        talent_trees?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                            name?: string;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -11957,12 +16155,29 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        max_tiers?: number;
+                        talents?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -12000,12 +16215,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        talents?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -12049,12 +16279,56 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        talent_tree?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        name?: string;
+                        description?: string;
+                        spell_tooltip?: {
+                            spell?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            description?: string;
+                            cast_time?: string;
+                        };
+                        tier?: number;
+                        display_order?: number;
+                        prerequisite_talent?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        media?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -12098,12 +16372,25 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        assets?: {
+                            key?: string;
+                            value?: string;
+                            file_data_id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -12141,12 +16428,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        titles?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -12190,12 +16492,26 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        gender_name?: {
+                            male?: string;
+                            female?: string;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -12233,12 +16549,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        toys?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -12282,12 +16613,39 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        item?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        source?: {
+                            type?: string;
+                            name?: string;
+                        };
+                        should_exclude_if_uncollected?: boolean;
+                        media?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -12787,12 +17145,92 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        total_quantity?: number;
+                        total_points?: number;
+                        achievements?: {
+                            id?: number;
+                            achievement?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            criteria?: {
+                                id?: number;
+                                is_completed?: boolean;
+                                child_criteria?: {
+                                    id?: number;
+                                    amount?: number;
+                                    is_completed?: boolean;
+                                    child_criteria?: {
+                                        id?: number;
+                                        amount?: number;
+                                        is_completed?: boolean;
+                                        child_criteria?: {
+                                            id?: number;
+                                            amount?: number;
+                                            is_completed?: boolean;
+                                        }[];
+                                    }[];
+                                }[];
+                                amount?: number;
+                            };
+                            completed_timestamp?: number;
+                        }[];
+                        category_progress?: {
+                            category?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            quantity?: number;
+                            points?: number;
+                        }[];
+                        recent_events?: {
+                            achievement?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            timestamp?: number;
+                        }[];
+                        character?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            realm?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                                slug?: string;
+                            };
+                        };
+                        statistics?: {
+                            href?: string;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -12841,12 +17279,57 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        character?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            realm?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                                slug?: string;
+                            };
+                        };
+                        categories?: {
+                            id?: number;
+                            name?: string;
+                            sub_categories?: {
+                                id?: number;
+                                name?: string;
+                                statistics?: {
+                                    id?: number;
+                                    name?: string;
+                                    last_updated_timestamp?: number;
+                                    quantity?: number;
+                                    description?: string;
+                                }[];
+                            }[];
+                            statistics?: {
+                                id?: number;
+                                name?: string;
+                                last_updated_timestamp?: number;
+                                quantity?: number;
+                                description?: string;
+                            }[];
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -12895,12 +17378,138 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        character?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            realm?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                                slug?: string;
+                            };
+                        };
+                        playable_race?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        playable_class?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        active_spec?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        gender?: {
+                            type?: string;
+                            name?: string;
+                        };
+                        faction?: {
+                            type?: string;
+                            name?: string;
+                        };
+                        guild_crest?: {
+                            emblem?: {
+                                id?: number;
+                                media?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    id?: number;
+                                };
+                                color?: {
+                                    id?: number;
+                                    rgba?: {
+                                        r?: number;
+                                        g?: number;
+                                        b?: number;
+                                        a?: number;
+                                    };
+                                };
+                            };
+                            border?: {
+                                id?: number;
+                                media?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    id?: number;
+                                };
+                                color?: {
+                                    id?: number;
+                                    rgba?: {
+                                        r?: number;
+                                        g?: number;
+                                        b?: number;
+                                        a?: number;
+                                    };
+                                };
+                            };
+                            background?: {
+                                color?: {
+                                    id?: number;
+                                    rgba?: {
+                                        r?: number;
+                                        g?: number;
+                                        b?: number;
+                                        a?: number;
+                                    };
+                                };
+                            };
+                        };
+                        items?: {
+                            id?: number;
+                            slot?: {
+                                type?: string;
+                                name?: string;
+                            };
+                            enchant?: number;
+                            item_appearance_modifier_id?: number;
+                            internal_slot_id?: number;
+                            subclass?: number;
+                            secondary_id?: number;
+                            secondary_item_appearance_modifier_id?: number;
+                            secondary_subclass?: number;
+                        }[];
+                        customizations?: {
+                            option?: {
+                                name?: string;
+                                id?: number;
+                            };
+                            choice?: {
+                                id?: number;
+                                display_order?: number;
+                                name?: string;
+                            };
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -12949,12 +17558,53 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        pets?: {
+                            href?: string;
+                        };
+                        mounts?: {
+                            href?: string;
+                        };
+                        heirlooms?: {
+                            href?: string;
+                        };
+                        toys?: {
+                            href?: string;
+                        };
+                        character?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            realm?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                                slug?: string;
+                            };
+                        };
+                        transmogs?: {
+                            href?: string;
+                        };
+                        decors?: {
+                            href?: string;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -13003,12 +17653,30 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        decor_collected?: {
+                            decor?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            quantity?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -13057,12 +17725,32 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        heirlooms?: {
+                            heirloom?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            upgrade?: {
+                                level?: number;
+                            };
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -13111,12 +17799,32 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        mounts?: {
+                            mount?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            is_useable?: boolean;
+                            is_favorite?: boolean;
+                            is_character_specific?: boolean;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -13165,12 +17873,51 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        pets?: {
+                            species?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            level?: number;
+                            quality?: {
+                                type?: string;
+                                name?: string;
+                            };
+                            stats?: {
+                                breed_id?: number;
+                                health?: number;
+                                power?: number;
+                                speed?: number;
+                            };
+                            creature_display?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                id?: number;
+                            };
+                            id?: number;
+                            name?: string;
+                            is_active?: boolean;
+                            active_slot?: number;
+                        }[];
+                        unlocked_battle_pet_slots?: number;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -13219,12 +17966,30 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        toys?: {
+                            toy?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            is_favorite?: boolean;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -13273,12 +18038,39 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        appearance_sets?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                        slots?: {
+                            slot?: {
+                                type?: string;
+                                name?: string;
+                            };
+                            appearances?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                id?: number;
+                            }[];
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -13327,12 +18119,41 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        character?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            realm?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                                slug?: string;
+                            };
+                        };
+                        dungeons?: {
+                            href?: string;
+                        };
+                        raids?: {
+                            href?: string;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -13381,12 +18202,63 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        expansions?: {
+                            expansion?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            instances?: {
+                                instance?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    name?: string;
+                                    id?: number;
+                                };
+                                modes?: {
+                                    difficulty?: {
+                                        type?: string;
+                                        name?: string;
+                                    };
+                                    status?: {
+                                        type?: string;
+                                        name?: string;
+                                    };
+                                    progress?: {
+                                        completed_count?: number;
+                                        total_count?: number;
+                                        encounters?: {
+                                            encounter?: {
+                                                key?: {
+                                                    href?: string;
+                                                };
+                                                name?: string;
+                                                id?: number;
+                                            };
+                                            completed_count?: number;
+                                            last_kill_timestamp?: number;
+                                        }[];
+                                    };
+                                }[];
+                            }[];
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -13435,12 +18307,78 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        character?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            realm?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                                slug?: string;
+                            };
+                        };
+                        expansions?: {
+                            expansion?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            instances?: {
+                                instance?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    name?: string;
+                                    id?: number;
+                                };
+                                modes?: {
+                                    difficulty?: {
+                                        type?: string;
+                                        name?: string;
+                                    };
+                                    status?: {
+                                        type?: string;
+                                        name?: string;
+                                    };
+                                    progress?: {
+                                        completed_count?: number;
+                                        total_count?: number;
+                                        encounters?: {
+                                            encounter?: {
+                                                key?: {
+                                                    href?: string;
+                                                };
+                                                name?: string;
+                                                id?: number;
+                                            };
+                                            completed_count?: number;
+                                            last_kill_timestamp?: number;
+                                        }[];
+                                    };
+                                }[];
+                            }[];
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -13489,12 +18427,296 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        character?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            realm?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                                slug?: string;
+                            };
+                        };
+                        equipped_items?: {
+                            item?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                id?: number;
+                            };
+                            enchantments?: {
+                                display_string?: string;
+                                enchantment_id?: number;
+                                enchantment_slot?: {
+                                    id?: number;
+                                    type?: string;
+                                };
+                                source_item?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    name?: string;
+                                    id?: number;
+                                };
+                            }[];
+                            sockets?: {
+                                socket_type?: {
+                                    type?: string;
+                                    name?: string;
+                                };
+                                item?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    name?: string;
+                                    id?: number;
+                                };
+                                display_string?: string;
+                                media?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    id?: number;
+                                };
+                            }[];
+                            slot?: {
+                                type?: string;
+                                name?: string;
+                            };
+                            quantity?: number;
+                            context?: number;
+                            bonus_list?: number[];
+                            quality?: {
+                                type?: string;
+                                name?: string;
+                            };
+                            name?: string;
+                            modified_appearance_id?: number;
+                            media?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                id?: number;
+                            };
+                            item_class?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            item_subclass?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            inventory_type?: {
+                                type?: string;
+                                name?: string;
+                            };
+                            binding?: {
+                                type?: string;
+                                name?: string;
+                            };
+                            armor?: {
+                                value?: number;
+                                display?: {
+                                    display_string?: string;
+                                    color?: {
+                                        r?: number;
+                                        g?: number;
+                                        b?: number;
+                                        a?: number;
+                                    };
+                                };
+                            };
+                            stats?: {
+                                type?: {
+                                    type?: string;
+                                    name?: string;
+                                };
+                                value?: number;
+                                display?: {
+                                    display_string?: string;
+                                    color?: {
+                                        r?: number;
+                                        g?: number;
+                                        b?: number;
+                                        a?: number;
+                                    };
+                                };
+                                is_negated?: boolean;
+                                is_equip_bonus?: boolean;
+                            }[];
+                            sell_price?: {
+                                value?: number;
+                                display_strings?: {
+                                    header?: string;
+                                    gold?: string;
+                                    silver?: string;
+                                    copper?: string;
+                                };
+                            };
+                            requirements?: {
+                                level?: {
+                                    value?: number;
+                                    display_string?: string;
+                                };
+                                playable_classes?: {
+                                    links?: {
+                                        key?: {
+                                            href?: string;
+                                        };
+                                        name?: string;
+                                        id?: number;
+                                    }[];
+                                    display_string?: string;
+                                };
+                            };
+                            set?: {
+                                item_set?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    name?: string;
+                                    id?: number;
+                                };
+                                items?: {
+                                    item?: {
+                                        key?: {
+                                            href?: string;
+                                        };
+                                        name?: string;
+                                        id?: number;
+                                    };
+                                    is_equipped?: boolean;
+                                }[];
+                                effects?: {
+                                    display_string?: string;
+                                    required_count?: number;
+                                    is_active?: boolean;
+                                }[];
+                                display_string?: string;
+                            };
+                            level?: {
+                                value?: number;
+                                display_string?: string;
+                            };
+                            transmog?: {
+                                item?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    name?: string;
+                                    id?: number;
+                                };
+                                display_string?: string;
+                                item_modified_appearance_id?: number;
+                                second_item?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    name?: string;
+                                    id?: number;
+                                };
+                                second_item_modified_appearance_id?: number;
+                            };
+                            durability?: {
+                                value?: number;
+                                display_string?: string;
+                            };
+                            is_subclass_hidden?: boolean;
+                            name_description?: {
+                                display_string?: string;
+                                color?: {
+                                    r?: number;
+                                    g?: number;
+                                    b?: number;
+                                    a?: number;
+                                };
+                            };
+                            unique_equipped?: string;
+                            spells?: {
+                                spell?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    name?: string;
+                                    id?: number;
+                                };
+                                description?: string;
+                            }[];
+                            weapon?: {
+                                damage?: {
+                                    min_value?: number;
+                                    max_value?: number;
+                                    display_string?: string;
+                                    damage_class?: {
+                                        type?: string;
+                                        name?: string;
+                                    };
+                                };
+                                attack_speed?: {
+                                    value?: number;
+                                    display_string?: string;
+                                };
+                                dps?: {
+                                    value?: number;
+                                    display_string?: string;
+                                };
+                            };
+                            modified_crafting_stat?: {
+                                id?: number;
+                                type?: string;
+                                name?: string;
+                            }[];
+                        }[];
+                        equipped_item_sets?: {
+                            item_set?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            items?: {
+                                item?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    name?: string;
+                                    id?: number;
+                                };
+                                is_equipped?: boolean;
+                            }[];
+                            effects?: {
+                                display_string?: string;
+                                required_count?: number;
+                                is_active?: boolean;
+                            }[];
+                            display_string?: string;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -13737,12 +18959,58 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        current_period?: {
+                            period?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                id?: number;
+                            };
+                        };
+                        seasons?: {
+                            key?: {
+                                href?: string;
+                            };
+                            id?: number;
+                        }[];
+                        character?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            realm?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                                slug?: string;
+                            };
+                        };
+                        current_mythic_rating?: {
+                            color?: {
+                                r?: number;
+                                g?: number;
+                                b?: number;
+                                a?: number;
+                            };
+                            rating?: number;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -13850,12 +19118,85 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        character?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            realm?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                                slug?: string;
+                            };
+                        };
+                        primaries?: {
+                            profession?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            tiers?: {
+                                skill_points?: number;
+                                max_skill_points?: number;
+                                tier?: {
+                                    name?: string;
+                                    id?: number;
+                                };
+                                known_recipes?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    name?: string;
+                                    id?: number;
+                                }[];
+                            }[];
+                        }[];
+                        secondaries?: {
+                            profession?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            skill_points?: number;
+                            max_skill_points?: number;
+                            tiers?: {
+                                skill_points?: number;
+                                max_skill_points?: number;
+                                tier?: {
+                                    name?: string;
+                                    id?: number;
+                                };
+                                known_recipes?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    name?: string;
+                                    id?: number;
+                                }[];
+                            }[];
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -14085,12 +19426,22 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        is_valid?: boolean;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -14198,12 +19549,48 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        honor_level?: number;
+                        pvp_map_statistics?: {
+                            world_map?: {
+                                name?: string;
+                                id?: number;
+                            };
+                            match_statistics?: {
+                                played?: number;
+                                won?: number;
+                                lost?: number;
+                            };
+                        }[];
+                        honorable_kills?: number;
+                        character?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            realm?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                                slug?: string;
+                            };
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -14252,12 +19639,45 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        character?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            realm?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                                slug?: string;
+                            };
+                        };
+                        in_progress?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                        completed?: {
+                            href?: string;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -14306,12 +19726,42 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        character?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            realm?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                                slug?: string;
+                            };
+                        };
+                        quests?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -14360,12 +19810,57 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        character?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            realm?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                                slug?: string;
+                            };
+                        };
+                        reputations?: {
+                            faction?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            standing?: {
+                                raw?: number;
+                                value?: number;
+                                max?: number;
+                                tier?: number;
+                                name?: string;
+                                renown_level?: number;
+                            };
+                            paragon?: {
+                                raw?: number;
+                                value?: number;
+                                max?: number;
+                            };
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -14468,12 +19963,161 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        specializations?: {
+                            specialization?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            loadouts?: {
+                                is_active?: boolean;
+                                talent_loadout_code?: string;
+                                selected_class_talents?: {
+                                    id?: number;
+                                    rank?: number;
+                                    tooltip?: {
+                                        talent?: {
+                                            key?: {
+                                                href?: string;
+                                            };
+                                            name?: string;
+                                            id?: number;
+                                        };
+                                        spell_tooltip?: {
+                                            spell?: {
+                                                key?: {
+                                                    href?: string;
+                                                };
+                                                name?: string;
+                                                id?: number;
+                                            };
+                                            description?: string;
+                                            cast_time?: string;
+                                            cooldown?: string;
+                                            power_cost?: string | null;
+                                            range?: string;
+                                        };
+                                    };
+                                    default_points?: number;
+                                }[];
+                                selected_spec_talents?: {
+                                    id?: number;
+                                    rank?: number;
+                                    tooltip?: {
+                                        talent?: {
+                                            key?: {
+                                                href?: string;
+                                            };
+                                            name?: string;
+                                            id?: number;
+                                        };
+                                        spell_tooltip?: {
+                                            spell?: {
+                                                key?: {
+                                                    href?: string;
+                                                };
+                                                name?: string;
+                                                id?: number;
+                                            };
+                                            description?: string;
+                                            cast_time?: string;
+                                            power_cost?: string;
+                                            range?: string;
+                                            cooldown?: string;
+                                        };
+                                    };
+                                }[];
+                                selected_hero_talents?: {
+                                    id?: number;
+                                    rank?: number;
+                                    tooltip?: {
+                                        talent?: {
+                                            key?: {
+                                                href?: string;
+                                            };
+                                            name?: string;
+                                            id?: number;
+                                        };
+                                        spell_tooltip?: {
+                                            spell?: {
+                                                key?: {
+                                                    href?: string;
+                                                };
+                                                name?: string;
+                                                id?: number;
+                                            };
+                                            description?: string | ((((((string | null) | string) | string) | string) | string) | string);
+                                            cast_time?: string;
+                                        };
+                                    };
+                                    default_points?: number;
+                                }[];
+                                selected_class_talent_tree?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    name?: string;
+                                };
+                                selected_spec_talent_tree?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    name?: string;
+                                };
+                                selected_hero_talent_tree?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    name?: string;
+                                    id?: number;
+                                };
+                            }[];
+                        }[];
+                        active_specialization?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        character?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            realm?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                                slug?: string;
+                            };
+                        };
+                        active_hero_talent_tree?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -14522,12 +20166,145 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        health?: number;
+                        power?: number;
+                        power_type?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        speed?: {
+                            rating_bonus?: number;
+                            rating_normalized?: number;
+                        };
+                        strength?: {
+                            base?: number;
+                            effective?: number;
+                        };
+                        agility?: {
+                            base?: number;
+                            effective?: number;
+                        };
+                        intellect?: {
+                            base?: number;
+                            effective?: number;
+                        };
+                        stamina?: {
+                            base?: number;
+                            effective?: number;
+                        };
+                        melee_crit?: {
+                            rating_bonus?: number;
+                            value?: number;
+                            rating_normalized?: number;
+                        };
+                        melee_haste?: {
+                            rating_bonus?: number;
+                            value?: number;
+                            rating_normalized?: number;
+                        };
+                        mastery?: {
+                            rating_bonus?: number;
+                            value?: number;
+                            rating_normalized?: number;
+                        };
+                        bonus_armor?: number;
+                        lifesteal?: {
+                            rating_bonus?: number;
+                            value?: number;
+                            rating_normalized?: number;
+                        };
+                        versatility?: number;
+                        versatility_damage_done_bonus?: number;
+                        versatility_healing_done_bonus?: number;
+                        versatility_damage_taken_bonus?: number;
+                        avoidance?: {
+                            rating_bonus?: number;
+                            rating_normalized?: number;
+                        };
+                        attack_power?: number;
+                        main_hand_damage_min?: number;
+                        main_hand_damage_max?: number;
+                        main_hand_speed?: number;
+                        main_hand_dps?: number;
+                        off_hand_damage_min?: number;
+                        off_hand_damage_max?: number;
+                        off_hand_speed?: number;
+                        off_hand_dps?: number;
+                        spell_power?: number;
+                        spell_penetration?: number;
+                        spell_crit?: {
+                            rating_bonus?: number;
+                            value?: number;
+                            rating_normalized?: number;
+                        };
+                        mana_regen?: number;
+                        mana_regen_combat?: number;
+                        armor?: {
+                            base?: number;
+                            effective?: number;
+                        };
+                        dodge?: {
+                            rating_bonus?: number;
+                            value?: number;
+                            rating_normalized?: number;
+                        };
+                        parry?: {
+                            rating_bonus?: number;
+                            value?: number;
+                            rating_normalized?: number;
+                        };
+                        block?: {
+                            rating_bonus?: number;
+                            value?: number;
+                            rating_normalized?: number;
+                        };
+                        ranged_crit?: {
+                            rating_bonus?: number;
+                            value?: number;
+                            rating_normalized?: number;
+                        };
+                        ranged_haste?: {
+                            rating_bonus?: number;
+                            value?: number;
+                            rating_normalized?: number;
+                        };
+                        spell_haste?: {
+                            rating_bonus?: number;
+                            value?: number;
+                            rating_normalized?: number;
+                        };
+                        character?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            realm?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                                slug?: string;
+                            };
+                        };
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -14576,12 +20353,50 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        character?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            realm?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                                slug?: string;
+                            };
+                        };
+                        active_title?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            display_string?: string;
+                        };
+                        titles?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
