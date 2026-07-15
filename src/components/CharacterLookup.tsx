@@ -1,66 +1,61 @@
 import { useState, type FormEvent } from "react";
-import type { BlizzardClient, paths } from "../vendor/battlenet-wow-client";
+import { useQuery } from "@tanstack/react-query";
+import type { BlizzardClient } from "../vendor/battlenet-wow-client";
 import { loc } from "../lib/types";
 import { toRealmSlug, toCharacterName } from "../lib/slug";
+import { BnetError, characterQuery, characterAvatarQuery, describeError } from "../lib/queries";
 
-/** Character profile summary (profile namespace, `locale=en_US` — localized names come flattened). */
-type CharacterSummary =
-  paths["/profile/wow/character/{realmSlug}/{characterName}"]["get"]["responses"][200]["content"]["application/json"];
+interface Submitted {
+  realmSlug: string;
+  characterName: string;
+}
 
 /** Look up a character's profile summary (+ avatar) by realm slug and name (profile namespace). */
 export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
   const [realm, setRealm] = useState("");
   const [name, setName] = useState("");
-  const [char, setChar] = useState<CharacterSummary | null>(null);
-  const [avatar, setAvatar] = useState("");
-  const [sub, setSub] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [submitted, setSubmitted] = useState<Submitted | null>(null);
+  const [formError, setFormError] = useState("");
+  const [brokenAvatar, setBrokenAvatar] = useState("");
 
-  async function lookup(e: FormEvent) {
+  const realmSlug = submitted?.realmSlug ?? "";
+  const characterName = submitted?.characterName ?? "";
+
+  const charQuery = useQuery({
+    ...characterQuery(bnet, realmSlug, characterName),
+    enabled: submitted !== null,
+  });
+  const avatarQuery = useQuery({
+    ...characterAvatarQuery(bnet, realmSlug, characterName),
+    enabled: submitted !== null && charQuery.isSuccess,
+  });
+
+  const char = charQuery.data ?? null;
+  const avatar = avatarQuery.data ?? "";
+
+  function lookup(e: FormEvent) {
     e.preventDefault();
-    const realmSlug = toRealmSlug(realm);
-    const characterName = toCharacterName(name);
-    if (!realmSlug || !characterName) {
-      setSub("Enter a realm and character name.");
+    const slug = toRealmSlug(realm);
+    const character = toCharacterName(name);
+    if (!slug || !character) {
+      setFormError("Enter a realm and character name.");
+      setSubmitted(null);
       return;
     }
-    setBusy(true);
-    setChar(null);
-    setAvatar("");
-    setSub("Looking up…");
-    try {
-      const namespace = bnet.namespace("profile");
-      const path = { realmSlug, characterName };
-      const { data, response } = await bnet.api.GET(
-        "/profile/wow/character/{realmSlug}/{characterName}",
-        { params: { path, query: { namespace, locale: "en_US" } } },
-      );
-      if (!response.ok) {
-        setSub(
-          response.status === 404
-            ? "Character not found — check the realm slug and name."
-            : `Failed (HTTP ${response.status}).`,
-        );
-        return;
-      }
-      setChar(data ?? null);
-      setSub("");
-
-      // Best-effort avatar (separate media document).
-      const media = await bnet.api.GET(
-        "/profile/wow/character/{realmSlug}/{characterName}/character-media",
-        { params: { path, query: { namespace, locale: "en_US" } } },
-      );
-      if (media.response.ok) {
-        const a = media.data?.assets?.find((x) => x.key === "avatar")?.value;
-        if (a) setAvatar(a);
-      }
-    } catch (err) {
-      setSub(`Error: ${String(err)}`);
-    } finally {
-      setBusy(false);
-    }
+    setFormError("");
+    setBrokenAvatar("");
+    setSubmitted({ realmSlug: slug, characterName: character });
   }
+
+  const sub = formError
+    ? formError
+    : charQuery.isFetching
+      ? "Looking up…"
+      : charQuery.isError
+        ? charQuery.error instanceof BnetError && charQuery.error.status === 404
+          ? "Character not found — check the realm slug and name."
+          : describeError(charQuery.error)
+        : "";
 
   return (
     <section className="card">
@@ -80,14 +75,16 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
           value={name}
           onChange={(e) => setName(e.currentTarget.value)}
         />
-        <button type="submit" disabled={busy}>
-          {busy ? "…" : "Look up"}
+        <button type="submit" disabled={charQuery.isFetching}>
+          {charQuery.isFetching ? "…" : "Look up"}
         </button>
       </form>
       {sub && <p className="muted">{sub}</p>}
       {char && (
         <div className="charcard">
-          {avatar && <img className="avatar" src={avatar} alt="" onError={() => setAvatar("")} />}
+          {avatar && avatar !== brokenAvatar && (
+            <img className="avatar" src={avatar} alt="" onError={() => setBrokenAvatar(avatar)} />
+          )}
           <div>
             <h3 style={{ margin: "0 0 .25rem" }}>
               {char.name}

@@ -1,52 +1,39 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import type { BlizzardClient } from "../vendor/battlenet-wow-client";
+import { tokenQuery, describeError } from "../lib/queries";
 
-/** Current WoW Token price (dynamic namespace). Price is in copper; 1 gold = 10,000 copper. */
+/**
+ * Current WoW Token price (dynamic namespace). A user-triggered read: nothing loads until the button
+ * is pressed (which flips the query on); pressing it again `refetch()`es. Cached per region.
+ */
 export function TokenPrice({ bnet }: { bnet: BlizzardClient }) {
-  const [price, setPrice] = useState("");
-  const [sub, setSub] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [enabled, setEnabled] = useState(false);
+  const { data, isFetching, isError, error, refetch } = useQuery({
+    ...tokenQuery(bnet),
+    enabled,
+  });
 
-  async function load() {
-    setBusy(true);
-    setPrice("");
-    setSub("Fetching…");
-    try {
-      const { data, response } = await bnet.api.GET("/data/wow/token/index", {
-        params: { query: { namespace: bnet.namespace("dynamic"), locale: "en_US" } },
-      });
-      if (!response.ok) {
-        setSub(`Failed (HTTP ${response.status}).`);
-        return;
-      }
-      // `data` is now fully typed from the captured response schema — no cast needed.
-      if (typeof data?.price === "number") {
-        setPrice(`${Math.floor(data.price / 10000).toLocaleString()} g`);
-        setSub(
-          data.last_updated_timestamp
-            ? `Updated ${new Date(data.last_updated_timestamp).toLocaleString()}`
-            : "",
-        );
-      } else {
-        setSub("No price in the response.");
-      }
-    } catch (e) {
-      setSub(`Error: ${String(e)}`);
-    } finally {
-      setBusy(false);
-    }
-  }
+  const price =
+    typeof data?.price === "number" ? `${Math.floor(data.price / 10000).toLocaleString()} g` : "";
+  const updated = data?.last_updated_timestamp
+    ? `Updated ${new Date(data.last_updated_timestamp).toLocaleString()}`
+    : "";
 
   return (
     <section className="card">
       <div className="row" style={{ justifyContent: "space-between" }}>
         <h2 style={{ margin: 0 }}>WoW Token</h2>
-        <button onClick={load} disabled={busy}>
-          {busy ? "…" : "Refresh"}
+        <button onClick={() => (enabled ? void refetch() : setEnabled(true))} disabled={isFetching}>
+          {isFetching ? "…" : "Refresh"}
         </button>
       </div>
       {price && <p className="big">{price}</p>}
-      {sub && <p className="muted">{sub}</p>}
+      {isError ? (
+        <p className="muted">{describeError(error)}</p>
+      ) : (
+        updated && <p className="muted">{updated}</p>
+      )}
     </section>
   );
 }
