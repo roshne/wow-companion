@@ -1,24 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-import { createQueryClient, shouldRetry } from "./queryClient";
+import { createQueryClient } from "./queryClient";
 import { BnetError } from "./queries";
-
-describe("shouldRetry", () => {
-  it("never retries client (4xx) errors, including 429", () => {
-    expect(shouldRetry(0, new BnetError(404))).toBe(false);
-    expect(shouldRetry(0, new BnetError(401))).toBe(false);
-    expect(shouldRetry(1, new BnetError(429))).toBe(false);
-  });
-
-  it("retries transient errors up to twice", () => {
-    expect(shouldRetry(0, new BnetError(500))).toBe(true);
-    expect(shouldRetry(1, new BnetError(503))).toBe(true);
-    expect(shouldRetry(2, new BnetError(500))).toBe(false);
-  });
-
-  it("retries non-BnetError failures (e.g. network)", () => {
-    expect(shouldRetry(0, new Error("network"))).toBe(true);
-  });
-});
 
 describe("createQueryClient", () => {
   it("dedups concurrent identical fetches — the queryFn runs once", async () => {
@@ -45,6 +27,23 @@ describe("createQueryClient", () => {
     const queryFn = vi.fn(async () => 1);
     await client.fetchQuery({ queryKey: ["k", "us"] as const, queryFn, staleTime: 60_000 });
     await client.fetchQuery({ queryKey: ["k", "eu"] as const, queryFn, staleTime: 60_000 });
+    expect(queryFn).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries a transient 429 and then resolves", async () => {
+    const client = createQueryClient();
+    let calls = 0;
+    const queryFn = vi.fn(async () => {
+      calls++;
+      if (calls === 1) throw new BnetError(429);
+      return "ok";
+    });
+    const result = await client.fetchQuery({
+      queryKey: ["retry-429"] as const,
+      queryFn,
+      retryDelay: 0,
+    });
+    expect(result).toBe("ok");
     expect(queryFn).toHaveBeenCalledTimes(2);
   });
 
