@@ -16,13 +16,17 @@ function fillAndSubmit(realm: string, name: string) {
 describe("CharacterLookup", () => {
   beforeEach(() => localStorage.clear());
 
-  it("validates empty input without hitting the API", () => {
+  it("validates empty input without looking up a character", () => {
     const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: { realms: [] }, response: mockResponse(200) });
     renderWithClient(<CharacterLookup bnet={bnet} />);
 
     fireEvent.click(screen.getByRole("button", { name: /look up/i }));
     expect(screen.getByText("Enter a realm and character name.")).toBeInTheDocument();
-    expect(get).not.toHaveBeenCalled();
+    expect(get).not.toHaveBeenCalledWith(
+      "/profile/wow/character/{realmSlug}/{characterName}",
+      expect.anything(),
+    );
   });
 
   it("looks up a character and then fetches the avatar as a dependent query", async () => {
@@ -95,9 +99,33 @@ describe("CharacterLookup", () => {
 
   it("shows only recents for the current region", () => {
     addRecentCharacter({ region: "eu", realmSlug: "silvermoon", characterName: "bob" });
-    const { bnet } = mockBnet("us");
+    const { bnet, get } = mockBnet("us");
+    get.mockResolvedValue({ data: { realms: [] }, response: mockResponse(200) });
     renderWithClient(<CharacterLookup bnet={bnet} />);
 
     expect(screen.queryByRole("button", { name: /Bob/ })).toBeNull();
+  });
+
+  it("populates the realm autocomplete from the realm index", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({
+      data: {
+        realms: [
+          { name: "Tichondrius", slug: "tichondrius" },
+          { name: "Area 52", slug: "area-52" },
+        ],
+      },
+      response: mockResponse(200),
+    });
+    const { container } = renderWithClient(<CharacterLookup bnet={bnet} />);
+
+    await waitFor(() =>
+      expect(container.querySelectorAll("#realm-options option")).toHaveLength(2),
+    );
+    const values = Array.from(
+      container.querySelectorAll<HTMLOptionElement>("#realm-options option"),
+    ).map((o) => o.value);
+    expect(values).toEqual(["Area 52", "Tichondrius"]);
+    expect(screen.getByPlaceholderText(/Realm/).getAttribute("list")).toBe("realm-options");
   });
 });

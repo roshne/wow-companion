@@ -12,6 +12,8 @@ import {
   connectedRealmsQuery,
   characterQuery,
   characterAvatarQuery,
+  fetchRealmIndex,
+  realmIndexQuery,
 } from "./queries";
 import { mockBnet, mockResponse } from "../test/mocks";
 
@@ -202,6 +204,44 @@ describe("fetchCharacterAvatar", () => {
   });
 });
 
+describe("fetchRealmIndex", () => {
+  it("requests the dynamic namespace and returns name/slug entries sorted by name", async () => {
+    const { bnet, get } = mockBnet("us");
+    get.mockResolvedValue({
+      data: {
+        realms: [
+          { name: "Zul'jin", slug: "zuljin", id: 3 },
+          { name: "Area 52", slug: "area-52", id: 2 },
+        ],
+      },
+      response: mockResponse(200),
+    });
+    const realms = await fetchRealmIndex(bnet);
+    expect(realms).toEqual([
+      { name: "Area 52", slug: "area-52" },
+      { name: "Zul'jin", slug: "zuljin" },
+    ]);
+    expect(get).toHaveBeenCalledWith("/data/wow/realm/index", {
+      params: { query: { namespace: "dynamic-us", locale: "en_US" } },
+    });
+  });
+
+  it("drops entries missing a name or slug", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({
+      data: { realms: [{ name: "Good", slug: "good" }, { slug: "no-name" }, { name: "No Slug" }] },
+      response: mockResponse(200),
+    });
+    await expect(fetchRealmIndex(bnet)).resolves.toEqual([{ name: "Good", slug: "good" }]);
+  });
+
+  it("throws on a non-OK response", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: undefined, response: mockResponse(500) });
+    await expect(fetchRealmIndex(bnet)).rejects.toBeInstanceOf(BnetError);
+  });
+});
+
 describe("query-option factories", () => {
   it("carry the region-scoped key and per-endpoint staleTime", () => {
     const { bnet } = mockBnet("kr");
@@ -218,6 +258,8 @@ describe("query-option factories", () => {
       "n",
     ]);
     expect(characterAvatarQuery(bnet, "r", "n").staleTime).toBe(30 * 60_000);
+    expect(realmIndexQuery(bnet).queryKey).toEqual(["realm-index", "kr"]);
+    expect(realmIndexQuery(bnet).staleTime).toBe(60 * 60_000);
   });
 
   it("wire a queryFn that hits the client", async () => {
