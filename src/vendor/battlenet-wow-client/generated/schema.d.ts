@@ -20445,12 +20445,96 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        faction?: {
+                            type?: string;
+                            name?: string;
+                        };
+                        achievement_points?: number;
+                        member_count?: number;
+                        realm?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            slug?: string;
+                        };
+                        crest?: {
+                            emblem?: {
+                                id?: number;
+                                media?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    id?: number;
+                                };
+                                color?: {
+                                    id?: number;
+                                    rgba?: {
+                                        r?: number;
+                                        g?: number;
+                                        b?: number;
+                                        a?: number;
+                                    };
+                                };
+                            };
+                            border?: {
+                                id?: number;
+                                media?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    id?: number;
+                                };
+                                color?: {
+                                    id?: number;
+                                    rgba?: {
+                                        r?: number;
+                                        g?: number;
+                                        b?: number;
+                                        a?: number;
+                                    };
+                                };
+                            };
+                            background?: {
+                                color?: {
+                                    id?: number;
+                                    rgba?: {
+                                        r?: number;
+                                        g?: number;
+                                        b?: number;
+                                        a?: number;
+                                    };
+                                };
+                            };
+                        };
+                        roster?: {
+                            href?: string;
+                        };
+                        achievements?: {
+                            href?: string;
+                        };
+                        created_timestamp?: number;
+                        activity?: {
+                            href?: string;
+                        };
+                        name_search?: string;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -20499,12 +20583,69 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        guild?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            realm?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                                slug?: string;
+                            };
+                            faction?: {
+                                type?: string;
+                                name?: string;
+                            };
+                        };
+                        activities?: {
+                            character_achievement?: {
+                                character?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    name?: string;
+                                    id?: number;
+                                    realm?: {
+                                        key?: {
+                                            href?: string;
+                                        };
+                                        name?: string;
+                                        id?: number;
+                                        slug?: string;
+                                    };
+                                };
+                                achievement?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    name?: string;
+                                    id?: number;
+                                };
+                            };
+                            activity?: {
+                                type?: string;
+                            };
+                            timestamp?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -20553,12 +20694,83 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        guild?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            realm?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                                slug?: string;
+                            };
+                            faction?: {
+                                type?: string;
+                                name?: string;
+                            };
+                        };
+                        total_quantity?: number;
+                        total_points?: number;
+                        achievements?: {
+                            id?: number;
+                            achievement?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            criteria?: {
+                                id?: number;
+                                is_completed?: boolean;
+                                child_criteria?: {
+                                    id?: number;
+                                    amount?: number;
+                                    is_completed?: boolean;
+                                }[];
+                                amount?: number;
+                            };
+                            completed_timestamp?: number;
+                        }[];
+                        category_progress?: {
+                            category?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            quantity?: number;
+                            points?: number;
+                        }[];
+                        recent_events?: {
+                            achievement?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                            };
+                            timestamp?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -20607,12 +20819,72 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        guild?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            realm?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                                slug?: string;
+                            };
+                            faction?: {
+                                type?: string;
+                                name?: string;
+                            };
+                        };
+                        members?: {
+                            character?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                                realm?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    id?: number;
+                                    slug?: string;
+                                };
+                                level?: number;
+                                playable_class?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    id?: number;
+                                };
+                                playable_race?: {
+                                    key?: {
+                                        href?: string;
+                                    };
+                                    id?: number;
+                                };
+                                faction?: {
+                                    type?: string;
+                                };
+                            };
+                            rank?: number;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
