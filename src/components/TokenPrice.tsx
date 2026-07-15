@@ -1,18 +1,14 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import type { BlizzardClient } from "../vendor/battlenet-wow-client";
-import { tokenQuery, describeError } from "../lib/queries";
+import type { TokenView } from "../lib/useTokenHistory";
+import { describeError } from "../lib/queries";
+import { Sparkline } from "./Sparkline";
 
 /**
- * Current WoW Token price (dynamic namespace). A user-triggered read: nothing loads until the button
- * is pressed (which flips the query on); pressing it again `refetch()`es. Cached per region.
+ * Current WoW Token price plus a self-accumulated price-history sparkline. Price is in copper;
+ * 1 gold = 10,000 copper. The capture (fetch + history) is owned by `useTokenHistory` in `App` so it
+ * accrues app-wide; this component just renders what it's handed.
  */
-export function TokenPrice({ bnet }: { bnet: BlizzardClient }) {
-  const [enabled, setEnabled] = useState(false);
-  const { data, isFetching, isError, error, refetch } = useQuery({
-    ...tokenQuery(bnet),
-    enabled,
-  });
+export function TokenPrice({ token }: { token: TokenView }) {
+  const { data, isFetching, isError, error, refetch, history } = token;
 
   const price =
     typeof data?.price === "number" ? `${Math.floor(data.price / 10000).toLocaleString()} g` : "";
@@ -24,7 +20,7 @@ export function TokenPrice({ bnet }: { bnet: BlizzardClient }) {
     <section className="card">
       <div className="row" style={{ justifyContent: "space-between" }}>
         <h2 style={{ margin: 0 }}>WoW Token</h2>
-        <button onClick={() => (enabled ? void refetch() : setEnabled(true))} disabled={isFetching}>
+        <button onClick={refetch} disabled={isFetching}>
           {isFetching ? "…" : "Refresh"}
         </button>
       </div>
@@ -33,6 +29,11 @@ export function TokenPrice({ bnet }: { bnet: BlizzardClient }) {
         <p className="muted">{describeError(error)}</p>
       ) : (
         updated && <p className="muted">{updated}</p>
+      )}
+      {history.length >= 2 ? (
+        <Sparkline values={history.map((p) => p.price)} />
+      ) : (
+        <p className="muted">Collecting price history…</p>
       )}
     </section>
   );

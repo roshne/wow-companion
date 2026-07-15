@@ -20,6 +20,9 @@ import {
   ensureRealmFavorites,
   hasSeededWarband,
   markWarbandSeeded,
+  loadTokenHistory,
+  appendTokenPrice,
+  TOKEN_HISTORY_CAP,
 } from "./persist";
 
 const char = (n: string, region: RecentCharacter["region"] = "us"): RecentCharacter => ({
@@ -153,5 +156,37 @@ describe("warband seed guard", () => {
     expect(hasSeededWarband("eu")).toBe(false);
     markWarbandSeeded("us"); // idempotent
     expect(hasSeededWarband("us")).toBe(true);
+  });
+});
+
+describe("token price history", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("appends points and dedupes on the server timestamp", () => {
+    appendTokenPrice("us", { t: 100, price: 2_500_000 });
+    appendTokenPrice("us", { t: 100, price: 2_500_000 }); // same t → no-op
+    appendTokenPrice("us", { t: 200, price: 2_600_000 });
+    expect(loadTokenHistory("us").map((p) => p.t)).toEqual([100, 200]);
+  });
+
+  it("is region-scoped", () => {
+    appendTokenPrice("us", { t: 1, price: 10 });
+    expect(loadTokenHistory("eu")).toEqual([]);
+  });
+
+  it("caps the series as a ring buffer, dropping the oldest", () => {
+    for (let i = 0; i < TOKEN_HISTORY_CAP + 5; i++) appendTokenPrice("us", { t: i, price: i });
+    const hist = loadTokenHistory("us");
+    expect(hist).toHaveLength(TOKEN_HISTORY_CAP);
+    expect(hist[0].t).toBe(5);
+    expect(hist[hist.length - 1].t).toBe(TOKEN_HISTORY_CAP + 4);
+  });
+
+  it("filters malformed points on read", () => {
+    localStorage.setItem(
+      "wow-companion:token-history:us",
+      JSON.stringify([{ t: 1, price: 10 }, { t: "x", price: 5 }, { nope: true }]),
+    );
+    expect(loadTokenHistory("us")).toEqual([{ t: 1, price: 10 }]);
   });
 });

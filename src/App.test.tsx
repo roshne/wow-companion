@@ -4,7 +4,13 @@ import { screen, fireEvent, waitFor } from "@testing-library/react";
 // App reaches Rust via Tauri `invoke` and makes data calls through the HTTP plugin's `fetch`; both
 // are mocked so the component renders without a Tauri backend.
 vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
-vi.mock("@tauri-apps/plugin-http", () => ({ fetch: vi.fn() }));
+// App now background-captures the token price; give its HTTP calls a valid (empty) JSON response.
+vi.mock("@tauri-apps/plugin-http", () => ({
+  fetch: vi.fn(
+    async () =>
+      new Response("{}", { status: 200, headers: { "content-type": "application/json" } }),
+  ),
+}));
 
 import { invoke } from "@tauri-apps/api/core";
 import App from "./App";
