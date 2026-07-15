@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import type { BlizzardClient, paths } from "../vendor/battlenet-wow-client";
 import { loc } from "../lib/types";
+import { toRealmSlug, toCharacterName } from "../lib/slug";
 
 /** Character profile summary (profile namespace, `locale=en_US` — localized names come flattened). */
 type CharacterSummary =
@@ -17,8 +18,8 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
 
   async function lookup(e: FormEvent) {
     e.preventDefault();
-    const realmSlug = realm.trim().toLowerCase().replace(/\s+/g, "-");
-    const characterName = name.trim().toLowerCase();
+    const realmSlug = toRealmSlug(realm);
+    const characterName = toCharacterName(name);
     if (!realmSlug || !characterName) {
       setSub("Enter a realm and character name.");
       return;
