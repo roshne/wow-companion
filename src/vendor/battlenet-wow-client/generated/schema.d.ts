@@ -5241,12 +5241,131 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        page?: number;
+                        pageSize?: number;
+                        maxPageSize?: number;
+                        pageCount?: number;
+                        results?: {
+                            key?: {
+                                href?: string;
+                            };
+                            data?: {
+                                realms?: {
+                                    is_tournament?: boolean;
+                                    timezone?: string;
+                                    name?: {
+                                        it_IT?: string;
+                                        ru_RU?: string;
+                                        en_GB?: string;
+                                        zh_TW?: string;
+                                        ko_KR?: string;
+                                        en_US?: string;
+                                        es_MX?: string;
+                                        pt_BR?: string;
+                                        es_ES?: string;
+                                        zh_CN?: string;
+                                        fr_FR?: string;
+                                        de_DE?: string;
+                                    };
+                                    id?: number;
+                                    region?: {
+                                        name?: {
+                                            it_IT?: string;
+                                            ru_RU?: string;
+                                            en_GB?: string;
+                                            zh_TW?: string;
+                                            ko_KR?: string;
+                                            en_US?: string;
+                                            es_MX?: string;
+                                            pt_BR?: string;
+                                            es_ES?: string;
+                                            zh_CN?: string;
+                                            fr_FR?: string;
+                                            de_DE?: string;
+                                        };
+                                        id?: number;
+                                    };
+                                    category?: {
+                                        it_IT?: string;
+                                        ru_RU?: string;
+                                        en_GB?: string;
+                                        zh_TW?: string;
+                                        ko_KR?: string;
+                                        en_US?: string;
+                                        es_MX?: string;
+                                        pt_BR?: string;
+                                        es_ES?: string;
+                                        zh_CN?: string;
+                                        fr_FR?: string;
+                                        de_DE?: string;
+                                    };
+                                    locale?: string;
+                                    type?: {
+                                        name?: {
+                                            it_IT?: string;
+                                            ru_RU?: string;
+                                            en_GB?: string;
+                                            zh_TW?: string;
+                                            ko_KR?: string;
+                                            en_US?: string;
+                                            es_MX?: string;
+                                            pt_BR?: string;
+                                            es_ES?: string;
+                                            zh_CN?: string;
+                                            fr_FR?: string;
+                                            de_DE?: string;
+                                        };
+                                        type?: string;
+                                    };
+                                    slug?: string;
+                                }[];
+                                id?: number;
+                                has_queue?: boolean;
+                                status?: {
+                                    name?: {
+                                        it_IT?: string;
+                                        ru_RU?: string;
+                                        en_GB?: string;
+                                        zh_TW?: string;
+                                        ko_KR?: string;
+                                        en_US?: string;
+                                        es_MX?: string;
+                                        pt_BR?: string;
+                                        es_ES?: string;
+                                        zh_CN?: string;
+                                        fr_FR?: string;
+                                        de_DE?: string;
+                                    };
+                                    type?: string;
+                                };
+                                population?: {
+                                    name?: {
+                                        it_IT?: string;
+                                        ru_RU?: string;
+                                        en_GB?: string;
+                                        zh_TW?: string;
+                                        ko_KR?: string;
+                                        en_US?: string;
+                                        es_MX?: string;
+                                        pt_BR?: string;
+                                        es_ES?: string;
+                                        zh_CN?: string;
+                                        fr_FR?: string;
+                                        de_DE?: string;
+                                    };
+                                    type?: string;
+                                };
+                            };
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -13537,12 +13656,39 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        character?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            realm?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                                slug?: string;
+                            };
+                        };
+                        assets?: {
+                            key?: string;
+                            value?: string;
+                        }[];
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
@@ -13758,12 +13904,139 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. NOTE: the response body schema is not captured in this spec — the source portal only renders it after an authenticated live call. */
+            /** @description Successful response. Schema inferred from a captured live sample. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        _links?: {
+                            self?: {
+                                href?: string;
+                            };
+                        };
+                        id?: number;
+                        name?: string;
+                        gender?: {
+                            type?: string;
+                            name?: string;
+                        };
+                        faction?: {
+                            type?: string;
+                            name?: string;
+                        };
+                        race?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        character_class?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        active_spec?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                        };
+                        realm?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            slug?: string;
+                        };
+                        guild?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            realm?: {
+                                key?: {
+                                    href?: string;
+                                };
+                                name?: string;
+                                id?: number;
+                                slug?: string;
+                            };
+                            faction?: {
+                                type?: string;
+                                name?: string;
+                            };
+                        };
+                        level?: number;
+                        experience?: number;
+                        achievement_points?: number;
+                        achievements?: {
+                            href?: string;
+                        };
+                        titles?: {
+                            href?: string;
+                        };
+                        pvp_summary?: {
+                            href?: string;
+                        };
+                        encounters?: {
+                            href?: string;
+                        };
+                        media?: {
+                            href?: string;
+                        };
+                        last_login_timestamp?: number;
+                        average_item_level?: number;
+                        equipped_item_level?: number;
+                        specializations?: {
+                            href?: string;
+                        };
+                        statistics?: {
+                            href?: string;
+                        };
+                        mythic_keystone_profile?: {
+                            href?: string;
+                        };
+                        equipment?: {
+                            href?: string;
+                        };
+                        appearance?: {
+                            href?: string;
+                        };
+                        collections?: {
+                            href?: string;
+                        };
+                        active_title?: {
+                            key?: {
+                                href?: string;
+                            };
+                            name?: string;
+                            id?: number;
+                            display_string?: string;
+                        };
+                        reputations?: {
+                            href?: string;
+                        };
+                        quests?: {
+                            href?: string;
+                        };
+                        achievements_statistics?: {
+                            href?: string;
+                        };
+                        professions?: {
+                            href?: string;
+                        };
+                        is_remix?: boolean;
+                        name_search?: string;
+                    };
+                };
             };
             /** @description Missing or invalid access token. */
             401: {
