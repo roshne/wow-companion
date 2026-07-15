@@ -1,13 +1,19 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { BlizzardClient } from "../vendor/battlenet-wow-client";
 import { loc } from "../lib/types";
 import { toRealmSlug, toCharacterName } from "../lib/slug";
 import { BnetError, characterQuery, characterAvatarQuery, describeError } from "../lib/queries";
+import { addRecentCharacter, loadRecentCharacters, type RecentCharacter } from "../lib/persist";
 
 interface Submitted {
   realmSlug: string;
   characterName: string;
+}
+
+/** Title-case a lowercase slug/name for display (e.g. "argent-dawn" -> "Argent Dawn"). */
+function titleCase(value: string): string {
+  return value.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 /** Look up a character's profile summary (+ avatar) by realm slug and name (profile namespace). */
@@ -17,6 +23,7 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
   const [submitted, setSubmitted] = useState<Submitted | null>(null);
   const [formError, setFormError] = useState("");
   const [brokenAvatar, setBrokenAvatar] = useState("");
+  const [recents, setRecents] = useState<RecentCharacter[]>(loadRecentCharacters);
 
   const realmSlug = submitted?.realmSlug ?? "";
   const characterName = submitted?.characterName ?? "";
@@ -33,6 +40,13 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
   const char = charQuery.data ?? null;
   const avatar = avatarQuery.data ?? "";
 
+  // Record a successful lookup in the recent-characters MRU (identity only; the profile re-fetches).
+  useEffect(() => {
+    if (submitted && charQuery.isSuccess) {
+      setRecents(addRecentCharacter({ region: bnet.region, ...submitted }));
+    }
+  }, [submitted, charQuery.isSuccess, bnet.region]);
+
   function lookup(e: FormEvent) {
     e.preventDefault();
     const slug = toRealmSlug(realm);
@@ -46,6 +60,17 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
     setBrokenAvatar("");
     setSubmitted({ realmSlug: slug, characterName: character });
   }
+
+  // Re-run a lookup from a recent-characters chip.
+  function pickRecent(r: RecentCharacter) {
+    setRealm(r.realmSlug);
+    setName(r.characterName);
+    setFormError("");
+    setBrokenAvatar("");
+    setSubmitted({ realmSlug: r.realmSlug, characterName: r.characterName });
+  }
+
+  const regionRecents = recents.filter((r) => r.region === bnet.region);
 
   const sub = formError
     ? formError
@@ -79,6 +104,21 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
           {charQuery.isFetching ? "…" : "Look up"}
         </button>
       </form>
+      {regionRecents.length > 0 && (
+        <div className="row" style={{ flexWrap: "wrap", gap: ".4rem" }}>
+          <span className="muted">Recent:</span>
+          {regionRecents.map((r) => (
+            <button
+              key={`${r.realmSlug}/${r.characterName}`}
+              type="button"
+              className="ghost"
+              onClick={() => pickRecent(r)}
+            >
+              {`${titleCase(r.characterName)} · ${titleCase(r.realmSlug)}`}
+            </button>
+          ))}
+        </div>
+      )}
       {sub && <p className="muted">{sub}</p>}
       {char && (
         <div className="charcard">
