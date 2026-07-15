@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { createQueryClient } from "./queryClient";
 import { BnetError } from "./queries";
+import { onUnauthorized } from "./auth";
 
 describe("createQueryClient", () => {
   it("dedups concurrent identical fetches — the queryFn runs once", async () => {
@@ -56,5 +57,44 @@ describe("createQueryClient", () => {
       client.fetchQuery({ queryKey: ["retry-4xx"] as const, queryFn }),
     ).rejects.toBeInstanceOf(BnetError);
     expect(queryFn).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("createQueryClient — 401 re-auth signal", () => {
+  it("notifies unauthorized subscribers on a BnetError 401", async () => {
+    const client = createQueryClient();
+    const listener = vi.fn();
+    const off = onUnauthorized(listener);
+    await client
+      .fetchQuery({
+        queryKey: ["unauth"] as const,
+        queryFn: async () => {
+          throw new BnetError(401);
+        },
+        retry: false,
+      })
+      .catch(() => {});
+    expect(listener).toHaveBeenCalledTimes(1);
+    off();
+  });
+
+  it("does not notify on other errors (404, 5xx, or non-BnetError)", async () => {
+    const client = createQueryClient();
+    const listener = vi.fn();
+    const off = onUnauthorized(listener);
+    const errors = [new BnetError(404), new BnetError(503), new Error("network")];
+    for (let i = 0; i < errors.length; i++) {
+      await client
+        .fetchQuery({
+          queryKey: ["not-401", i] as const,
+          queryFn: async () => {
+            throw errors[i];
+          },
+          retry: false,
+        })
+        .catch(() => {});
+    }
+    expect(listener).not.toHaveBeenCalled();
+    off();
   });
 });

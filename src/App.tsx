@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { makeClient } from "./lib/bnet";
+import { onUnauthorized } from "./lib/auth";
 import type { Region } from "./vendor/battlenet-wow-client";
 import { TokenPrice } from "./components/TokenPrice";
 import { RealmStatus } from "./components/RealmStatus";
@@ -28,6 +29,19 @@ function App() {
       .then(setHasCreds)
       .catch(() => setHasCreds(false));
   }, []);
+
+  // A 401 from any data call means the stored secret is invalid/expired: clear it and route back to
+  // the connect form so the user can reconnect, instead of failing silently.
+  useEffect(
+    () =>
+      onUnauthorized(() => {
+        void invoke("clear_credentials").finally(() => {
+          setHasCreds(false);
+          setStatus("Your Battle.net credentials were rejected — please reconnect.");
+        });
+      }),
+    [],
+  );
 
   async function saveCreds(e: FormEvent) {
     e.preventDefault();
