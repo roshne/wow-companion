@@ -29,6 +29,12 @@ export type ConnectedRealm = NonNullable<
 export type CharacterSummary =
   paths["/profile/wow/character/{realmSlug}/{characterName}"]["get"]["responses"][200]["content"]["application/json"];
 
+/** One realm from the realm index (name + slug), used for slug autocomplete. */
+export interface RealmIndexEntry {
+  name: string;
+  slug: string;
+}
+
 /**
  * Thrown when a Battle.net request comes back non-OK (or a 200 with no body). Carries the HTTP
  * `status` for error-state routing and retry gating, plus any parsed `Retry-After` (seconds) so the
@@ -89,6 +95,7 @@ export const queryKeys = {
     ["character", region, realmSlug, characterName] as const,
   characterMedia: (region: Region, realmSlug: string, characterName: string) =>
     ["character-media", region, realmSlug, characterName] as const,
+  realmIndex: (region: Region) => ["realm-index", region] as const,
 };
 
 /** Fetch the current WoW Token price document. */
@@ -116,6 +123,20 @@ export async function fetchConnectedRealms(bnet: BlizzardClient): Promise<Connec
     if (page >= (body.pageCount ?? 1)) break;
   }
   return all;
+}
+
+/**
+ * Fetch the full realm list (name + slug) for autocomplete. `locale=en_US` flattens the names.
+ * Near-static, so it's cached aggressively; keeps only entries with both a name and a slug.
+ */
+export async function fetchRealmIndex(bnet: BlizzardClient): Promise<RealmIndexEntry[]> {
+  const { data, response } = await bnet.api.GET("/data/wow/realm/index", {
+    params: { query: { namespace: bnet.namespace("dynamic"), locale: "en_US" } },
+  });
+  const body = unwrap(data, response);
+  return (body.realms ?? [])
+    .flatMap((r) => (r.name && r.slug ? [{ name: r.name, slug: r.slug }] : []))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /** Look up a character's profile summary by realm slug and name. */
@@ -172,6 +193,13 @@ export const connectedRealmsQuery = (bnet: BlizzardClient) =>
     queryKey: queryKeys.connectedRealms(bnet.region),
     queryFn: () => fetchConnectedRealms(bnet),
     staleTime: 5 * MINUTE,
+  });
+
+export const realmIndexQuery = (bnet: BlizzardClient) =>
+  queryOptions({
+    queryKey: queryKeys.realmIndex(bnet.region),
+    queryFn: () => fetchRealmIndex(bnet),
+    staleTime: 60 * MINUTE,
   });
 
 export const characterQuery = (bnet: BlizzardClient, realmSlug: string, characterName: string) =>

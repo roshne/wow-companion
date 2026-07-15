@@ -3,7 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import type { BlizzardClient } from "../vendor/battlenet-wow-client";
 import { loc } from "../lib/types";
 import { toRealmSlug, toCharacterName } from "../lib/slug";
-import { BnetError, characterQuery, characterAvatarQuery, describeError } from "../lib/queries";
+import {
+  BnetError,
+  characterQuery,
+  characterAvatarQuery,
+  describeError,
+  realmIndexQuery,
+} from "../lib/queries";
 import { addRecentCharacter, loadRecentCharacters, type RecentCharacter } from "../lib/persist";
 
 interface Submitted {
@@ -36,6 +42,7 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
     ...characterAvatarQuery(bnet, realmSlug, characterName),
     enabled: submitted !== null && charQuery.isSuccess,
   });
+  const realmIndex = useQuery(realmIndexQuery(bnet));
 
   const char = charQuery.data ?? null;
   const avatar = avatarQuery.data ?? "";
@@ -92,9 +99,15 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
       >
         <input
           placeholder="Realm (e.g. Tichondrius)"
+          list="realm-options"
           value={realm}
           onChange={(e) => setRealm(e.currentTarget.value)}
         />
+        <datalist id="realm-options">
+          {(realmIndex.data ?? []).map((r) => (
+            <option key={r.slug} value={r.name} />
+          ))}
+        </datalist>
         <input
           placeholder="Character name"
           value={name}
