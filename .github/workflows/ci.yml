@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   frontend:
-    name: Frontend (lint · typecheck · build)
+    name: Frontend (lint · typecheck · test · build)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,6 +28,7 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
       - run: npx tsc --noEmit
+      - run: npm run test
       - run: npx vite build
 
   rust:
