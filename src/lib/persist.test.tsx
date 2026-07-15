@@ -8,6 +8,18 @@ import {
   addRecentCharacter,
   RECENTS_CAP,
   type RecentCharacter,
+  loadFavoriteCharacters,
+  saveFavoriteCharacters,
+  isFavoriteCharacter,
+  toggleFavoriteCharacter,
+  removeFavoriteCharacter,
+  type FavoriteCharacter,
+  loadFavoriteRealms,
+  isRealmFavorited,
+  toggleFavoriteRealmRow,
+  ensureRealmFavorites,
+  hasSeededWarband,
+  markWarbandSeeded,
 } from "./persist";
 
 const char = (n: string, region: RecentCharacter["region"] = "us"): RecentCharacter => ({
@@ -74,5 +86,72 @@ describe("recent characters MRU", () => {
   it("returns an empty list for corrupt JSON", () => {
     localStorage.setItem("wow-companion:recent-characters", "{not json");
     expect(loadRecentCharacters()).toEqual([]);
+  });
+});
+
+describe("favorite characters", () => {
+  beforeEach(() => localStorage.clear());
+
+  const fav = (n: string, region: FavoriteCharacter["region"] = "us"): FavoriteCharacter => ({
+    region,
+    realmSlug: "tichondrius",
+    characterName: n,
+  });
+
+  it("toggles a character in and out of favorites", () => {
+    expect(loadFavoriteCharacters()).toEqual([]);
+    toggleFavoriteCharacter(fav("asmon"));
+    expect(loadFavoriteCharacters().map((f) => f.characterName)).toEqual(["asmon"]);
+    expect(isFavoriteCharacter(loadFavoriteCharacters(), fav("asmon"))).toBe(true);
+    toggleFavoriteCharacter(fav("asmon"));
+    expect(loadFavoriteCharacters()).toEqual([]);
+  });
+
+  it("removes a specific favorite", () => {
+    toggleFavoriteCharacter(fav("a"));
+    toggleFavoriteCharacter(fav("b"));
+    removeFavoriteCharacter(fav("a"));
+    expect(loadFavoriteCharacters().map((f) => f.characterName)).toEqual(["b"]);
+  });
+
+  it("filters malformed entries on read", () => {
+    saveFavoriteCharacters([
+      fav("valid"),
+      { region: "us", realmSlug: "", characterName: "x" } as unknown as FavoriteCharacter,
+    ]);
+    expect(loadFavoriteCharacters().map((f) => f.characterName)).toEqual(["valid"]);
+  });
+});
+
+describe("favorite realms", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("toggles a connected-realm row (all its slugs together)", () => {
+    toggleFavoriteRealmRow("us", ["tichondrius", "area-52"]);
+    expect(isRealmFavorited(loadFavoriteRealms(), "us", "tichondrius")).toBe(true);
+    expect(isRealmFavorited(loadFavoriteRealms(), "us", "area-52")).toBe(true);
+    // Toggling again (any pinned → remove all) clears the row.
+    toggleFavoriteRealmRow("us", ["tichondrius", "area-52"]);
+    expect(loadFavoriteRealms()).toEqual([]);
+  });
+
+  it("ensureRealmFavorites adds only absent slugs and stays region-scoped", () => {
+    ensureRealmFavorites("us", ["tichondrius"]);
+    const list = ensureRealmFavorites("us", ["tichondrius", "area-52"]);
+    expect(list.map((f) => f.realmSlug).sort()).toEqual(["area-52", "tichondrius"]);
+    expect(isRealmFavorited(list, "eu", "tichondrius")).toBe(false);
+  });
+});
+
+describe("warband seed guard", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("marks a region seeded exactly once, independent of other regions", () => {
+    expect(hasSeededWarband("us")).toBe(false);
+    markWarbandSeeded("us");
+    expect(hasSeededWarband("us")).toBe(true);
+    expect(hasSeededWarband("eu")).toBe(false);
+    markWarbandSeeded("us"); // idempotent
+    expect(hasSeededWarband("us")).toBe(true);
   });
 });
