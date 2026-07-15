@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { makeClient } from "./lib/bnet";
 import { onUnauthorized } from "./lib/auth";
+import { loadRegion, saveRegion } from "./lib/persist";
 import type { Region } from "./vendor/battlenet-wow-client";
 import { TokenPrice } from "./components/TokenPrice";
 import { RealmStatus } from "./components/RealmStatus";
@@ -17,12 +18,15 @@ function App() {
   const [hasCreds, setHasCreds] = useState<boolean | null>(null);
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
-  const [region, setRegion] = useState<Region>("us");
+  const [region, setRegion] = useState<Region>(loadRegion);
   const [tab, setTab] = useState<Tab>("token");
   const [status, setStatus] = useState("");
 
   // Rebuilt when the region changes; children re-fetch against the new region.
   const bnet = useMemo(() => makeClient(region), [region]);
+
+  // Remember the selected region so the app reopens on it.
+  useEffect(() => saveRegion(region), [region]);
 
   useEffect(() => {
     invoke<boolean>("has_credentials")
