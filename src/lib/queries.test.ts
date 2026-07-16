@@ -16,6 +16,14 @@ import {
   realmIndexQuery,
   fetchCharacterEquipment,
   characterEquipmentQuery,
+  fetchGuild,
+  fetchGuildRoster,
+  fetchGuildAchievements,
+  fetchGuildActivity,
+  guildQuery,
+  guildRosterQuery,
+  guildAchievementsQuery,
+  guildActivityQuery,
 } from "./queries";
 import { mockBnet, mockResponse } from "../test/mocks";
 
@@ -111,6 +119,18 @@ describe("queryKeys", () => {
       "tw",
       "tichondrius",
       "asmon",
+    ]);
+    expect(queryKeys.guild("us", "illidan", "complexity-limit")).toEqual([
+      "guild",
+      "us",
+      "illidan",
+      "complexity-limit",
+    ]);
+    expect(queryKeys.guildRoster("eu", "silvermoon", "echo")).toEqual([
+      "guild-roster",
+      "eu",
+      "silvermoon",
+      "echo",
     ]);
   });
 });
@@ -271,6 +291,87 @@ describe("fetchCharacterEquipment", () => {
   });
 });
 
+describe("fetchGuild", () => {
+  it("requests the profile namespace with the guild path params and returns the body", async () => {
+    const { bnet, get } = mockBnet("eu");
+    get.mockResolvedValue({
+      data: { name: "Complexity Limit", member_count: 42 },
+      response: mockResponse(200),
+    });
+    const data = await fetchGuild(bnet, "illidan", "complexity-limit");
+    expect(data.member_count).toBe(42);
+    expect(get).toHaveBeenCalledWith("/data/wow/guild/{realmSlug}/{nameSlug}", {
+      params: {
+        path: { realmSlug: "illidan", nameSlug: "complexity-limit" },
+        query: { namespace: "profile-eu", locale: "en_US" },
+      },
+    });
+  });
+
+  it("throws a BnetError(404) for a missing guild", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: undefined, response: mockResponse(404) });
+    await expect(fetchGuild(bnet, "nope", "ghost")).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+describe("fetchGuildRoster", () => {
+  it("requests the roster endpoint and returns the members", async () => {
+    const { bnet, get } = mockBnet("us");
+    get.mockResolvedValue({
+      data: { members: [{ character: { name: "Maximum" }, rank: 0 }] },
+      response: mockResponse(200),
+    });
+    const data = await fetchGuildRoster(bnet, "illidan", "complexity-limit");
+    expect(data.members?.[0].rank).toBe(0);
+    expect(get).toHaveBeenCalledWith("/data/wow/guild/{realmSlug}/{nameSlug}/roster", {
+      params: {
+        path: { realmSlug: "illidan", nameSlug: "complexity-limit" },
+        query: { namespace: "profile-us", locale: "en_US" },
+      },
+    });
+  });
+
+  it("throws on a non-OK response", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: undefined, response: mockResponse(500) });
+    await expect(fetchGuildRoster(bnet, "r", "g")).rejects.toBeInstanceOf(BnetError);
+  });
+});
+
+describe("fetchGuildAchievements", () => {
+  it("requests the achievements endpoint and returns the body", async () => {
+    const { bnet, get } = mockBnet("us");
+    get.mockResolvedValue({
+      data: { total_quantity: 500, total_points: 3000 },
+      response: mockResponse(200),
+    });
+    const data = await fetchGuildAchievements(bnet, "illidan", "complexity-limit");
+    expect(data.total_points).toBe(3000);
+    expect(get).toHaveBeenCalledWith("/data/wow/guild/{realmSlug}/{nameSlug}/achievements", {
+      params: {
+        path: { realmSlug: "illidan", nameSlug: "complexity-limit" },
+        query: { namespace: "profile-us", locale: "en_US" },
+      },
+    });
+  });
+});
+
+describe("fetchGuildActivity", () => {
+  it("requests the activity endpoint and returns the body", async () => {
+    const { bnet, get } = mockBnet("us");
+    get.mockResolvedValue({ data: { activities: [] }, response: mockResponse(200) });
+    const data = await fetchGuildActivity(bnet, "illidan", "complexity-limit");
+    expect(data.activities).toEqual([]);
+    expect(get).toHaveBeenCalledWith("/data/wow/guild/{realmSlug}/{nameSlug}/activity", {
+      params: {
+        path: { realmSlug: "illidan", nameSlug: "complexity-limit" },
+        query: { namespace: "profile-us", locale: "en_US" },
+      },
+    });
+  });
+});
+
 describe("query-option factories", () => {
   it("carry the region-scoped key and per-endpoint staleTime", () => {
     const { bnet } = mockBnet("kr");
@@ -296,6 +397,19 @@ describe("query-option factories", () => {
       "n",
     ]);
     expect(characterEquipmentQuery(bnet, "r", "n").staleTime).toBe(2 * 60_000);
+    expect(guildQuery(bnet, "r", "g").queryKey).toEqual(["guild", "kr", "r", "g"]);
+    expect(guildQuery(bnet, "r", "g").staleTime).toBe(5 * 60_000);
+    expect(guildRosterQuery(bnet, "r", "g").queryKey).toEqual(["guild-roster", "kr", "r", "g"]);
+    expect(guildRosterQuery(bnet, "r", "g").staleTime).toBe(2 * 60_000);
+    expect(guildAchievementsQuery(bnet, "r", "g").queryKey).toEqual([
+      "guild-achievements",
+      "kr",
+      "r",
+      "g",
+    ]);
+    expect(guildAchievementsQuery(bnet, "r", "g").staleTime).toBe(5 * 60_000);
+    expect(guildActivityQuery(bnet, "r", "g").queryKey).toEqual(["guild-activity", "kr", "r", "g"]);
+    expect(guildActivityQuery(bnet, "r", "g").staleTime).toBe(5 * 60_000);
   });
 
   it("wire a queryFn that hits the client", async () => {

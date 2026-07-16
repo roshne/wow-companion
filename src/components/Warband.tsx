@@ -1,23 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { WarbandCharacter, WarbandData } from "../lib/warband";
-
-// Blizzard class colours, keyed by the class file key (`classKey`).
-const CLASS_COLORS: Record<string, string> = {
-  Warrior: "#C69B6D",
-  Paladin: "#F48CBA",
-  Hunter: "#AAD372",
-  Rogue: "#FFF468",
-  Priest: "#FFFFFF",
-  DeathKnight: "#C41E3A",
-  Shaman: "#0070DD",
-  Mage: "#3FC7EB",
-  Warlock: "#8788EE",
-  Monk: "#00FF98",
-  Druid: "#FF7C0A",
-  DemonHunter: "#A330C9",
-  Evoker: "#33937F",
-};
+import { CLASS_COLORS } from "../lib/wow";
 
 const ROLE_LABEL: Record<string, string> = {
   TANK: "Tank",

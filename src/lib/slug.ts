@@ -11,3 +11,12 @@ export function toRealmSlug(input: string): string {
 export function toCharacterName(input: string): string {
   return input.trim().toLowerCase();
 }
+
+/**
+ * A guild display name to its API `nameSlug`: same normalization as a realm slug (trimmed,
+ * lowercased, whitespace runs collapsed to hyphens). Covers the common case; names with apostrophes
+ * or accents may not match Blizzard's exact slugging.
+ */
+export function toGuildNameSlug(input: string): string {
+  return toRealmSlug(input);
+}
