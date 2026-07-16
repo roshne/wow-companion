@@ -35,6 +35,18 @@ export type CharacterSummary =
 export type CharacterEquipment =
   paths["/profile/wow/character/{realmSlug}/{characterName}/equipment"]["get"]["responses"][200]["content"]["application/json"];
 
+/** Character Mythic+ profile (overall `current_mythic_rating` and the current period). */
+export type CharacterMythicKeystone =
+  paths["/profile/wow/character/{realmSlug}/{characterName}/mythic-keystone-profile"]["get"]["responses"][200]["content"]["application/json"];
+
+/** Character PvP summary (honor level/kills and per-map match statistics). */
+export type CharacterPvpSummary =
+  paths["/profile/wow/character/{realmSlug}/{characterName}/pvp-summary"]["get"]["responses"][200]["content"]["application/json"];
+
+/** Character professions (primary/secondary professions, each with tiered skill points). */
+export type CharacterProfessions =
+  paths["/profile/wow/character/{realmSlug}/{characterName}/professions"]["get"]["responses"][200]["content"]["application/json"];
+
 /** Guild summary (profile namespace): name, faction, member count, achievement points, realm, crest. */
 export type GuildSummary =
   paths["/data/wow/guild/{realmSlug}/{nameSlug}"]["get"]["responses"][200]["content"]["application/json"];
@@ -123,6 +135,12 @@ export const queryKeys = {
   realmIndex: (region: Region) => ["realm-index", region] as const,
   characterEquipment: (region: Region, realmSlug: string, characterName: string) =>
     ["character-equipment", region, realmSlug, characterName] as const,
+  characterMythicKeystone: (region: Region, realmSlug: string, characterName: string) =>
+    ["character-mythic-keystone", region, realmSlug, characterName] as const,
+  characterPvpSummary: (region: Region, realmSlug: string, characterName: string) =>
+    ["character-pvp-summary", region, realmSlug, characterName] as const,
+  characterProfessions: (region: Region, realmSlug: string, characterName: string) =>
+    ["character-professions", region, realmSlug, characterName] as const,
   guild: (region: Region, realmSlug: string, nameSlug: string) =>
     ["guild", region, realmSlug, nameSlug] as const,
   guildRoster: (region: Region, realmSlug: string, nameSlug: string) =>
@@ -203,6 +221,60 @@ export async function fetchCharacterEquipment(
 ): Promise<CharacterEquipment> {
   const { data, response } = await bnet.api.GET(
     "/profile/wow/character/{realmSlug}/{characterName}/equipment",
+    {
+      params: {
+        path: { realmSlug, characterName },
+        query: { namespace: bnet.namespace("profile"), locale: "en_US" },
+      },
+    },
+  );
+  return unwrap(data, response);
+}
+
+/** Fetch a character's Mythic+ profile (overall rating + current period). */
+export async function fetchCharacterMythicKeystone(
+  bnet: BlizzardClient,
+  realmSlug: string,
+  characterName: string,
+): Promise<CharacterMythicKeystone> {
+  const { data, response } = await bnet.api.GET(
+    "/profile/wow/character/{realmSlug}/{characterName}/mythic-keystone-profile",
+    {
+      params: {
+        path: { realmSlug, characterName },
+        query: { namespace: bnet.namespace("profile"), locale: "en_US" },
+      },
+    },
+  );
+  return unwrap(data, response);
+}
+
+/** Fetch a character's PvP summary (honor level/kills + per-map statistics). */
+export async function fetchCharacterPvpSummary(
+  bnet: BlizzardClient,
+  realmSlug: string,
+  characterName: string,
+): Promise<CharacterPvpSummary> {
+  const { data, response } = await bnet.api.GET(
+    "/profile/wow/character/{realmSlug}/{characterName}/pvp-summary",
+    {
+      params: {
+        path: { realmSlug, characterName },
+        query: { namespace: bnet.namespace("profile"), locale: "en_US" },
+      },
+    },
+  );
+  return unwrap(data, response);
+}
+
+/** Fetch a character's professions (primaries + secondaries, each with tiers). */
+export async function fetchCharacterProfessions(
+  bnet: BlizzardClient,
+  realmSlug: string,
+  characterName: string,
+): Promise<CharacterProfessions> {
+  const { data, response } = await bnet.api.GET(
+    "/profile/wow/character/{realmSlug}/{characterName}/professions",
     {
       params: {
         path: { realmSlug, characterName },
@@ -380,6 +452,39 @@ export const characterEquipmentQuery = (
   queryOptions({
     queryKey: queryKeys.characterEquipment(bnet.region, realmSlug, characterName),
     queryFn: () => fetchCharacterEquipment(bnet, realmSlug, characterName),
+    staleTime: 2 * MINUTE,
+  });
+
+export const characterMythicKeystoneQuery = (
+  bnet: BlizzardClient,
+  realmSlug: string,
+  characterName: string,
+) =>
+  queryOptions({
+    queryKey: queryKeys.characterMythicKeystone(bnet.region, realmSlug, characterName),
+    queryFn: () => fetchCharacterMythicKeystone(bnet, realmSlug, characterName),
+    staleTime: 2 * MINUTE,
+  });
+
+export const characterPvpSummaryQuery = (
+  bnet: BlizzardClient,
+  realmSlug: string,
+  characterName: string,
+) =>
+  queryOptions({
+    queryKey: queryKeys.characterPvpSummary(bnet.region, realmSlug, characterName),
+    queryFn: () => fetchCharacterPvpSummary(bnet, realmSlug, characterName),
+    staleTime: 2 * MINUTE,
+  });
+
+export const characterProfessionsQuery = (
+  bnet: BlizzardClient,
+  realmSlug: string,
+  characterName: string,
+) =>
+  queryOptions({
+    queryKey: queryKeys.characterProfessions(bnet.region, realmSlug, characterName),
+    queryFn: () => fetchCharacterProfessions(bnet, realmSlug, characterName),
     staleTime: 2 * MINUTE,
   });
 
