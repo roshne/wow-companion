@@ -9,6 +9,8 @@ import {
   guildActivityQuery,
   type GuildRosterMember,
 } from "../lib/queries";
+import { SkeletonTable, SkeletonLines } from "./Skeleton";
+import { EmptyState } from "./EmptyState";
 
 type GuildTab = "roster" | "achievements" | "activity";
 
@@ -101,7 +103,9 @@ function Roster({
   realmSlug: string;
   nameSlug: string;
 }) {
-  const { data, isPending, isError, error } = useQuery(guildRosterQuery(bnet, realmSlug, nameSlug));
+  const { data, isPending, isError, error, refetch } = useQuery(
+    guildRosterQuery(bnet, realmSlug, nameSlug),
+  );
   const [sort, setSort] = useState<Sort>({ key: "rank", dir: 1 });
   const [showAll, setShowAll] = useState(false);
 
@@ -110,9 +114,9 @@ function Roster({
     return [...members].sort((a, b) => sort.dir * compare(a, b, sort.key));
   }, [data, sort]);
 
-  if (isError) return <p className="muted">{describeError(error)}</p>;
-  if (isPending || !data) return <p className="muted">Loading roster…</p>;
-  if (rows.length === 0) return <p className="muted">No members.</p>;
+  if (isError) return <EmptyState message={describeError(error)} onRetry={() => void refetch()} />;
+  if (isPending || !data) return <SkeletonTable rows={8} columns={6} />;
+  if (rows.length === 0) return <EmptyState message="No members." />;
 
   function toggleSort(key: SortKey) {
     setSort((s) =>
@@ -192,12 +196,12 @@ function Achievements({
   realmSlug: string;
   nameSlug: string;
 }) {
-  const { data, isPending, isError, error } = useQuery(
+  const { data, isPending, isError, error, refetch } = useQuery(
     guildAchievementsQuery(bnet, realmSlug, nameSlug),
   );
 
-  if (isError) return <p className="muted">{describeError(error)}</p>;
-  if (isPending || !data) return <p className="muted">Loading achievements…</p>;
+  if (isError) return <EmptyState message={describeError(error)} onRetry={() => void refetch()} />;
+  if (isPending || !data) return <SkeletonLines lines={4} />;
 
   const recent = data.recent_events ?? [];
   return (
@@ -240,15 +244,15 @@ function Activity({
   realmSlug: string;
   nameSlug: string;
 }) {
-  const { data, isPending, isError, error } = useQuery(
+  const { data, isPending, isError, error, refetch } = useQuery(
     guildActivityQuery(bnet, realmSlug, nameSlug),
   );
 
-  if (isError) return <p className="muted">{describeError(error)}</p>;
-  if (isPending || !data) return <p className="muted">Loading activity…</p>;
+  if (isError) return <EmptyState message={describeError(error)} onRetry={() => void refetch()} />;
+  if (isPending || !data) return <SkeletonLines lines={4} />;
 
   const activities = data.activities ?? [];
-  if (activities.length === 0) return <p className="muted">No recent activity.</p>;
+  if (activities.length === 0) return <EmptyState message="No recent activity." />;
 
   return (
     <ul className="muted" style={{ margin: ".25rem 0 0", paddingLeft: "1.1rem" }}>

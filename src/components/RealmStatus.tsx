@@ -5,6 +5,8 @@ import { loc } from "../lib/types";
 import { toRealmSlug } from "../lib/slug";
 import { connectedRealmsQuery, describeError } from "../lib/queries";
 import { warbandQuery } from "../lib/warband";
+import { SkeletonTable } from "./Skeleton";
+import { EmptyState } from "./EmptyState";
 import {
   loadFavoriteRealms,
   toggleFavoriteRealmRow,
@@ -49,12 +51,6 @@ export function RealmStatus({ bnet }: { bnet: BlizzardClient }) {
     realmFavorites.filter((f) => f.region === bnet.region).map((f) => f.realmSlug),
   );
 
-  const sub = isError
-    ? describeError(error)
-    : isFetching && rows.length === 0
-      ? "Loading realms…"
-      : `${rows.length} connected realms · ${bnet.region.toUpperCase()}`;
-
   const q = filter.trim().toLowerCase();
   const view = rows
     .map((cr) => {
@@ -91,52 +87,66 @@ export function RealmStatus({ bnet }: { bnet: BlizzardClient }) {
           </button>
         </div>
       </div>
-      {sub && <p className="muted">{sub}</p>}
-      <div style={{ overflowX: "auto" }}>
-        <table className="grid">
-          <thead>
-            <tr>
-              <th aria-label="Favorite"></th>
-              <th>Realm(s)</th>
-              <th>Type</th>
-              <th>Category</th>
-              <th>Status</th>
-              <th>Population</th>
-              <th>Timezone</th>
-              <th>Queue</th>
-            </tr>
-          </thead>
-          <tbody>
-            {view.map(({ cr, slugs, favorited, names, type, category, timezone }) => {
-              const up = (cr.status?.type ?? "").toUpperCase() === "UP";
-              return (
-                <tr key={cr.id}>
-                  <td>
-                    <button
-                      type="button"
-                      className="ghost"
-                      aria-label={favorited ? "Unpin realm" : "Pin realm"}
-                      aria-pressed={favorited}
-                      onClick={() => setRealmFavorites(toggleFavoriteRealmRow(bnet.region, slugs))}
-                    >
-                      {favorited ? "★" : "☆"}
-                    </button>
-                  </td>
-                  <td>{names || `#${cr.id}`}</td>
-                  <td>{type || "—"}</td>
-                  <td>{category || "—"}</td>
-                  <td className={up ? "up" : "down"}>
-                    {loc(cr.status?.name) || cr.status?.type || "?"}
-                  </td>
-                  <td>{loc(cr.population?.name) || cr.population?.type || "—"}</td>
-                  <td>{timezone || "—"}</td>
-                  <td>{cr.has_queue ? "Yes" : "No"}</td>
+      {isError ? (
+        <EmptyState message={describeError(error)} onRetry={() => void refetch()} />
+      ) : isFetching && rows.length === 0 ? (
+        <SkeletonTable rows={8} columns={8} />
+      ) : rows.length === 0 ? (
+        <EmptyState message="No connected realms found." onRetry={() => void refetch()} />
+      ) : view.length === 0 ? (
+        <EmptyState message={`No realms match “${filter.trim()}”.`} />
+      ) : (
+        <>
+          <p className="muted">{`${rows.length} connected realms · ${bnet.region.toUpperCase()}`}</p>
+          <div style={{ overflowX: "auto" }}>
+            <table className="grid">
+              <thead>
+                <tr>
+                  <th aria-label="Favorite"></th>
+                  <th>Realm(s)</th>
+                  <th>Type</th>
+                  <th>Category</th>
+                  <th>Status</th>
+                  <th>Population</th>
+                  <th>Timezone</th>
+                  <th>Queue</th>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody>
+                {view.map(({ cr, slugs, favorited, names, type, category, timezone }) => {
+                  const up = (cr.status?.type ?? "").toUpperCase() === "UP";
+                  return (
+                    <tr key={cr.id}>
+                      <td>
+                        <button
+                          type="button"
+                          className="ghost"
+                          aria-label={favorited ? "Unpin realm" : "Pin realm"}
+                          aria-pressed={favorited}
+                          onClick={() =>
+                            setRealmFavorites(toggleFavoriteRealmRow(bnet.region, slugs))
+                          }
+                        >
+                          {favorited ? "★" : "☆"}
+                        </button>
+                      </td>
+                      <td>{names || `#${cr.id}`}</td>
+                      <td>{type || "—"}</td>
+                      <td>{category || "—"}</td>
+                      <td className={up ? "up" : "down"}>
+                        {loc(cr.status?.name) || cr.status?.type || "?"}
+                      </td>
+                      <td>{loc(cr.population?.name) || cr.population?.type || "—"}</td>
+                      <td>{timezone || "—"}</td>
+                      <td>{cr.has_queue ? "Yes" : "No"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </section>
   );
 }

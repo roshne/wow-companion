@@ -11,6 +11,8 @@ import {
   describeError,
   type CharacterSummary,
 } from "../lib/queries";
+import { SkeletonTable, SkeletonLines } from "./Skeleton";
+import { EmptyState } from "./EmptyState";
 
 type DetailTab = "overview" | "gear" | "mplus" | "pvp" | "professions";
 
@@ -116,15 +118,15 @@ function Gear({
   realmSlug: string;
   characterName: string;
 }) {
-  const { data, isPending, isError, error } = useQuery(
+  const { data, isPending, isError, error, refetch } = useQuery(
     characterEquipmentQuery(bnet, realmSlug, characterName),
   );
 
-  if (isError) return <p className="muted">{describeError(error)}</p>;
-  if (isPending || !data) return <p className="muted">Loading gear…</p>;
+  if (isError) return <EmptyState message={describeError(error)} onRetry={() => void refetch()} />;
+  if (isPending || !data) return <SkeletonTable rows={8} columns={3} />;
 
   const items = (data.equipped_items ?? []).filter((it) => it.slot?.name);
-  if (items.length === 0) return <p className="muted">No equipped items.</p>;
+  if (items.length === 0) return <EmptyState message="No equipped items." />;
 
   return (
     <div style={{ overflowX: "auto" }}>
@@ -161,17 +163,17 @@ function MythicPlus({
   realmSlug: string;
   characterName: string;
 }) {
-  const { data, isPending, isError, error } = useQuery(
+  const { data, isPending, isError, error, refetch } = useQuery(
     characterMythicKeystoneQuery(bnet, realmSlug, characterName),
   );
 
-  if (isError) return <p className="muted">{describeError(error)}</p>;
-  if (isPending || !data) return <p className="muted">Loading Mythic+…</p>;
+  if (isError) return <EmptyState message={describeError(error)} onRetry={() => void refetch()} />;
+  if (isPending || !data) return <SkeletonLines lines={3} />;
 
   const rating = data.current_mythic_rating?.rating;
   const periodId = data.current_period?.period?.id;
   if (typeof rating !== "number" && typeof periodId !== "number") {
-    return <p className="muted">No Mythic+ activity.</p>;
+    return <EmptyState message="No Mythic+ activity." />;
   }
 
   return (
@@ -201,12 +203,12 @@ function Pvp({
   realmSlug: string;
   characterName: string;
 }) {
-  const { data, isPending, isError, error } = useQuery(
+  const { data, isPending, isError, error, refetch } = useQuery(
     characterPvpSummaryQuery(bnet, realmSlug, characterName),
   );
 
-  if (isError) return <p className="muted">{describeError(error)}</p>;
-  if (isPending || !data) return <p className="muted">Loading PvP…</p>;
+  if (isError) return <EmptyState message={describeError(error)} onRetry={() => void refetch()} />;
+  if (isPending || !data) return <SkeletonLines lines={4} />;
 
   const maps = (data.pvp_map_statistics ?? []).filter((m) => m.world_map?.name);
 
@@ -261,18 +263,18 @@ function Professions({
   realmSlug: string;
   characterName: string;
 }) {
-  const { data, isPending, isError, error } = useQuery(
+  const { data, isPending, isError, error, refetch } = useQuery(
     characterProfessionsQuery(bnet, realmSlug, characterName),
   );
 
-  if (isError) return <p className="muted">{describeError(error)}</p>;
-  if (isPending || !data) return <p className="muted">Loading professions…</p>;
+  if (isError) return <EmptyState message={describeError(error)} onRetry={() => void refetch()} />;
+  if (isPending || !data) return <SkeletonLines lines={4} />;
 
   // Primaries then secondaries; both share the same {profession, tiers} shape.
   const groups = [...(data.primaries ?? []), ...(data.secondaries ?? [])].filter(
     (p) => p.profession?.name,
   );
-  if (groups.length === 0) return <p className="muted">No professions.</p>;
+  if (groups.length === 0) return <EmptyState message="No professions." />;
 
   return (
     <div>

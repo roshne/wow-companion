@@ -53,4 +53,10 @@ describe("TokenPrice", () => {
     render(<TokenPrice token={tokenView({ isError: true, error: new Error("boom") })} />);
     expect(screen.getByText(/Error: Error: boom/)).toBeInTheDocument();
   });
+
+  it("shows a loading skeleton on the first fetch (no data yet)", () => {
+    render(<TokenPrice token={tokenView({ isFetching: true })} />);
+    expect(screen.getByRole("status")).toHaveAttribute("aria-busy", "true");
+    expect(screen.queryByText(/g$/)).toBeNull();
+  });
 });

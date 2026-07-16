@@ -12,6 +12,8 @@ import {
 } from "../lib/queries";
 import { useItemNames } from "../lib/useItemNames";
 import type { AuctionMode, AggregatedRow } from "../lib/auctions";
+import { SkeletonTable } from "./Skeleton";
+import { EmptyState } from "./EmptyState";
 
 // A stable empty array so the sort memo doesn't re-run every render while a query is pending.
 const NO_ROWS: AggregatedRow[] = [];
@@ -95,16 +97,6 @@ export function AuctionHouse({ bnet }: { bnet: BlizzardClient }) {
   const priceLabel = mode === "realm" ? "Min buyout" : "Min unit price";
   const awaitingRealm = mode === "realm" && connectedRealmId === null;
 
-  const sub = active.isError
-    ? describeError(active.error)
-    : awaitingRealm
-      ? "Choose a realm to view its auctions."
-      : active.isFetching && rows.length === 0
-        ? "Loading auctions…"
-        : rows.length === 0
-          ? "No auctions found."
-          : `${rows.length.toLocaleString()} items · ${bnet.region.toUpperCase()}`;
-
   function toggleSort(key: SortKey) {
     setSort((s) => (s.key === key ? { key, dir: s.dir === 1 ? -1 : 1 } : { key, dir: -1 }));
   }
@@ -165,10 +157,17 @@ export function AuctionHouse({ bnet }: { bnet: BlizzardClient }) {
           </button>
         </div>
       </div>
-      {sub && <p className="muted">{sub}</p>}
-
-      {rows.length > 0 && (
+      {awaitingRealm ? (
+        <p className="muted">Choose a realm to view its auctions.</p>
+      ) : active.isError ? (
+        <EmptyState message={describeError(active.error)} onRetry={() => void active.refetch()} />
+      ) : active.isFetching && rows.length === 0 ? (
+        <SkeletonTable rows={10} columns={4} />
+      ) : rows.length === 0 ? (
+        <EmptyState message="No auctions found." onRetry={() => void active.refetch()} />
+      ) : (
         <>
+          <p className="muted">{`${rows.length.toLocaleString()} items · ${bnet.region.toUpperCase()}`}</p>
           <div className="ah-head">
             <span>Item</span>
             <SortButton label="Listings" sortKey="listings" />

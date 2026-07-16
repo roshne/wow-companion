@@ -78,6 +78,24 @@ describe("RealmStatus", () => {
     await waitFor(() => expect(screen.getByText("Failed (HTTP 503).")).toBeInTheDocument());
   });
 
+  it("shows a loading skeleton while the search is pending", () => {
+    const { bnet, get } = mockBnet();
+    get.mockReturnValue(new Promise(() => {})); // never resolves
+    renderWithClient(<RealmStatus bnet={bnet} />);
+    expect(screen.getByRole("status")).toHaveAttribute("aria-busy", "true");
+  });
+
+  it("shows an empty state with a working Retry when there are no realms", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue(page([]));
+    renderWithClient(<RealmStatus bnet={bnet} />);
+
+    await screen.findByText("No connected realms found.");
+    const callsBefore = get.mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(get.mock.calls.length).toBeGreaterThan(callsBefore));
+  });
+
   it("auto-pins warband realms present in the region and floats them to the top", async () => {
     mockInvoke.mockResolvedValue({
       account: "acc",
