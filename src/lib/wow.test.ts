@@ -7,6 +7,7 @@ import {
   className,
   classColor,
   raceName,
+  formatGold,
 } from "./wow";
 
 describe("className", () => {
@@ -79,5 +80,44 @@ describe("static maps", () => {
   it("names the base Human/Orc races", () => {
     expect(RACE_BY_ID[1]).toBe("Human");
     expect(RACE_BY_ID[2]).toBe("Orc");
+  });
+});
+
+describe("formatGold", () => {
+  it("splits copper into gold/silver/copper", () => {
+    // 1234g 56s 78c
+    expect(formatGold(12_345_678)).toBe("1,234g 56s 78c");
+  });
+
+  it("drops zero higher denominations", () => {
+    expect(formatGold(5678)).toBe("56s 78c");
+    expect(formatGold(78)).toBe("78c");
+    expect(formatGold(50000)).toBe("5g");
+  });
+
+  it("keeps a trailing copper only when non-zero", () => {
+    expect(formatGold(10000)).toBe("1g");
+    expect(formatGold(15000)).toBe("1g 50s"); // 10000 + 50*100
+    expect(formatGold(10005)).toBe("1g 5c"); // 10000 + 5c, silver skipped
+  });
+
+  it("thousands-separates large gold amounts", () => {
+    expect(formatGold(1_000_000_0000)).toBe("1,000,000g");
+  });
+
+  it("renders zero as 0c", () => {
+    expect(formatGold(0)).toBe("0c");
+  });
+
+  it("floors fractional copper", () => {
+    expect(formatGold(199.9)).toBe("1s 99c");
+  });
+
+  it("returns an em dash for missing, negative, or non-finite input", () => {
+    expect(formatGold(undefined)).toBe("—");
+    expect(formatGold(null)).toBe("—");
+    expect(formatGold(-1)).toBe("—");
+    expect(formatGold(Infinity)).toBe("—");
+    expect(formatGold(NaN)).toBe("—");
   });
 });

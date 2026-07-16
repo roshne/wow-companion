@@ -110,3 +110,21 @@ export function raceName(id: number | undefined | null): string {
   if (id == null) return "—";
   return RACE_BY_ID[id] ?? `Race #${id}`;
 }
+
+/**
+ * Format a copper amount as WoW money: `1,234g 56s 78c` (1 gold = 100 silver = 10,000 copper). Zero
+ * higher denominations are dropped (`56s 78c`, `78c`), but a leading `g` keeps its silver/copper only
+ * when non-zero. `0` renders as `0c`. Negative or non-finite input returns `—`.
+ */
+export function formatGold(copper: number | null | undefined): string {
+  if (copper == null || !Number.isFinite(copper) || copper < 0) return "—";
+  const c = Math.floor(copper);
+  const gold = Math.floor(c / 10000);
+  const silver = Math.floor((c % 10000) / 100);
+  const copperPart = c % 100;
+  const parts: string[] = [];
+  if (gold > 0) parts.push(`${gold.toLocaleString()}g`);
+  if (silver > 0) parts.push(`${silver}s`);
+  if (copperPart > 0 || parts.length === 0) parts.push(`${copperPart}c`);
+  return parts.join(" ");
+}

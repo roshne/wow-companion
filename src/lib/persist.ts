@@ -17,6 +17,7 @@ const FAVORITE_CHARACTERS_KEY = "wow-companion:favorite-characters";
 const FAVORITE_REALMS_KEY = "wow-companion:favorite-realms";
 const WARBAND_SEEDED_KEY = "wow-companion:warband-seeded-regions";
 const TOKEN_HISTORY_PREFIX = "wow-companion:token-history:";
+const ITEM_NAMES_KEY = "wow-companion:item-names";
 
 /** How many recently viewed characters to keep. */
 export const RECENTS_CAP = 8;
@@ -292,5 +293,63 @@ export function appendTokenPrice(region: Region, point: TokenPricePoint): TokenP
   if (last && last.t === point.t) return history;
   const next = [...history, point].slice(-TOKEN_HISTORY_CAP);
   writeRaw(TOKEN_HISTORY_PREFIX + region, JSON.stringify(next));
+  return next;
+}
+
+// --- Resolved item names: the persistent cache behind the auction browser's viewport-only name
+// resolution. Item names (en_US) are region-independent, so the cache is a single global map keyed by
+// numeric item id and kept indefinitely (item names effectively never change). ------------------------
+
+/** A resolved item: its localized display name and quality tier (for colouring). */
+export interface ResolvedItem {
+  name: string;
+  /** The API's `quality.type` (e.g. "EPIC"), when known. */
+  quality?: string;
+}
+
+function isResolvedItem(value: unknown): value is ResolvedItem {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.name === "string" &&
+    v.name.length > 0 &&
+    (v.quality === undefined || typeof v.quality === "string")
+  );
+}
+
+/**
+ * The persisted item-name cache, keyed by numeric item id (JSON object keys are strings; numeric
+ * lookups coerce, so `cache[123]` works). Invalid entries are dropped.
+ */
+export function loadItemNames(): Record<number, ResolvedItem> {
+  const raw = readRaw(ITEM_NAMES_KEY);
+  if (!raw) return {};
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return {};
+    const out: Record<number, ResolvedItem> = {};
+    for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+      const id = Number(key);
+      if (Number.isInteger(id) && isResolvedItem(value)) {
+        out[id] = value.quality === undefined ? { name: value.name } : value;
+      }
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Merge freshly resolved items into the persisted cache (new entries win), persist, and return the
+ * merged map. A no-op merge (nothing new) still returns the current cache without a write.
+ */
+export function mergeItemNames(
+  entries: Record<number, ResolvedItem>,
+): Record<number, ResolvedItem> {
+  const current = loadItemNames();
+  if (Object.keys(entries).length === 0) return current;
+  const next = { ...current, ...entries };
+  writeRaw(ITEM_NAMES_KEY, JSON.stringify(next));
   return next;
 }
