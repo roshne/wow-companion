@@ -36,10 +36,13 @@ React webview  ──invoke("get_access_token")──►  Rust (Tauri)
 - **Realm Status** — every connected realm's status (UP/DOWN), population, and login queue, with a filter.
 - **Character** — look up a character's profile summary (level, race/class/spec, faction, guild, item
   level, achievements) plus avatar, by realm + name.
+- **Guild** — look up a guild by realm + name: a summary card (faction, member count, achievement
+  points) and a sub-tabbed detail — a sortable **roster** (name/class colour, rank, level, race,
+  class, realm), guild **achievements**, and recent **activity**.
 - **Warband** — a warband-wide roster (name, class colour, level, item level, spec, professions for
   every alt) read locally from the [Warbandeer](https://github.com/nazumods/wow) addon — no API call.
 
-The first three tabs are typed by the vendored Web API client, and the region (US/EU/KR/TW) is
+The first four tabs are typed by the vendored Web API client, and the region (US/EU/KR/TW) is
 switchable in the header.
 
 ### Warband tab — local addon data
@@ -81,8 +84,8 @@ npm run tauri dev
 ```
 
 Then, in the app: paste a **Client ID / Secret** (see _Getting a Client ID & Secret_ below) →
-_Save to keychain_ → pick a **region** → explore the **WoW Token**, **Realm Status**, and
-**Character** tabs.
+_Save to keychain_ → pick a **region** → explore the **WoW Token**, **Realm Status**,
+**Character**, and **Guild** tabs.
 
 Build the full installers (MSI/NSIS):
 
@@ -112,7 +115,7 @@ npm run tauri build
 ```
 src/                     # React frontend
   App.tsx                # app shell: credentials gate, region picker, tab nav
-  components/            # TokenPrice, RealmStatus, CharacterLookup
+  components/            # TokenPrice, RealmStatus, CharacterLookup, GuildLookup
   lib/bnet.ts            # builds the typed client (token from Rust, fetch via Tauri HTTP)
   lib/types.ts           # local response shapes (the spec omits response schemas)
   vendor/battlenet-wow-client/   # vendored typed client (generated types + auth + factory)

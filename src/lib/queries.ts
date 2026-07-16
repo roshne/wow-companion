@@ -33,6 +33,25 @@ export type CharacterSummary =
 export type CharacterEquipment =
   paths["/profile/wow/character/{realmSlug}/{characterName}/equipment"]["get"]["responses"][200]["content"]["application/json"];
 
+/** Guild summary (profile namespace): name, faction, member count, achievement points, realm, crest. */
+export type GuildSummary =
+  paths["/data/wow/guild/{realmSlug}/{nameSlug}"]["get"]["responses"][200]["content"]["application/json"];
+
+/** Guild roster document (members carry class/race ids, level, and rank — no localized names). */
+export type GuildRoster =
+  paths["/data/wow/guild/{realmSlug}/{nameSlug}/roster"]["get"]["responses"][200]["content"]["application/json"];
+
+/** One guild roster entry: a member's character stub plus their rank. */
+export type GuildRosterMember = NonNullable<GuildRoster["members"]>[number];
+
+/** Guild achievements document (total quantity/points, per-category progress, recent events). */
+export type GuildAchievements =
+  paths["/data/wow/guild/{realmSlug}/{nameSlug}/achievements"]["get"]["responses"][200]["content"]["application/json"];
+
+/** Guild activity feed (recent character-achievement events with timestamps). */
+export type GuildActivity =
+  paths["/data/wow/guild/{realmSlug}/{nameSlug}/activity"]["get"]["responses"][200]["content"]["application/json"];
+
 /** One realm from the realm index (name + slug), used for slug autocomplete. */
 export interface RealmIndexEntry {
   name: string;
@@ -102,6 +121,14 @@ export const queryKeys = {
   realmIndex: (region: Region) => ["realm-index", region] as const,
   characterEquipment: (region: Region, realmSlug: string, characterName: string) =>
     ["character-equipment", region, realmSlug, characterName] as const,
+  guild: (region: Region, realmSlug: string, nameSlug: string) =>
+    ["guild", region, realmSlug, nameSlug] as const,
+  guildRoster: (region: Region, realmSlug: string, nameSlug: string) =>
+    ["guild-roster", region, realmSlug, nameSlug] as const,
+  guildAchievements: (region: Region, realmSlug: string, nameSlug: string) =>
+    ["guild-achievements", region, realmSlug, nameSlug] as const,
+  guildActivity: (region: Region, realmSlug: string, nameSlug: string) =>
+    ["guild-activity", region, realmSlug, nameSlug] as const,
 };
 
 /** Fetch the current WoW Token price document. */
@@ -200,6 +227,71 @@ export async function fetchCharacterAvatar(
   return data?.assets?.find((x) => x.key === "avatar")?.value ?? null;
 }
 
+// Guild reads — all four share the profile namespace and a `{realmSlug, nameSlug}` path.
+
+/** Fetch a guild's summary document (member count, achievement points, faction, realm). */
+export async function fetchGuild(
+  bnet: BlizzardClient,
+  realmSlug: string,
+  nameSlug: string,
+): Promise<GuildSummary> {
+  const { data, response } = await bnet.api.GET("/data/wow/guild/{realmSlug}/{nameSlug}", {
+    params: {
+      path: { realmSlug, nameSlug },
+      query: { namespace: bnet.namespace("profile"), locale: "en_US" },
+    },
+  });
+  return unwrap(data, response);
+}
+
+/** Fetch a guild's roster (members with class/race ids, level, and rank). */
+export async function fetchGuildRoster(
+  bnet: BlizzardClient,
+  realmSlug: string,
+  nameSlug: string,
+): Promise<GuildRoster> {
+  const { data, response } = await bnet.api.GET("/data/wow/guild/{realmSlug}/{nameSlug}/roster", {
+    params: {
+      path: { realmSlug, nameSlug },
+      query: { namespace: bnet.namespace("profile"), locale: "en_US" },
+    },
+  });
+  return unwrap(data, response);
+}
+
+/** Fetch a guild's achievements document (total quantity/points, recent events). */
+export async function fetchGuildAchievements(
+  bnet: BlizzardClient,
+  realmSlug: string,
+  nameSlug: string,
+): Promise<GuildAchievements> {
+  const { data, response } = await bnet.api.GET(
+    "/data/wow/guild/{realmSlug}/{nameSlug}/achievements",
+    {
+      params: {
+        path: { realmSlug, nameSlug },
+        query: { namespace: bnet.namespace("profile"), locale: "en_US" },
+      },
+    },
+  );
+  return unwrap(data, response);
+}
+
+/** Fetch a guild's recent activity feed. */
+export async function fetchGuildActivity(
+  bnet: BlizzardClient,
+  realmSlug: string,
+  nameSlug: string,
+): Promise<GuildActivity> {
+  const { data, response } = await bnet.api.GET("/data/wow/guild/{realmSlug}/{nameSlug}/activity", {
+    params: {
+      path: { realmSlug, nameSlug },
+      query: { namespace: bnet.namespace("profile"), locale: "en_US" },
+    },
+  });
+  return unwrap(data, response);
+}
+
 // Query-option factories: region-scoped keys + per-endpoint staleTime. Components call these and
 // spread the result into `useQuery`. staleTime is the main lever for staying under the rate limits —
 // the token/realm docs move slowly (~5 min), character data a little faster (~60 s), and a
@@ -253,4 +345,32 @@ export const characterAvatarQuery = (
     queryKey: queryKeys.characterMedia(bnet.region, realmSlug, characterName),
     queryFn: () => fetchCharacterAvatar(bnet, realmSlug, characterName),
     staleTime: 30 * MINUTE,
+  });
+
+export const guildQuery = (bnet: BlizzardClient, realmSlug: string, nameSlug: string) =>
+  queryOptions({
+    queryKey: queryKeys.guild(bnet.region, realmSlug, nameSlug),
+    queryFn: () => fetchGuild(bnet, realmSlug, nameSlug),
+    staleTime: 5 * MINUTE,
+  });
+
+export const guildRosterQuery = (bnet: BlizzardClient, realmSlug: string, nameSlug: string) =>
+  queryOptions({
+    queryKey: queryKeys.guildRoster(bnet.region, realmSlug, nameSlug),
+    queryFn: () => fetchGuildRoster(bnet, realmSlug, nameSlug),
+    staleTime: 2 * MINUTE,
+  });
+
+export const guildAchievementsQuery = (bnet: BlizzardClient, realmSlug: string, nameSlug: string) =>
+  queryOptions({
+    queryKey: queryKeys.guildAchievements(bnet.region, realmSlug, nameSlug),
+    queryFn: () => fetchGuildAchievements(bnet, realmSlug, nameSlug),
+    staleTime: 5 * MINUTE,
+  });
+
+export const guildActivityQuery = (bnet: BlizzardClient, realmSlug: string, nameSlug: string) =>
+  queryOptions({
+    queryKey: queryKeys.guildActivity(bnet.region, realmSlug, nameSlug),
+    queryFn: () => fetchGuildActivity(bnet, realmSlug, nameSlug),
+    staleTime: 5 * MINUTE,
   });

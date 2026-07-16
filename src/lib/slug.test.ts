@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { toRealmSlug, toCharacterName } from "./slug";
+import { toRealmSlug, toCharacterName, toGuildNameSlug } from "./slug";
 
 describe("toRealmSlug", () => {
   it("trims and lowercases", () => {
@@ -22,5 +22,19 @@ describe("toRealmSlug", () => {
 describe("toCharacterName", () => {
   it("trims and lowercases", () => {
     expect(toCharacterName("  Kobrick ")).toBe("kobrick");
+  });
+});
+
+describe("toGuildNameSlug", () => {
+  it("lowercases and hyphenates a multi-word guild name", () => {
+    expect(toGuildNameSlug("Complexity Limit")).toBe("complexity-limit");
+  });
+
+  it("collapses whitespace runs and trims", () => {
+    expect(toGuildNameSlug("  Echo   Gaming ")).toBe("echo-gaming");
+  });
+
+  it("returns an empty string for blank input", () => {
+    expect(toGuildNameSlug("   ")).toBe("");
   });
 });
