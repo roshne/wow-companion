@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { toRealmSlug, toCharacterName, toGuildNameSlug } from "./slug";
+import { toRealmSlug, toCharacterName, toGuildNameSlug, resolveRealmSlug } from "./slug";
 
 describe("toRealmSlug", () => {
   it("trims and lowercases", () => {
@@ -22,6 +22,34 @@ describe("toRealmSlug", () => {
 describe("toCharacterName", () => {
   it("trims and lowercases", () => {
     expect(toCharacterName("  Kobrick ")).toBe("kobrick");
+  });
+});
+
+describe("resolveRealmSlug", () => {
+  const REALMS = [
+    { name: "Argent Dawn", slug: "argent-dawn" },
+    { name: "Aggra (Português)", slug: "aggra-portugues" },
+  ];
+
+  it("uses the index slug when the typed display name matches (accents/punctuation)", () => {
+    // Derivation would give "aggra-(português)"; the index's real slug is correct.
+    expect(resolveRealmSlug("Aggra (Português)", REALMS)).toBe("aggra-portugues");
+  });
+
+  it("matches case-insensitively on the display name", () => {
+    expect(resolveRealmSlug("argent dawn", REALMS)).toBe("argent-dawn");
+  });
+
+  it("matches an already-slugged input against the index slug", () => {
+    expect(resolveRealmSlug("aggra-portugues", REALMS)).toBe("aggra-portugues");
+  });
+
+  it("falls back to the derived slug for input not in the index", () => {
+    expect(resolveRealmSlug("Tichondrius", REALMS)).toBe("tichondrius");
+  });
+
+  it("falls back to the derived slug when the index is empty", () => {
+    expect(resolveRealmSlug("Argent Dawn", [])).toBe("argent-dawn");
   });
 });
 

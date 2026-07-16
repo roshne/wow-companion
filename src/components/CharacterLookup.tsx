@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { BlizzardClient } from "../vendor/battlenet-wow-client";
 import { loc } from "../lib/types";
 import { classColor } from "../lib/wow";
-import { toRealmSlug, toCharacterName } from "../lib/slug";
+import { resolveRealmSlug, toCharacterName } from "../lib/slug";
 import { CharacterDetail } from "./CharacterDetail";
 import {
   BnetError,
@@ -74,7 +74,7 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
 
   function lookup(e: FormEvent) {
     e.preventDefault();
-    const slug = toRealmSlug(realm);
+    const slug = resolveRealmSlug(realm, realmIndex.data ?? []);
     const character = toCharacterName(name);
     if (!slug || !character) {
       setFormError("Enter a realm and character name.");
@@ -146,6 +146,16 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
           {charQuery.isFetching ? "…" : "Look up"}
         </button>
       </form>
+      {realmIndex.isError ? (
+        <p className="muted">
+          Couldn't load realm suggestions.{" "}
+          <button type="button" className="ghost" onClick={() => void realmIndex.refetch()}>
+            Retry
+          </button>
+        </p>
+      ) : realmIndex.isLoading ? (
+        <p className="muted">Loading realm suggestions…</p>
+      ) : null}
       {regionFavorites.length > 0 && (
         <div className="row" style={{ flexWrap: "wrap", gap: ".4rem", alignItems: "center" }}>
           <span className="muted">Favorites:</span>

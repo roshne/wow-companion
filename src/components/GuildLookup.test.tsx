@@ -126,4 +126,50 @@ describe("GuildLookup", () => {
     );
     expect(screen.getByPlaceholderText(/Realm/).getAttribute("list")).toBe("guild-realm-options");
   });
+
+  it("surfaces an error (with retry) when the realm suggestions fail to load", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockImplementation((path: string) =>
+      path === REALM_INDEX_PATH
+        ? Promise.resolve({ data: undefined, response: mockResponse(500) })
+        : Promise.resolve({ data: SUMMARY, response: mockResponse(200) }),
+    );
+    renderWithClient(<GuildLookup bnet={bnet} />);
+
+    expect(await screen.findByText("Couldn't load realm suggestions.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
+  });
+
+  it("submits the realm index's real slug when the typed realm matches (accents)", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockImplementation((path: string) => {
+      if (path === REALM_INDEX_PATH) {
+        return Promise.resolve({
+          data: { realms: [{ name: "Aggra (Português)", slug: "aggra-portugues" }] },
+          response: mockResponse(200),
+        });
+      }
+      if (path === ROSTER_PATH) {
+        return Promise.resolve({ data: { members: [] }, response: mockResponse(200) });
+      }
+      return Promise.resolve({ data: SUMMARY, response: mockResponse(200) });
+    });
+    const { container } = renderWithClient(<GuildLookup bnet={bnet} />);
+
+    await waitFor(() =>
+      expect(container.querySelectorAll("#guild-realm-options option")).toHaveLength(1),
+    );
+    fillAndSubmit("Aggra (Português)", "Complexity Limit");
+
+    await waitFor(() =>
+      expect(get).toHaveBeenCalledWith(
+        GUILD_PATH,
+        expect.objectContaining({
+          params: expect.objectContaining({
+            path: { realmSlug: "aggra-portugues", nameSlug: "complexity-limit" },
+          }),
+        }),
+      ),
+    );
+  });
 });
