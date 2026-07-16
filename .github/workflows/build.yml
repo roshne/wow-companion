@@ -38,3 +38,43 @@ jobs:
           name: wow-companion-windows
           path: src-tauri/target/release/wow-companion.exe
           if-no-files-found: error
+
+  linux-bin:
+    name: Linux binary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Tauri's webview (webkitgtk) and the keyring Secret Service backend (libdbus-1)
+      # are system libraries the cargo build links against — install them first.
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libdbus-1-dev \
+            pkg-config
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      # Same build:exe script as Windows; on Linux --no-bundle skips the deb/AppImage
+      # bundles and leaves the raw ELF binary (no .exe extension).
+      - run: npm run build:exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wow-companion-linux
+          path: src-tauri/target/release/wow-companion
+          if-no-files-found: error

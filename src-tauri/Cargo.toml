@@ -26,9 +26,24 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 # OAuth token exchange (the client secret never leaves Rust).
 reqwest = { version = "0.12", features = ["json"] }
-# OS-native secret storage (Windows Credential Manager). For macOS/Linux builds, also enable
-# the "apple-native" / "sync-secret-service" features respectively.
-keyring = { version = "3", features = ["windows-native"] }
 # Read the Warbandeer addon's SavedVariables (a Lua table literal) via an embedded, sandboxed
 # Lua VM. `vendored` builds Lua from source (no system Lua needed).
 mlua = { version = "0.10", features = ["lua54", "vendored"] }
+
+# OS-native secret storage. The backend is target-specific because each platform pulls a
+# different keyring feature (and Linux additionally needs a crypto backend for its D-Bus
+# session), so a single unconditional feature set can't cover more than one OS.
+[target.'cfg(windows)'.dependencies]
+# Windows Credential Manager.
+keyring = { version = "3", features = ["windows-native"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# Secret Service over D-Bus (GNOME Keyring / KWallet). `crypto-rust` supplies the session
+# cipher in pure Rust; the sync-secret-service backend links the system libdbus-1, so the
+# Linux CI jobs install `libdbus-1-dev`.
+keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
+
+# Any other target (e.g. macOS until `apple-native` is wired up) falls back to the in-memory
+# mock store so the crate still compiles.
+[target.'cfg(not(any(windows, target_os = "linux")))'.dependencies]
+keyring = "3"
