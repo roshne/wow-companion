@@ -12,6 +12,7 @@ import type { Region } from "../vendor/battlenet-wow-client";
 
 const REGIONS: Region[] = ["us", "eu", "kr", "tw"];
 const REGION_KEY = "wow-companion:region";
+const THEME_KEY = "wow-companion:theme";
 const RECENTS_KEY = "wow-companion:recent-characters";
 const FAVORITE_CHARACTERS_KEY = "wow-companion:favorite-characters";
 const FAVORITE_REALMS_KEY = "wow-companion:favorite-realms";
@@ -60,6 +61,27 @@ export function loadRegion(): Region {
 
 export function saveRegion(region: Region): void {
   writeRaw(REGION_KEY, region);
+}
+
+// --- Theme choice: light / dark, or "system" to follow the OS `prefers-color-scheme`. -------------
+
+/** The user's theme preference. "system" defers to the OS setting (the first-run default). */
+export type ThemeChoice = "light" | "dark" | "system";
+
+const THEMES: ThemeChoice[] = ["light", "dark", "system"];
+
+function isThemeChoice(value: unknown): value is ThemeChoice {
+  return typeof value === "string" && (THEMES as string[]).includes(value);
+}
+
+/** The persisted theme choice, or "system" when absent/invalid. */
+export function loadTheme(): ThemeChoice {
+  const raw = readRaw(THEME_KEY);
+  return isThemeChoice(raw) ? raw : "system";
+}
+
+export function saveTheme(choice: ThemeChoice): void {
+  writeRaw(THEME_KEY, choice);
 }
 
 function isCharacterRef(value: unknown): value is RecentCharacter {

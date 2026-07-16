@@ -363,8 +363,24 @@ form.card input {
   color: var(--muted);
 }
 
+/*
+ * Dark theme tokens. Applied when the user explicitly picks Dark (`data-theme="dark"`), or — for the
+ * default "System" choice, which sets no attribute — when the OS prefers dark AND the user hasn't
+ * pinned Light. So a manual choice wins in both directions: Light stays light on a dark OS, Dark stays
+ * dark on a light OS. The two blocks carry identical values (a media query can't share a selector list).
+ */
+:root[data-theme="dark"] {
+  color: #ededed;
+  background: #1b1b1d;
+  --border: #38383d;
+  --muted: #9a9aa2;
+  --card: #242427;
+  --accent: #4b8bff;
+  --up: #3fb950;
+  --down: #ff6b6b;
+}
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     color: #ededed;
     background: #1b1b1d;
     --border: #38383d;

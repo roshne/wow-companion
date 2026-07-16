@@ -11,6 +11,7 @@ import { CharacterLookup } from "./components/CharacterLookup";
 import { GuildLookup } from "./components/GuildLookup";
 import { AuctionHouse } from "./components/AuctionHouse";
 import { Warband } from "./components/Warband";
+import { ThemeToggle } from "./components/ThemeToggle";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import "./App.css";
 
@@ -123,6 +124,7 @@ function App() {
             ))}
           </select>
         </label>
+        <ThemeToggle />
         <button className="ghost" onClick={clearCreds}>
           Disconnect
         </button>

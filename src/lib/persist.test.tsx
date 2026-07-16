@@ -3,6 +3,8 @@ import { describe, it, expect, beforeEach } from "vitest";
 import {
   loadRegion,
   saveRegion,
+  loadTheme,
+  saveTheme,
   loadRecentCharacters,
   saveRecentCharacters,
   addRecentCharacter,
@@ -48,6 +50,26 @@ describe("region persistence", () => {
   it("ignores an invalid stored region", () => {
     localStorage.setItem("wow-companion:region", "zz");
     expect(loadRegion()).toBe("us");
+  });
+});
+
+describe("theme persistence", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("defaults to system when nothing is stored", () => {
+    expect(loadTheme()).toBe("system");
+  });
+
+  it("round-trips each valid choice", () => {
+    for (const choice of ["light", "dark", "system"] as const) {
+      saveTheme(choice);
+      expect(loadTheme()).toBe(choice);
+    }
+  });
+
+  it("ignores an invalid stored theme", () => {
+    localStorage.setItem("wow-companion:theme", "neon");
+    expect(loadTheme()).toBe("system");
   });
 });
 
