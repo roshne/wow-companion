@@ -47,6 +47,12 @@ describe("App", () => {
     expect(await screen.findByRole("button", { name: "Guild" })).toBeInTheDocument();
   });
 
+  it("switches to the Auctions tab and renders the browser", async () => {
+    renderWithClient(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: "Auctions" }));
+    expect(await screen.findByRole("heading", { name: "Auction House" })).toBeInTheDocument();
+  });
+
   it("restores the persisted region on load", async () => {
     localStorage.setItem("wow-companion:region", "eu");
     renderWithClient(<App />);

@@ -9,12 +9,13 @@ import { TokenPrice } from "./components/TokenPrice";
 import { RealmStatus } from "./components/RealmStatus";
 import { CharacterLookup } from "./components/CharacterLookup";
 import { GuildLookup } from "./components/GuildLookup";
+import { AuctionHouse } from "./components/AuctionHouse";
 import { Warband } from "./components/Warband";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import "./App.css";
 
 const REGIONS: Region[] = ["us", "eu", "kr", "tw"];
-type Tab = "token" | "realms" | "character" | "guild" | "warband";
+type Tab = "token" | "realms" | "character" | "guild" | "auctions" | "warband";
 
 function App() {
   const [hasCreds, setHasCreds] = useState<boolean | null>(null);
@@ -140,6 +141,9 @@ function App() {
         <button className={tab === "guild" ? "active" : ""} onClick={() => setTab("guild")}>
           Guild
         </button>
+        <button className={tab === "auctions" ? "active" : ""} onClick={() => setTab("auctions")}>
+          Auctions
+        </button>
         <button className={tab === "warband" ? "active" : ""} onClick={() => setTab("warband")}>
           Warband
         </button>
@@ -150,6 +154,7 @@ function App() {
         {tab === "realms" && <RealmStatus bnet={bnet} />}
         {tab === "character" && <CharacterLookup bnet={bnet} />}
         {tab === "guild" && <GuildLookup bnet={bnet} />}
+        {tab === "auctions" && <AuctionHouse bnet={bnet} />}
         {tab === "warband" && <Warband />}
       </ErrorBoundary>
     </main>
