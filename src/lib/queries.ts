@@ -122,6 +122,17 @@ export function describeError(error: unknown): string {
 }
 
 /**
+ * Whether a query error deserves a global error toast. Only "real" failures qualify: server errors
+ * (5xx), rate limiting (429), and non-HTTP failures (network/unknown). Expected request-specific 4xx
+ * — a 404 "not found", a 401 (which routes to the reconnect form) — are shown inline instead, so they
+ * don't also spam a toast.
+ */
+export function shouldToastError(error: unknown): boolean {
+  if (error instanceof BnetError) return error.status >= 500 || error.status === 429;
+  return true;
+}
+
+/**
  * QueryKey factories — the single source of cache identity. `region` leads every key so per-region
  * caches never collide; character keys also carry the realm slug + name.
  */
