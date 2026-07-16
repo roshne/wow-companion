@@ -71,4 +71,133 @@ describe("CharacterDetail", () => {
     fireEvent.click(screen.getByRole("button", { name: "Gear" }));
     await waitFor(() => expect(screen.getByText("Failed (HTTP 500).")).toBeInTheDocument());
   });
+
+  it("lazily fetches Mythic+ only when the M+ tab is selected, rendering the rounded rating", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({
+      data: {
+        current_mythic_rating: { rating: 2456.7, color: { r: 255, g: 128, b: 0 } },
+        current_period: { period: { id: 987 } },
+      },
+      response: mockResponse(200),
+    });
+    renderWithClient(
+      <CharacterDetail
+        bnet={bnet}
+        realmSlug="tichondrius"
+        characterName="asmon"
+        summary={summary}
+      />,
+    );
+
+    expect(get).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "M+" }));
+
+    await waitFor(() => expect(screen.getByText("2,457")).toBeInTheDocument());
+    expect(screen.getByText("#987")).toBeInTheDocument();
+  });
+
+  it("shows an error when Mythic+ fails to load", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: undefined, response: mockResponse(500) });
+    renderWithClient(
+      <CharacterDetail bnet={bnet} realmSlug="r" characterName="n" summary={summary} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "M+" }));
+    await waitFor(() => expect(screen.getByText("Failed (HTTP 500).")).toBeInTheDocument());
+  });
+
+  it("lazily fetches PvP only when the PvP tab is selected, rendering summary + a battleground row", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({
+      data: {
+        honor_level: 500,
+        honorable_kills: 12000,
+        pvp_map_statistics: [
+          {
+            world_map: { name: "Warsong Gulch", id: 1 },
+            match_statistics: { played: 10, won: 6, lost: 4 },
+          },
+        ],
+      },
+      response: mockResponse(200),
+    });
+    renderWithClient(
+      <CharacterDetail
+        bnet={bnet}
+        realmSlug="tichondrius"
+        characterName="asmon"
+        summary={summary}
+      />,
+    );
+
+    expect(get).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "PvP" }));
+
+    await waitFor(() => expect(screen.getByText("Warsong Gulch")).toBeInTheDocument());
+    expect(screen.getByText("500")).toBeInTheDocument();
+    expect(screen.getByText("12,000")).toBeInTheDocument();
+  });
+
+  it("shows an error when PvP fails to load", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: undefined, response: mockResponse(503) });
+    renderWithClient(
+      <CharacterDetail bnet={bnet} realmSlug="r" characterName="n" summary={summary} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "PvP" }));
+    await waitFor(() => expect(screen.getByText("Failed (HTTP 503).")).toBeInTheDocument());
+  });
+
+  it("lazily fetches professions only when the Professions tab is selected", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({
+      data: {
+        primaries: [
+          {
+            profession: { name: "Blacksmithing", id: 164 },
+            tiers: [
+              {
+                tier: { name: "Khaz Algar Blacksmithing" },
+                skill_points: 45,
+                max_skill_points: 100,
+              },
+            ],
+          },
+        ],
+        secondaries: [{ profession: { name: "Cooking", id: 185 }, tiers: [] }],
+      },
+      response: mockResponse(200),
+    });
+    renderWithClient(
+      <CharacterDetail
+        bnet={bnet}
+        realmSlug="tichondrius"
+        characterName="asmon"
+        summary={summary}
+      />,
+    );
+
+    expect(get).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Professions" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "Blacksmithing" })).toBeInTheDocument(),
+    );
+    expect(screen.getByText(/Khaz Algar Blacksmithing/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Cooking" })).toBeInTheDocument();
+  });
+
+  it("shows an error when professions fail to load", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: undefined, response: mockResponse(500) });
+    renderWithClient(
+      <CharacterDetail bnet={bnet} realmSlug="r" characterName="n" summary={summary} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Professions" }));
+    await waitFor(() => expect(screen.getByText("Failed (HTTP 500).")).toBeInTheDocument());
+  });
 });

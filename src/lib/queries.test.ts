@@ -16,6 +16,12 @@ import {
   realmIndexQuery,
   fetchCharacterEquipment,
   characterEquipmentQuery,
+  fetchCharacterMythicKeystone,
+  fetchCharacterPvpSummary,
+  fetchCharacterProfessions,
+  characterMythicKeystoneQuery,
+  characterPvpSummaryQuery,
+  characterProfessionsQuery,
   fetchGuild,
   fetchGuildRoster,
   fetchGuildAchievements,
@@ -296,6 +302,87 @@ describe("fetchCharacterEquipment", () => {
   });
 });
 
+describe("fetchCharacterMythicKeystone", () => {
+  it("requests the profile namespace with the path params and returns the body", async () => {
+    const { bnet, get } = mockBnet("us");
+    get.mockResolvedValue({
+      data: { current_mythic_rating: { rating: 2145.6 } },
+      response: mockResponse(200),
+    });
+    const data = await fetchCharacterMythicKeystone(bnet, "tichondrius", "asmon");
+    expect(data.current_mythic_rating?.rating).toBe(2145.6);
+    expect(get).toHaveBeenCalledWith(
+      "/profile/wow/character/{realmSlug}/{characterName}/mythic-keystone-profile",
+      {
+        params: {
+          path: { realmSlug: "tichondrius", characterName: "asmon" },
+          query: { namespace: "profile-us", locale: "en_US" },
+        },
+      },
+    );
+  });
+
+  it("throws on a non-OK response", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: undefined, response: mockResponse(500) });
+    await expect(fetchCharacterMythicKeystone(bnet, "r", "n")).rejects.toBeInstanceOf(BnetError);
+  });
+});
+
+describe("fetchCharacterPvpSummary", () => {
+  it("requests the profile namespace with the path params and returns the body", async () => {
+    const { bnet, get } = mockBnet("eu");
+    get.mockResolvedValue({
+      data: { honor_level: 500, honorable_kills: 12000 },
+      response: mockResponse(200),
+    });
+    const data = await fetchCharacterPvpSummary(bnet, "tichondrius", "asmon");
+    expect(data.honor_level).toBe(500);
+    expect(get).toHaveBeenCalledWith(
+      "/profile/wow/character/{realmSlug}/{characterName}/pvp-summary",
+      {
+        params: {
+          path: { realmSlug: "tichondrius", characterName: "asmon" },
+          query: { namespace: "profile-eu", locale: "en_US" },
+        },
+      },
+    );
+  });
+
+  it("throws on a non-OK response", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: undefined, response: mockResponse(500) });
+    await expect(fetchCharacterPvpSummary(bnet, "r", "n")).rejects.toBeInstanceOf(BnetError);
+  });
+});
+
+describe("fetchCharacterProfessions", () => {
+  it("requests the profile namespace with the path params and returns the body", async () => {
+    const { bnet, get } = mockBnet("us");
+    get.mockResolvedValue({
+      data: { primaries: [{ profession: { name: "Blacksmithing" } }] },
+      response: mockResponse(200),
+    });
+    const data = await fetchCharacterProfessions(bnet, "tichondrius", "asmon");
+    expect(data.primaries?.[0].profession?.name).toBe("Blacksmithing");
+    expect(get).toHaveBeenCalledWith(
+      "/profile/wow/character/{realmSlug}/{characterName}/professions",
+      {
+        params: {
+          path: { realmSlug: "tichondrius", characterName: "asmon" },
+          query: { namespace: "profile-us", locale: "en_US" },
+        },
+      },
+    );
+  });
+
+  it("throws on a non-OK response", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: undefined, response: mockResponse(500) });
+    await expect(fetchCharacterProfessions(bnet, "r", "n")).rejects.toBeInstanceOf(BnetError);
+  });
+});
+
 describe("fetchGuild", () => {
   it("requests the profile namespace with the guild path params and returns the body", async () => {
     const { bnet, get } = mockBnet("eu");
@@ -485,6 +572,27 @@ describe("query-option factories", () => {
       "n",
     ]);
     expect(characterEquipmentQuery(bnet, "r", "n").staleTime).toBe(2 * 60_000);
+    expect(characterMythicKeystoneQuery(bnet, "r", "n").queryKey).toEqual([
+      "character-mythic-keystone",
+      "kr",
+      "r",
+      "n",
+    ]);
+    expect(characterMythicKeystoneQuery(bnet, "r", "n").staleTime).toBe(2 * 60_000);
+    expect(characterPvpSummaryQuery(bnet, "r", "n").queryKey).toEqual([
+      "character-pvp-summary",
+      "kr",
+      "r",
+      "n",
+    ]);
+    expect(characterPvpSummaryQuery(bnet, "r", "n").staleTime).toBe(2 * 60_000);
+    expect(characterProfessionsQuery(bnet, "r", "n").queryKey).toEqual([
+      "character-professions",
+      "kr",
+      "r",
+      "n",
+    ]);
+    expect(characterProfessionsQuery(bnet, "r", "n").staleTime).toBe(2 * 60_000);
     expect(guildQuery(bnet, "r", "g").queryKey).toEqual(["guild", "kr", "r", "g"]);
     expect(guildQuery(bnet, "r", "g").staleTime).toBe(5 * 60_000);
     expect(guildRosterQuery(bnet, "r", "g").queryKey).toEqual(["guild-roster", "kr", "r", "g"]);
