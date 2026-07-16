@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { createQueryClient } from "./queryClient";
 import { BnetError } from "./queries";
 import { onUnauthorized } from "./auth";
+import { onToast, type ToastMessage } from "./toast";
 
 describe("createQueryClient", () => {
   it("dedups concurrent identical fetches — the queryFn runs once", async () => {
@@ -96,5 +97,43 @@ describe("createQueryClient — 401 re-auth signal", () => {
     }
     expect(listener).not.toHaveBeenCalled();
     off();
+  });
+});
+
+describe("createQueryClient — error toasts", () => {
+  /** Run a query that throws `error`, collecting any toasts fired by the global handler. */
+  async function toastsFor(error: unknown, key: string): Promise<ToastMessage[]> {
+    const client = createQueryClient();
+    const toasts: ToastMessage[] = [];
+    const off = onToast((t) => toasts.push(t));
+    await client
+      .fetchQuery({
+        queryKey: [key] as const,
+        queryFn: async () => {
+          throw error;
+        },
+        retry: false,
+      })
+      .catch(() => {});
+    off();
+    return toasts;
+  }
+
+  it("toasts a server error (5xx) with the described message", async () => {
+    const toasts = await toastsFor(new BnetError(503), "toast-503");
+    expect(toasts).toEqual([{ message: "Failed (HTTP 503).", tone: "error" }]);
+  });
+
+  it("toasts a rate-limit (429) and a non-HTTP failure", async () => {
+    expect(await toastsFor(new BnetError(429), "toast-429")).toHaveLength(1);
+    expect(await toastsFor(new Error("network down"), "toast-net")).toHaveLength(1);
+  });
+
+  it("does not toast an expected 404", async () => {
+    expect(await toastsFor(new BnetError(404), "toast-404")).toEqual([]);
+  });
+
+  it("does not toast a 401 (routes to reconnect instead)", async () => {
+    expect(await toastsFor(new BnetError(401), "toast-401")).toEqual([]);
   });
 });

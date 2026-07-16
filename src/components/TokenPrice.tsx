@@ -1,6 +1,7 @@
 import type { TokenView } from "../lib/useTokenHistory";
 import { describeError } from "../lib/queries";
 import { Sparkline } from "./Sparkline";
+import { SkeletonLines } from "./Skeleton";
 
 /**
  * Current WoW Token price plus a self-accumulated price-history sparkline. Price is in copper;
@@ -15,6 +16,8 @@ export function TokenPrice({ token }: { token: TokenView }) {
   const updated = data?.last_updated_timestamp
     ? `Updated ${new Date(data.last_updated_timestamp).toLocaleString()}`
     : "";
+  // First load only: no price yet and a fetch is in flight (a failure falls through to the error line).
+  const loading = !data && isFetching && !isError;
 
   return (
     <section className="card">
@@ -24,16 +27,22 @@ export function TokenPrice({ token }: { token: TokenView }) {
           {isFetching ? "…" : "Refresh"}
         </button>
       </div>
-      {price && <p className="big">{price}</p>}
-      {isError ? (
-        <p className="muted">{describeError(error)}</p>
+      {loading ? (
+        <SkeletonLines lines={2} />
       ) : (
-        updated && <p className="muted">{updated}</p>
-      )}
-      {history.length >= 2 ? (
-        <Sparkline values={history.map((p) => p.price)} />
-      ) : (
-        <p className="muted">Collecting price history…</p>
+        <>
+          {price && <p className="big">{price}</p>}
+          {isError ? (
+            <p className="muted">{describeError(error)}</p>
+          ) : (
+            updated && <p className="muted">{updated}</p>
+          )}
+          {history.length >= 2 ? (
+            <Sparkline values={history.map((p) => p.price)} />
+          ) : (
+            <p className="muted">Collecting price history…</p>
+          )}
+        </>
       )}
     </section>
   );

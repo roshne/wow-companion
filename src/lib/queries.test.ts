@@ -3,6 +3,7 @@ import {
   BnetError,
   unwrap,
   describeError,
+  shouldToastError,
   queryKeys,
   fetchTokenIndex,
   fetchConnectedRealms,
@@ -112,6 +113,25 @@ describe("describeError", () => {
 
   it("stringifies any other error", () => {
     expect(describeError(new Error("boom"))).toBe("Error: Error: boom");
+  });
+});
+
+describe("shouldToastError", () => {
+  it("toasts server errors (5xx) and rate limiting (429)", () => {
+    expect(shouldToastError(new BnetError(500))).toBe(true);
+    expect(shouldToastError(new BnetError(503))).toBe(true);
+    expect(shouldToastError(new BnetError(429))).toBe(true);
+  });
+
+  it("toasts non-HTTP (network/unknown) failures", () => {
+    expect(shouldToastError(new Error("network"))).toBe(true);
+    expect(shouldToastError("weird")).toBe(true);
+  });
+
+  it("does not toast expected client errors (401 / 403 / 404)", () => {
+    expect(shouldToastError(new BnetError(401))).toBe(false);
+    expect(shouldToastError(new BnetError(403))).toBe(false);
+    expect(shouldToastError(new BnetError(404))).toBe(false);
   });
 });
 

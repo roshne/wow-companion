@@ -166,4 +166,23 @@ describe("AuctionHouse", () => {
     renderWithClient(<AuctionHouse bnet={bnet} />);
     await screen.findByText("No auctions found.");
   });
+
+  it("shows a loading skeleton while the snapshot is pending", () => {
+    const { bnet, get } = mockBnet("us");
+    get.mockReturnValue(new Promise(() => {})); // never resolves
+    renderWithClient(<AuctionHouse bnet={bnet} />);
+    expect(screen.getByRole("status")).toHaveAttribute("aria-busy", "true");
+  });
+
+  it("retries the snapshot from the empty state", async () => {
+    const { bnet, get } = mockBnet("us");
+    route(get, { commodities: { auctions: [] } });
+    renderWithClient(<AuctionHouse bnet={bnet} />);
+
+    await screen.findByText("No auctions found.");
+    const commodityCalls = () => get.mock.calls.filter((c) => c[0] === COMMODITIES_PATH).length;
+    const before = commodityCalls();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(commodityCalls()).toBeGreaterThan(before));
+  });
 });
