@@ -159,6 +159,8 @@ function App() {
         {tab === "auctions" && <AuctionHouse bnet={bnet} />}
         {tab === "warband" && <Warband />}
       </ErrorBoundary>
+
+      <footer className="appfooter muted">{__BUILD_ID__}</footer>
     </main>
   );
 }
