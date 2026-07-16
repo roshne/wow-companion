@@ -7,6 +7,8 @@ import { addRecentCharacter, toggleFavoriteCharacter } from "../lib/persist";
 import { CLASS_COLORS } from "../lib/wow";
 
 const MEDIA_PATH = "/profile/wow/character/{realmSlug}/{characterName}/character-media";
+const CHARACTER_PATH = "/profile/wow/character/{realmSlug}/{characterName}";
+const REALM_INDEX_PATH = "/data/wow/realm/index";
 
 /** Route the character summary and its media doc (assets) separately. */
 function routeChar(
@@ -182,6 +184,49 @@ describe("CharacterLookup", () => {
     ).map((o) => o.value);
     expect(values).toEqual(["Area 52", "Tichondrius"]);
     expect(screen.getByPlaceholderText(/Realm/).getAttribute("list")).toBe("realm-options");
+  });
+
+  it("surfaces an error (with retry) when the realm suggestions fail to load", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockImplementation((path: string) =>
+      path === REALM_INDEX_PATH
+        ? Promise.resolve({ data: undefined, response: mockResponse(500) })
+        : Promise.resolve({ data: { name: "Asmon", level: 70 }, response: mockResponse(200) }),
+    );
+    renderWithClient(<CharacterLookup bnet={bnet} />);
+
+    expect(await screen.findByText("Couldn't load realm suggestions.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
+  });
+
+  it("submits the realm index's real slug when the typed realm matches (accents)", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockImplementation((path: string) =>
+      path === REALM_INDEX_PATH
+        ? Promise.resolve({
+            data: { realms: [{ name: "Aggra (Português)", slug: "aggra-portugues" }] },
+            response: mockResponse(200),
+          })
+        : Promise.resolve({ data: { name: "Asmon", level: 70 }, response: mockResponse(200) }),
+    );
+    const { container } = renderWithClient(<CharacterLookup bnet={bnet} />);
+
+    // Wait for the realm index to load so resolution has the entry to match against.
+    await waitFor(() =>
+      expect(container.querySelectorAll("#realm-options option")).toHaveLength(1),
+    );
+    fillAndSubmit("Aggra (Português)", "Asmon");
+
+    await waitFor(() =>
+      expect(get).toHaveBeenCalledWith(
+        CHARACTER_PATH,
+        expect.objectContaining({
+          params: expect.objectContaining({
+            path: { realmSlug: "aggra-portugues", characterName: "asmon" },
+          }),
+        }),
+      ),
+    );
   });
 
   it("stars a looked-up character into the favorites strip", async () => {

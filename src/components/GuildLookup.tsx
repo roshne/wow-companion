@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { BlizzardClient } from "../vendor/battlenet-wow-client";
 import { loc } from "../lib/types";
-import { toRealmSlug, toGuildNameSlug } from "../lib/slug";
+import { resolveRealmSlug, toGuildNameSlug } from "../lib/slug";
 import { FACTION_COLORS } from "../lib/wow";
 import { BnetError, describeError, guildQuery, realmIndexQuery } from "../lib/queries";
 import { GuildDetail } from "./GuildDetail";
@@ -37,7 +37,7 @@ export function GuildLookup({ bnet }: { bnet: BlizzardClient }) {
 
   function lookup(e: FormEvent) {
     e.preventDefault();
-    const realmSlugInput = toRealmSlug(realm);
+    const realmSlugInput = resolveRealmSlug(realm, realmIndex.data ?? []);
     const nameSlugInput = toGuildNameSlug(name);
     if (!realmSlugInput || !nameSlugInput) {
       setFormError("Enter a realm and guild name.");
@@ -89,6 +89,16 @@ export function GuildLookup({ bnet }: { bnet: BlizzardClient }) {
           {guild.isFetching ? "…" : "Look up"}
         </button>
       </form>
+      {realmIndex.isError ? (
+        <p className="muted">
+          Couldn't load realm suggestions.{" "}
+          <button type="button" className="ghost" onClick={() => void realmIndex.refetch()}>
+            Retry
+          </button>
+        </p>
+      ) : realmIndex.isLoading ? (
+        <p className="muted">Loading realm suggestions…</p>
+      ) : null}
       {sub && <p className="muted">{sub}</p>}
       {data && (
         <div>
