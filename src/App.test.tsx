@@ -42,6 +42,11 @@ describe("App", () => {
     expect(screen.getByText(/please reconnect/)).toBeInTheDocument();
   });
 
+  it("renders the Guild tab in the nav once connected", async () => {
+    renderWithClient(<App />);
+    expect(await screen.findByRole("button", { name: "Guild" })).toBeInTheDocument();
+  });
+
   it("restores the persisted region on load", async () => {
     localStorage.setItem("wow-companion:region", "eu");
     renderWithClient(<App />);
