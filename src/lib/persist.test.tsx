@@ -23,6 +23,8 @@ import {
   loadTokenHistory,
   appendTokenPrice,
   TOKEN_HISTORY_CAP,
+  loadItemNames,
+  mergeItemNames,
 } from "./persist";
 
 const char = (n: string, region: RecentCharacter["region"] = "us"): RecentCharacter => ({
@@ -188,5 +190,54 @@ describe("token price history", () => {
       JSON.stringify([{ t: 1, price: 10 }, { t: "x", price: 5 }, { nope: true }]),
     );
     expect(loadTokenHistory("us")).toEqual([{ t: 1, price: 10 }]);
+  });
+});
+
+describe("resolved item-name cache", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("is empty by default", () => {
+    expect(loadItemNames()).toEqual({});
+  });
+
+  it("merges and round-trips resolved items keyed by numeric id", () => {
+    mergeItemNames({ 19019: { name: "Thunderfury", quality: "LEGENDARY" } });
+    const cache = loadItemNames();
+    expect(cache[19019]).toEqual({ name: "Thunderfury", quality: "LEGENDARY" });
+  });
+
+  it("merges new entries over existing without clobbering", () => {
+    mergeItemNames({ 1: { name: "One" } });
+    const merged = mergeItemNames({ 2: { name: "Two", quality: "EPIC" } });
+    expect(merged[1]).toEqual({ name: "One" });
+    expect(merged[2]).toEqual({ name: "Two", quality: "EPIC" });
+    // The persisted cache reflects both.
+    expect(Object.keys(loadItemNames()).sort()).toEqual(["1", "2"]);
+  });
+
+  it("does not write on an empty merge and returns the current cache", () => {
+    mergeItemNames({ 5: { name: "Five" } });
+    const before = localStorage.getItem("wow-companion:item-names");
+    const result = mergeItemNames({});
+    expect(result[5]).toEqual({ name: "Five" });
+    expect(localStorage.getItem("wow-companion:item-names")).toBe(before);
+  });
+
+  it("drops malformed entries and non-integer keys on read", () => {
+    localStorage.setItem(
+      "wow-companion:item-names",
+      JSON.stringify({
+        123: { name: "Valid", quality: "RARE" },
+        456: { name: "" }, // empty name → invalid
+        789: { quality: "EPIC" }, // missing name → invalid
+        abc: { name: "NonNumericKey" }, // non-integer key → dropped
+      }),
+    );
+    expect(loadItemNames()).toEqual({ 123: { name: "Valid", quality: "RARE" } });
+  });
+
+  it("returns an empty map for corrupt JSON", () => {
+    localStorage.setItem("wow-companion:item-names", "{not json");
+    expect(loadItemNames()).toEqual({});
   });
 });

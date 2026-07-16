@@ -30,6 +30,17 @@ function createMemoryStorage(): Storage {
 
 vi.stubGlobal("localStorage", createMemoryStorage());
 
+// jsdom lacks ResizeObserver, which @tanstack/react-virtual attaches to the scroll element. A no-op
+// stub lets the virtualizer mount; tests that need real dimensions mock `getBoundingClientRect`.
+vi.stubGlobal(
+  "ResizeObserver",
+  class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  },
+);
+
 // Unmount React trees between tests so queries don't see stale DOM from a prior test.
 afterEach(() => {
   cleanup();

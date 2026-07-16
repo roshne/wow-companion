@@ -10,6 +10,8 @@
 
 import { queryOptions } from "@tanstack/react-query";
 import type { BlizzardClient, Region, paths } from "../vendor/battlenet-wow-client";
+import { aggregateRealmAuctions, aggregateCommodities, type AggregatedRow } from "./auctions";
+import type { ResolvedItem } from "./persist";
 
 const SECOND = 1000;
 const MINUTE = 60 * SECOND;
@@ -129,6 +131,9 @@ export const queryKeys = {
     ["guild-achievements", region, realmSlug, nameSlug] as const,
   guildActivity: (region: Region, realmSlug: string, nameSlug: string) =>
     ["guild-activity", region, realmSlug, nameSlug] as const,
+  realmAuctions: (region: Region, connectedRealmId: number) =>
+    ["realm-auctions", region, connectedRealmId] as const,
+  commodities: (region: Region) => ["commodities", region] as const,
 };
 
 /** Fetch the current WoW Token price document. */
@@ -292,6 +297,55 @@ export async function fetchGuildActivity(
   return unwrap(data, response);
 }
 
+// Auction reads. The snapshots (dynamic namespace) are large, so they're aggregated by item id in the
+// queryFn — the cache then holds the compact `AggregatedRow[]`, not the raw listing dump. Item detail
+// (for name resolution) is a *static*-namespace read and best-effort: a failure yields `null` rather
+// than throwing, so one unresolved item never breaks the list.
+
+/** Fetch a connected realm's auction snapshot, aggregated by item id. */
+export async function fetchRealmAuctions(
+  bnet: BlizzardClient,
+  connectedRealmId: number,
+): Promise<AggregatedRow[]> {
+  const { data, response } = await bnet.api.GET(
+    "/data/wow/connected-realm/{connectedRealmId}/auctions",
+    {
+      params: {
+        path: { connectedRealmId },
+        query: { namespace: bnet.namespace("dynamic"), locale: "en_US" },
+      },
+    },
+  );
+  return aggregateRealmAuctions(unwrap(data, response).auctions);
+}
+
+/** Fetch the region-wide commodities snapshot, aggregated by item id. */
+export async function fetchCommodities(bnet: BlizzardClient): Promise<AggregatedRow[]> {
+  const { data, response } = await bnet.api.GET("/data/wow/auctions/commodities", {
+    params: { query: { namespace: bnet.namespace("dynamic"), locale: "en_US" } },
+  });
+  return aggregateCommodities(unwrap(data, response).auctions);
+}
+
+/**
+ * Resolve one item's display name + quality (static namespace, `locale=en_US` so the name comes back
+ * flattened). Best-effort: returns `null` on any non-OK response or a body with no name.
+ */
+export async function fetchItemName(
+  bnet: BlizzardClient,
+  itemId: number,
+): Promise<ResolvedItem | null> {
+  const { data, response } = await bnet.api.GET("/data/wow/item/{itemId}", {
+    params: {
+      path: { itemId: String(itemId) },
+      query: { namespace: bnet.namespace("static"), locale: "en_US" },
+    },
+  });
+  if (!response.ok || typeof data?.name !== "string") return null;
+  const quality = data.quality?.type;
+  return typeof quality === "string" ? { name: data.name, quality } : { name: data.name };
+}
+
 // Query-option factories: region-scoped keys + per-endpoint staleTime. Components call these and
 // spread the result into `useQuery`. staleTime is the main lever for staying under the rate limits —
 // the token/realm docs move slowly (~5 min), character data a little faster (~60 s), and a
@@ -373,4 +427,24 @@ export const guildActivityQuery = (bnet: BlizzardClient, realmSlug: string, name
     queryKey: queryKeys.guildActivity(bnet.region, realmSlug, nameSlug),
     queryFn: () => fetchGuildActivity(bnet, realmSlug, nameSlug),
     staleTime: 5 * MINUTE,
+  });
+
+// Auction snapshots: fetch once and hold. Blizzard regenerates them ~hourly, so re-fetching per
+// interaction only burns quota — `staleTime`/`gcTime` are Infinity, and the browser exposes an explicit
+// Refresh instead. The queryKey carries the connected realm so each realm caches independently.
+
+export const realmAuctionsQuery = (bnet: BlizzardClient, connectedRealmId: number) =>
+  queryOptions({
+    queryKey: queryKeys.realmAuctions(bnet.region, connectedRealmId),
+    queryFn: () => fetchRealmAuctions(bnet, connectedRealmId),
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
+
+export const commoditiesQuery = (bnet: BlizzardClient) =>
+  queryOptions({
+    queryKey: queryKeys.commodities(bnet.region),
+    queryFn: () => fetchCommodities(bnet),
+    staleTime: Infinity,
+    gcTime: Infinity,
   });

@@ -24,6 +24,11 @@ import {
   guildRosterQuery,
   guildAchievementsQuery,
   guildActivityQuery,
+  fetchRealmAuctions,
+  fetchCommodities,
+  fetchItemName,
+  realmAuctionsQuery,
+  commoditiesQuery,
 } from "./queries";
 import { mockBnet, mockResponse } from "../test/mocks";
 
@@ -372,6 +377,89 @@ describe("fetchGuildActivity", () => {
   });
 });
 
+describe("fetchRealmAuctions", () => {
+  it("requests the dynamic namespace with the connected-realm id and returns aggregated rows", async () => {
+    const { bnet, get } = mockBnet("us");
+    get.mockResolvedValue({
+      data: {
+        auctions: [
+          { id: 1, item: { id: 100 }, buyout: 5000, quantity: 2 },
+          { id: 2, item: { id: 100 }, buyout: 3000, quantity: 1 },
+        ],
+      },
+      response: mockResponse(200),
+    });
+    const rows = await fetchRealmAuctions(bnet, 1146);
+    expect(rows).toEqual([{ itemId: 100, minPrice: 3000, totalQuantity: 3, listings: 2 }]);
+    expect(get).toHaveBeenCalledWith("/data/wow/connected-realm/{connectedRealmId}/auctions", {
+      params: {
+        path: { connectedRealmId: 1146 },
+        query: { namespace: "dynamic-us", locale: "en_US" },
+      },
+    });
+  });
+
+  it("throws on a non-OK response", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: undefined, response: mockResponse(404) });
+    await expect(fetchRealmAuctions(bnet, 1)).rejects.toBeInstanceOf(BnetError);
+  });
+});
+
+describe("fetchCommodities", () => {
+  it("requests the commodities endpoint (dynamic namespace) and returns aggregated rows", async () => {
+    const { bnet, get } = mockBnet("eu");
+    get.mockResolvedValue({
+      data: { auctions: [{ id: 1, item: { id: 200 }, unit_price: 5, quantity: 1000 }] },
+      response: mockResponse(200),
+    });
+    const rows = await fetchCommodities(bnet);
+    expect(rows).toEqual([{ itemId: 200, minPrice: 5, totalQuantity: 1000, listings: 1 }]);
+    expect(get).toHaveBeenCalledWith("/data/wow/auctions/commodities", {
+      params: { query: { namespace: "dynamic-eu", locale: "en_US" } },
+    });
+  });
+
+  it("throws on a non-OK response", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: undefined, response: mockResponse(500) });
+    await expect(fetchCommodities(bnet)).rejects.toBeInstanceOf(BnetError);
+  });
+});
+
+describe("fetchItemName", () => {
+  it("requests the static namespace with a string item id and returns name + quality", async () => {
+    const { bnet, get } = mockBnet("us");
+    get.mockResolvedValue({
+      data: { id: 19019, name: "Thunderfury", quality: { type: "LEGENDARY", name: "Legendary" } },
+      response: mockResponse(200),
+    });
+    const item = await fetchItemName(bnet, 19019);
+    expect(item).toEqual({ name: "Thunderfury", quality: "LEGENDARY" });
+    expect(get).toHaveBeenCalledWith("/data/wow/item/{itemId}", {
+      params: { path: { itemId: "19019" }, query: { namespace: "static-us", locale: "en_US" } },
+    });
+  });
+
+  it("returns a name-only result when quality is absent", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: { name: "Linen Cloth" }, response: mockResponse(200) });
+    await expect(fetchItemName(bnet, 2589)).resolves.toEqual({ name: "Linen Cloth" });
+  });
+
+  it("returns null (best-effort) on a non-OK response instead of throwing", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: undefined, response: mockResponse(404) });
+    await expect(fetchItemName(bnet, 1)).resolves.toBeNull();
+  });
+
+  it("returns null when the body has no string name", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: { id: 1 }, response: mockResponse(200) });
+    await expect(fetchItemName(bnet, 1)).resolves.toBeNull();
+  });
+});
+
 describe("query-option factories", () => {
   it("carry the region-scoped key and per-endpoint staleTime", () => {
     const { bnet } = mockBnet("kr");
@@ -410,6 +498,13 @@ describe("query-option factories", () => {
     expect(guildAchievementsQuery(bnet, "r", "g").staleTime).toBe(5 * 60_000);
     expect(guildActivityQuery(bnet, "r", "g").queryKey).toEqual(["guild-activity", "kr", "r", "g"]);
     expect(guildActivityQuery(bnet, "r", "g").staleTime).toBe(5 * 60_000);
+    // Auction snapshots are held for the session (Infinity stale/gc), keyed by connected realm.
+    expect(realmAuctionsQuery(bnet, 1146).queryKey).toEqual(["realm-auctions", "kr", 1146]);
+    expect(realmAuctionsQuery(bnet, 1146).staleTime).toBe(Infinity);
+    expect(realmAuctionsQuery(bnet, 1146).gcTime).toBe(Infinity);
+    expect(commoditiesQuery(bnet).queryKey).toEqual(["commodities", "kr"]);
+    expect(commoditiesQuery(bnet).staleTime).toBe(Infinity);
+    expect(commoditiesQuery(bnet).gcTime).toBe(Infinity);
   });
 
   it("wire a queryFn that hits the client", async () => {
