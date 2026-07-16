@@ -4,6 +4,7 @@ import { CharacterDetail } from "./CharacterDetail";
 import { renderWithClient } from "../test/utils";
 import { mockBnet, mockResponse } from "../test/mocks";
 import type { CharacterSummary } from "../lib/queries";
+import { FACTION_COLORS } from "../lib/wow";
 
 const summary = {
   faction: { name: "Horde" },
@@ -27,6 +28,19 @@ describe("CharacterDetail", () => {
     expect(screen.getByText("480")).toBeInTheDocument();
     expect(screen.getByText("12,345")).toBeInTheDocument();
     expect(get).not.toHaveBeenCalled();
+  });
+
+  it("tints the Overview faction by its type", () => {
+    const { bnet } = mockBnet();
+    renderWithClient(
+      <CharacterDetail
+        bnet={bnet}
+        realmSlug="tichondrius"
+        characterName="asmon"
+        summary={{ faction: { type: "HORDE", name: "Horde" } } as CharacterSummary}
+      />,
+    );
+    expect(screen.getByText("Horde")).toHaveStyle({ color: FACTION_COLORS.HORDE });
   });
 
   it("lazily fetches gear only when the Gear tab is selected", async () => {

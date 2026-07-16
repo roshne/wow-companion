@@ -1,13 +1,14 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { BlizzardClient } from "../vendor/battlenet-wow-client";
 import { loc } from "../lib/types";
+import { classColor } from "../lib/wow";
 import { toRealmSlug, toCharacterName } from "../lib/slug";
 import { CharacterDetail } from "./CharacterDetail";
 import {
   BnetError,
   characterQuery,
-  characterAvatarQuery,
+  characterMediaQuery,
   describeError,
   realmIndexQuery,
 } from "../lib/queries";
@@ -38,7 +39,8 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
   const [name, setName] = useState("");
   const [submitted, setSubmitted] = useState<Submitted | null>(null);
   const [formError, setFormError] = useState("");
-  const [brokenAvatar, setBrokenAvatar] = useState("");
+  // Image sources that failed to load this lookup, so we can fall back render → avatar → placeholder.
+  const [failedSrcs, setFailedSrcs] = useState<Set<string>>(new Set());
   const [recents, setRecents] = useState<RecentCharacter[]>(loadRecentCharacters);
   const [favorites, setFavorites] = useState<FavoriteCharacter[]>(loadFavoriteCharacters);
 
@@ -49,14 +51,19 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
     ...characterQuery(bnet, realmSlug, characterName),
     enabled: submitted !== null,
   });
-  const avatarQuery = useQuery({
-    ...characterAvatarQuery(bnet, realmSlug, characterName),
+  const mediaQuery = useQuery({
+    ...characterMediaQuery(bnet, realmSlug, characterName),
     enabled: submitted !== null && charQuery.isSuccess,
   });
   const realmIndex = useQuery(realmIndexQuery(bnet));
 
   const char = charQuery.data ?? null;
-  const avatar = avatarQuery.data ?? "";
+  // Prefer the full-body render, then the avatar; skip any source that already failed to load.
+  const media = mediaQuery.data ?? { render: null, avatar: null };
+  const imageSrc = useMemo(() => {
+    const candidates = [media.render, media.avatar].filter((s): s is string => !!s);
+    return candidates.find((s) => !failedSrcs.has(s)) ?? null;
+  }, [media.render, media.avatar, failedSrcs]);
 
   // Record a successful lookup in the recent-characters MRU (identity only; the profile re-fetches).
   useEffect(() => {
@@ -75,7 +82,7 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
       return;
     }
     setFormError("");
-    setBrokenAvatar("");
+    setFailedSrcs(new Set());
     setSubmitted({ realmSlug: slug, characterName: character });
   }
 
@@ -84,7 +91,7 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
     setRealm(r.realmSlug);
     setName(r.characterName);
     setFormError("");
-    setBrokenAvatar("");
+    setFailedSrcs(new Set());
     setSubmitted({ realmSlug: r.realmSlug, characterName: r.characterName });
   }
 
@@ -177,8 +184,21 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
       {sub && <p className="muted">{sub}</p>}
       {char && (
         <div className="charcard">
-          {avatar && avatar !== brokenAvatar && (
-            <img className="avatar" src={avatar} alt="" onError={() => setBrokenAvatar(avatar)} />
+          {imageSrc ? (
+            <img
+              className={imageSrc === media.render ? "char-render" : "avatar"}
+              src={imageSrc}
+              alt=""
+              onError={() => setFailedSrcs((prev) => new Set(prev).add(imageSrc))}
+            />
+          ) : (
+            <div
+              className="avatar avatar-placeholder"
+              aria-hidden="true"
+              style={{ color: classColor(char.character_class?.id) }}
+            >
+              {char.name?.[0]?.toUpperCase() ?? "?"}
+            </div>
           )}
           <div>
             <h3 style={{ margin: "0 0 .25rem" }}>
@@ -196,7 +216,10 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
               {currentIsFavorited ? "★ Favorited" : "☆ Favorite"}
             </button>
             <p style={{ margin: ".1rem 0" }}>
-              Level {char.level} {loc(char.race?.name)} {loc(char.character_class?.name)}
+              Level {char.level} {loc(char.race?.name)}{" "}
+              <span style={{ color: classColor(char.character_class?.id), fontWeight: 600 }}>
+                {loc(char.character_class?.name)}
+              </span>
               {char.active_spec?.name ? ` · ${loc(char.active_spec.name)}` : ""}
             </p>
             {char.guild?.name ? (

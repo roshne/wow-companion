@@ -153,6 +153,24 @@ input {
   border-radius: 8px;
   border: 1px solid var(--border);
 }
+/* Full-body character render (main-raw / main): a tall transparent PNG, sized to the card. */
+.char-render {
+  width: 120px;
+  height: auto;
+  max-height: 220px;
+  object-fit: contain;
+  object-position: top center;
+  align-self: flex-start;
+}
+/* Fallback when a character has no render or avatar: the initial, tinted by class colour. */
+.avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  font-weight: 700;
+  background: var(--border);
+}
 .stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

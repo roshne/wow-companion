@@ -296,12 +296,24 @@ export async function fetchCharacterProfessions(
   return unwrap(data, response);
 }
 
-/** Best-effort character avatar URL from the media document. Returns `null` when unavailable. */
-export async function fetchCharacterAvatar(
+/** A character's portrait image URLs from the media document — best-effort, either may be `null`. */
+export interface CharacterMedia {
+  /** Full-body render: the `main-raw` asset (preferred) or `main`. */
+  render: string | null;
+  /** The small square `avatar` asset. */
+  avatar: string | null;
+}
+
+/**
+ * Best-effort character portrait URLs from the media document. Returns both the full-body `render`
+ * (preferring `main-raw` over `main`) and the square `avatar`; each is `null` when that asset — or the
+ * whole document — is unavailable, so a caller can fall back render → avatar → placeholder.
+ */
+export async function fetchCharacterMedia(
   bnet: BlizzardClient,
   realmSlug: string,
   characterName: string,
-): Promise<string | null> {
+): Promise<CharacterMedia> {
   const { data, response } = await bnet.api.GET(
     "/profile/wow/character/{realmSlug}/{characterName}/character-media",
     {
@@ -311,8 +323,9 @@ export async function fetchCharacterAvatar(
       },
     },
   );
-  if (!response.ok) return null;
-  return data?.assets?.find((x) => x.key === "avatar")?.value ?? null;
+  if (!response.ok) return { render: null, avatar: null };
+  const asset = (key: string) => data?.assets?.find((x) => x.key === key)?.value ?? null;
+  return { render: asset("main-raw") ?? asset("main"), avatar: asset("avatar") };
 }
 
 // Guild reads — all four share the profile namespace and a `{realmSlug, nameSlug}` path.
@@ -506,14 +519,14 @@ export const characterQuery = (bnet: BlizzardClient, realmSlug: string, characte
     staleTime: 60 * SECOND,
   });
 
-export const characterAvatarQuery = (
+export const characterMediaQuery = (
   bnet: BlizzardClient,
   realmSlug: string,
   characterName: string,
 ) =>
   queryOptions({
     queryKey: queryKeys.characterMedia(bnet.region, realmSlug, characterName),
-    queryFn: () => fetchCharacterAvatar(bnet, realmSlug, characterName),
+    queryFn: () => fetchCharacterMedia(bnet, realmSlug, characterName),
     staleTime: 30 * MINUTE,
   });
 
