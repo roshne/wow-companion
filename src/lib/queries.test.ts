@@ -8,11 +8,11 @@ import {
   fetchTokenIndex,
   fetchConnectedRealms,
   fetchCharacter,
-  fetchCharacterAvatar,
+  fetchCharacterMedia,
   tokenQuery,
   connectedRealmsQuery,
   characterQuery,
-  characterAvatarQuery,
+  characterMediaQuery,
   fetchRealmIndex,
   realmIndexQuery,
   fetchCharacterEquipment,
@@ -231,29 +231,56 @@ describe("fetchCharacter", () => {
   });
 });
 
-describe("fetchCharacterAvatar", () => {
-  it("returns the avatar asset value when present", async () => {
+describe("fetchCharacterMedia", () => {
+  it("prefers the main-raw render and returns the avatar too", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({
+      data: {
+        assets: [
+          { key: "avatar", value: "http://img/a.jpg" },
+          { key: "main", value: "http://img/main.jpg" },
+          { key: "main-raw", value: "http://img/raw.png" },
+        ],
+      },
+      response: mockResponse(200),
+    });
+    await expect(fetchCharacterMedia(bnet, "r", "n")).resolves.toEqual({
+      render: "http://img/raw.png",
+      avatar: "http://img/a.jpg",
+    });
+  });
+
+  it("falls back to the main render when there is no main-raw", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({
+      data: { assets: [{ key: "main", value: "http://img/main.jpg" }] },
+      response: mockResponse(200),
+    });
+    await expect(fetchCharacterMedia(bnet, "r", "n")).resolves.toEqual({
+      render: "http://img/main.jpg",
+      avatar: null,
+    });
+  });
+
+  it("returns a null render (avatar only) when no full-body asset exists", async () => {
     const { bnet, get } = mockBnet();
     get.mockResolvedValue({
       data: { assets: [{ key: "avatar", value: "http://img/a.jpg" }] },
       response: mockResponse(200),
     });
-    await expect(fetchCharacterAvatar(bnet, "r", "n")).resolves.toBe("http://img/a.jpg");
-  });
-
-  it("returns null when there is no avatar asset", async () => {
-    const { bnet, get } = mockBnet();
-    get.mockResolvedValue({
-      data: { assets: [{ key: "main", value: "x" }] },
-      response: mockResponse(200),
+    await expect(fetchCharacterMedia(bnet, "r", "n")).resolves.toEqual({
+      render: null,
+      avatar: "http://img/a.jpg",
     });
-    await expect(fetchCharacterAvatar(bnet, "r", "n")).resolves.toBeNull();
   });
 
-  it("returns null (best-effort) on a non-OK response instead of throwing", async () => {
+  it("returns both null (best-effort) on a non-OK response instead of throwing", async () => {
     const { bnet, get } = mockBnet();
     get.mockResolvedValue({ data: undefined, response: mockResponse(404) });
-    await expect(fetchCharacterAvatar(bnet, "r", "n")).resolves.toBeNull();
+    await expect(fetchCharacterMedia(bnet, "r", "n")).resolves.toEqual({
+      render: null,
+      avatar: null,
+    });
   });
 });
 
@@ -576,13 +603,13 @@ describe("query-option factories", () => {
     expect(connectedRealmsQuery(bnet).staleTime).toBe(5 * 60_000);
     expect(characterQuery(bnet, "r", "n").queryKey).toEqual(["character", "kr", "r", "n"]);
     expect(characterQuery(bnet, "r", "n").staleTime).toBe(60_000);
-    expect(characterAvatarQuery(bnet, "r", "n").queryKey).toEqual([
+    expect(characterMediaQuery(bnet, "r", "n").queryKey).toEqual([
       "character-media",
       "kr",
       "r",
       "n",
     ]);
-    expect(characterAvatarQuery(bnet, "r", "n").staleTime).toBe(30 * 60_000);
+    expect(characterMediaQuery(bnet, "r", "n").staleTime).toBe(30 * 60_000);
     expect(realmIndexQuery(bnet).queryKey).toEqual(["realm-index", "kr"]);
     expect(realmIndexQuery(bnet).staleTime).toBe(60 * 60_000);
     expect(characterEquipmentQuery(bnet, "r", "n").queryKey).toEqual([

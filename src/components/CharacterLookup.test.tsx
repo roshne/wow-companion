@@ -4,8 +4,28 @@ import { CharacterLookup } from "./CharacterLookup";
 import { renderWithClient } from "../test/utils";
 import { mockBnet, mockResponse } from "../test/mocks";
 import { addRecentCharacter, toggleFavoriteCharacter } from "../lib/persist";
+import { CLASS_COLORS } from "../lib/wow";
 
 const MEDIA_PATH = "/profile/wow/character/{realmSlug}/{characterName}/character-media";
+
+/** Route the character summary and its media doc (assets) separately. */
+function routeChar(
+  get: ReturnType<typeof mockBnet>["get"],
+  opts: { summary?: unknown; assets?: { key: string; value: string }[] } = {},
+) {
+  get.mockImplementation((path: string) => {
+    if (path === MEDIA_PATH) {
+      return Promise.resolve({
+        data: { assets: opts.assets ?? [] },
+        response: mockResponse(200),
+      });
+    }
+    return Promise.resolve({
+      data: opts.summary ?? { name: "Asmon", level: 70, realm: { name: "Tichondrius" } },
+      response: mockResponse(200),
+    });
+  });
+}
 
 function fillAndSubmit(realm: string, name: string) {
   fireEvent.change(screen.getByPlaceholderText(/Realm/), { target: { value: realm } });
@@ -29,30 +49,65 @@ describe("CharacterLookup", () => {
     );
   });
 
-  it("looks up a character and then fetches the avatar as a dependent query", async () => {
+  it("looks up a character and then fetches the media as a dependent query", async () => {
     const { bnet, get } = mockBnet();
-    get.mockImplementation((path: string) => {
-      if (path === MEDIA_PATH) {
-        return Promise.resolve({
-          data: { assets: [{ key: "avatar", value: "http://img/a.jpg" }] },
-          response: mockResponse(200),
-        });
-      }
-      return Promise.resolve({
-        data: { name: "Asmon", level: 70, realm: { name: "Tichondrius" } },
-        response: mockResponse(200),
-      });
-    });
+    routeChar(get, { assets: [{ key: "avatar", value: "http://img/a.jpg" }] });
     const { container } = renderWithClient(<CharacterLookup bnet={bnet} />);
 
     fillAndSubmit("Tichondrius", "Asmon");
 
     await waitFor(() => expect(screen.getByText("Asmon")).toBeInTheDocument());
-    // Avatar query only fires after the character query succeeds.
+    // Media query only fires after the character query succeeds.
     await waitFor(() => expect(get).toHaveBeenCalledWith(MEDIA_PATH, expect.anything()));
+    // With only an avatar asset, the avatar is used as the portrait.
     await waitFor(() =>
       expect(container.querySelector("img.avatar")).toHaveAttribute("src", "http://img/a.jpg"),
     );
+  });
+
+  it("renders the full-body render when a main-raw asset is present", async () => {
+    const { bnet, get } = mockBnet();
+    routeChar(get, {
+      assets: [
+        { key: "avatar", value: "http://img/a.jpg" },
+        { key: "main-raw", value: "http://img/raw.png" },
+      ],
+    });
+    const { container } = renderWithClient(<CharacterLookup bnet={bnet} />);
+
+    fillAndSubmit("Tichondrius", "Asmon");
+    await waitFor(() =>
+      expect(container.querySelector("img.char-render")).toHaveAttribute(
+        "src",
+        "http://img/raw.png",
+      ),
+    );
+    expect(container.querySelector("img.avatar")).toBeNull();
+  });
+
+  it("shows an initial-letter placeholder when the character has no media images", async () => {
+    const { bnet, get } = mockBnet();
+    routeChar(get, { assets: [] });
+    const { container } = renderWithClient(<CharacterLookup bnet={bnet} />);
+
+    fillAndSubmit("Tichondrius", "Asmon");
+    await screen.findByRole("heading", { name: /Asmon/ });
+    await waitFor(() =>
+      expect(container.querySelector(".avatar-placeholder")).toHaveTextContent("A"),
+    );
+    expect(container.querySelector("img")).toBeNull();
+  });
+
+  it("colors the class name by class", async () => {
+    const { bnet, get } = mockBnet();
+    routeChar(get, {
+      summary: { name: "Asmon", level: 70, character_class: { id: 8, name: "Mage" } },
+    });
+    renderWithClient(<CharacterLookup bnet={bnet} />);
+
+    fillAndSubmit("Tichondrius", "Asmon");
+    const className = await screen.findByText("Mage");
+    expect(className).toHaveStyle({ color: CLASS_COLORS.Mage });
   });
 
   it("shows a not-found message on a 404", async () => {

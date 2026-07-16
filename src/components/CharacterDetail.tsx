@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { BlizzardClient } from "../vendor/battlenet-wow-client";
 import { loc } from "../lib/types";
-import { QUALITY_COLORS } from "../lib/wow";
+import { QUALITY_COLORS, FACTION_COLORS } from "../lib/wow";
 import {
   characterEquipmentQuery,
   characterMythicKeystoneQuery,
@@ -86,7 +86,13 @@ function Overview({ summary }: { summary: CharacterSummary }) {
     <dl className="stats">
       <div>
         <dt>Faction</dt>
-        <dd>{loc(summary.faction?.name) || "—"}</dd>
+        <dd
+          style={{
+            color: summary.faction?.type ? FACTION_COLORS[summary.faction.type] : undefined,
+          }}
+        >
+          {loc(summary.faction?.name) || "—"}
+        </dd>
       </div>
       <div>
         <dt>Item level</dt>
