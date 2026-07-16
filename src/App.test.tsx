@@ -53,6 +53,12 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { name: "Auction House" })).toBeInTheDocument();
   });
 
+  it("shows the build-time version stamp in the footer", async () => {
+    renderWithClient(<App />);
+    // vitest injects a fixed __BUILD_ID__ (see vitest.config.ts).
+    expect(await screen.findByText("v0.0.0-test")).toBeInTheDocument();
+  });
+
   it("restores the persisted region on load", async () => {
     localStorage.setItem("wow-companion:region", "eu");
     renderWithClient(<App />);
