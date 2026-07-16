@@ -20,7 +20,10 @@ function buildStamp(): string {
   return `${date}-${time}`;
 }
 
-const buildId = `v${version}-${buildStamp()}`;
+// The timestamp is a during-alpha/beta build aid: append it only for pre-1.0 (0.x) or prerelease
+// versions so it self-drops at a stable release, leaving just the semver (e.g. "v1.0.0").
+const isPrerelease = /^0\.|-/.test(version);
+const buildId = isPrerelease ? `v${version}-${buildStamp()}` : `v${version}`;
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
