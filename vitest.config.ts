@@ -1,10 +1,11 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
-// Two projects so app-owned lib helpers run lean under Node while React components run under jsdom
-// with Testing Library. Standalone from vite.config.ts (which is Tauri-tuned) so the test run doesn't
-// pull in the dev-server/plugin setup. Globs are disjoint by extension: `.test.ts` → lib, `.test.tsx`
-// → components.
+// Three projects so app-owned lib helpers run lean under Node while React components run under jsdom
+// with Testing Library, and the release/version scripts run under Node against real files. Standalone
+// from vite.config.ts (which is Tauri-tuned) so the test run doesn't pull in the dev-server/plugin
+// setup. Globs are disjoint by extension/path: `src/**/*.test.ts` → lib, `src/**/*.test.tsx` →
+// components, `scripts/**/*.test.mjs` → scripts.
 export default defineConfig({
   test: {
     projects: [
@@ -13,6 +14,13 @@ export default defineConfig({
           name: "lib",
           environment: "node",
           include: ["src/**/*.test.ts"],
+        },
+      },
+      {
+        test: {
+          name: "scripts",
+          environment: "node",
+          include: ["scripts/**/*.test.mjs"],
         },
       },
       {
