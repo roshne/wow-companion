@@ -87,11 +87,16 @@ Then, in the app: paste a **Client ID / Secret** (see _Getting a Client ID & Sec
 _Save to keychain_ → pick a **region** → explore the **WoW Token**, **Realm Status**,
 **Character**, and **Guild** tabs.
 
-Build the full installers (MSI/NSIS):
+Build the Windows installer (NSIS) + updater artifacts:
 
 ```bash
-npm run tauri build
+npm run build:installer   # -> src-tauri/target/release/bundle/nsis/*_x64-setup.exe
 ```
+
+The app **auto-updates**: on launch it checks the latest GitHub Release and, if a newer signed
+version exists, offers an in-place install. The installer is currently unsigned, so Windows
+SmartScreen may warn on first run (**More info → Run anyway**). Signing-key setup and what's deferred
+to the release workflow (#45) are in [`docs/updater.md`](docs/updater.md).
 
 ## Getting a Client ID & Secret
 
