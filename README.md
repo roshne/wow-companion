@@ -95,8 +95,9 @@ npm run build:installer   # -> src-tauri/target/release/bundle/nsis/*_x64-setup.
 
 The app **auto-updates**: on launch it checks the latest GitHub Release and, if a newer signed
 version exists, offers an in-place install. The installer is currently unsigned, so Windows
-SmartScreen may warn on first run (**More info → Run anyway**). Signing-key setup and what's deferred
-to the release workflow (#45) are in [`docs/updater.md`](docs/updater.md).
+SmartScreen may warn on first run (**More info → Run anyway**). Cutting a release (`npm run bump` →
+tag → the release workflow drafts a GitHub Release) and signing-key setup are in
+[`docs/updater.md`](docs/updater.md).
 
 ## Getting a Client ID & Secret
 

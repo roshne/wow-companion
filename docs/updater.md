@@ -54,7 +54,43 @@ OV/EV certificate) can be added later without touching the updater setup.
   `npm run tauri build -- --bundles nsis -c "{\"bundle\":{\"createUpdaterArtifacts\":false}}"`.
 - `npm run build:exe` / `npm run app` use `--no-bundle`, so they never need the key.
 
-## `latest.json` format (assembled by the release workflow, #45)
+## Cutting a release
+
+Releases are automated by the [`Release`](../.github/workflows/release.yml) workflow, triggered by
+pushing a **`v*` tag**. The version lives in four files (`package.json`, `tauri.conf.json`,
+`Cargo.toml`, and the `wow-companion` entry in `Cargo.lock`); `npm run bump` is the single source of
+truth that rewrites all four at once.
+
+1. **Bump the version** and commit it:
+
+   ```bash
+   npm run bump 0.2.0
+   git commit -am "chore(release): v0.2.0"
+   ```
+
+2. **Tag and push.** The tag must match the version you just bumped (the workflow asserts this):
+
+   ```bash
+   git tag v0.2.0
+   git push && git push origin v0.2.0
+   ```
+
+3. **The workflow** checks out the tag, verifies the four versions agree with it
+   (`npm run check:versions -- --tag v0.2.0`), builds the signed installer + updater artifact,
+   assembles `latest.json` ([`scripts/make-latest-json.mjs`](../scripts/make-latest-json.mjs)), and
+   creates a **draft** GitHub Release with the installer and `latest.json` attached.
+
+4. **Review and publish** the draft on GitHub. Publishing is the manual gate: the updater endpoint
+   resolves `/releases/latest/…` only to a **published, non-prerelease** release, so nothing reaches
+   users until you click Publish. Once published, installed apps see the new `latest.json` on their
+   next launch and offer the update.
+
+> A single `check:versions` (no `--tag`) also runs in the normal test suite, so version drift across
+> the four files fails CI before you ever tag.
+
+## `latest.json` format
+
+The manifest the release workflow attaches (assembled by `scripts/make-latest-json.mjs`):
 
 ```json
 {
@@ -69,10 +105,3 @@ OV/EV certificate) can be added later without touching the updater setup.
   }
 }
 ```
-
-## What's deferred to #45
-
-This PR wires the installer + updater. The **live** update flow can only be exercised once releases
-exist, which is [#45 (release workflow + version bumping)](https://github.com/roshne/wow-companion/issues/45):
-tag → build the installer + signed artifact → generate `latest.json` → publish a GitHub Release the
-`endpoints` URL resolves to. Until then, `check()` 404s and the app simply reports no update.

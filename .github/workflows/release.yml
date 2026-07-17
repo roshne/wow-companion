@@ -1,0 +1,67 @@
+name: Release
+
+# Cut a release from a version tag: build the signed NSIS installer + updater artifact, assemble the
+# updater manifest (latest.json), and publish them to a GitHub Release. Triggered by pushing a `v*`
+# tag (see `npm run bump`, which rewrites the version files and prints the tag steps).
+#
+# The release is created as a DRAFT on purpose — it's the manual publish gate. The updater endpoint
+# (plugins.updater.endpoints in tauri.conf.json) resolves `/releases/latest/…` only to a *published*,
+# non-prerelease release, so nothing ships to users until the maintainer reviews the draft and clicks
+# Publish. Version drift across the source files, or a tag that disagrees with them, fails the build
+# before anything is published.
+#
+# Requires the same two repo secrets as the Installer workflow (generate with
+# `npm run tauri signer generate`):
+#   TAURI_SIGNING_PRIVATE_KEY           — contents of the generated private-key file
+#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD  — the password chosen at generation time
+on:
+  push:
+    tags:
+      - "v*"
+
+# Creating the Release and uploading assets needs write access to repository contents.
+permissions:
+  contents: write
+
+# Never cancel a release mid-flight if another tag lands.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows-release:
+    name: Windows release (NSIS + updater)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      # Guard: the pushed tag must match the (agreed) version in the source files, or the installer
+      # and latest.json would advertise a version the release URL doesn't match.
+      - run: node scripts/check-versions.mjs --tag ${{ github.ref_name }}
+      # createUpdaterArtifacts is on, so this signs the update artifact and emits its .sig.
+      - run: npm run build:installer
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      # Assemble latest.json (reads the installer's .sig, points the URL at this tag's release).
+      - run: node scripts/make-latest-json.mjs --tag ${{ github.ref_name }}
+      - name: Create draft release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" \
+            --draft \
+            --title "$TAG" \
+            --generate-notes \
+            src-tauri/target/release/bundle/nsis/*-setup.exe \
+            latest.json
