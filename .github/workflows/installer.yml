@@ -1,0 +1,41 @@
+name: Installer
+
+# Build the (unsigned) NSIS installer + signed updater artifacts on demand. Manual-only so it never
+# runs automatically and can't break `main`. The tag-triggered release that publishes these to a
+# GitHub Release with a generated latest.json is issue #45.
+#
+# Requires two repo secrets for the updater signature (generate with `npm run tauri signer generate`):
+#   TAURI_SIGNING_PRIVATE_KEY           — contents of the generated private-key file
+#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD  — the password chosen at generation time
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-installer:
+    name: Windows installer (NSIS)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      # `bundle.createUpdaterArtifacts` is on, so the build signs the update artifact with this key.
+      - run: npm run build:installer
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wow-companion-installer
+          # The NSIS setup .exe plus the updater artifact + its .sig.
+          path: src-tauri/target/release/bundle/nsis/*
+          if-no-files-found: error

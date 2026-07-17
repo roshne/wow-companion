@@ -22,6 +22,9 @@ tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
 # Data-API requests are made from Rust (via the HTTP plugin) so they bypass webview CORS.
 tauri-plugin-http = "2"
+# In-app updates: check a signed manifest, download + install the next installer, then relaunch.
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 # OAuth token exchange (the client secret never leaves Rust).
