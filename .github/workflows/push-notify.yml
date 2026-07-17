@@ -10,4 +10,8 @@ on:
 jobs:
   notify:
     uses: roshne/addon-ci/.github/workflows/push-notify.yml@main
+    # Run the notify job on our own Linux runner too (0 billed min); the reusable
+    # workflow executes on this caller's runners. Requires addon-ci#8.
+    with:
+      runner: '["self-hosted", "linux"]'
     secrets: inherit

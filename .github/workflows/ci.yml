@@ -17,7 +17,8 @@ concurrency:
 jobs:
   frontend:
     name: Frontend (lint · typecheck · test · build)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]      # NucBox G5 self-hosted runner (0 billed min)
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -36,7 +37,8 @@ jobs:
     # Windows-native app: keyring uses the windows-native backend and the
     # webview is WebView2, so we gate on the real target platform. This also
     # avoids installing the Linux webkit2gtk stack just to compile Tauri.
-    runs-on: windows-latest
+    runs-on: [self-hosted, windows]    # dev-box self-hosted runner (0 billed min)
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: src-tauri
@@ -58,29 +60,18 @@ jobs:
     # The Windows job above gates the shipping target; this job verifies the app also
     # compiles for Linux — chiefly the Linux-only keyring backend (Secret Service /
     # libdbus) that the Windows build never exercises.
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]      # NucBox G5 self-hosted runner (0 billed min)
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: src-tauri
     steps:
       - uses: actions/checkout@v4
       # webkitgtk (Tauri's webview) and libdbus-1 (keyring Secret Service backend) are
-      # linked at build time, so they must be present for cargo check/clippy/test.
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            build-essential \
-            curl \
-            wget \
-            file \
-            libxdo-dev \
-            libssl-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            libdbus-1-dev \
-            pkg-config
+      # linked at build time. They're pre-installed on the self-hosted runner, so there
+      # is no apt step here: libwebkit2gtk-4.1-dev build-essential curl wget file
+      # libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev libdbus-1-dev
+      # pkg-config.
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
