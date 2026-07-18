@@ -25,6 +25,19 @@ function App() {
   const [region, setRegion] = useState<Region>(loadRegion);
   const [tab, setTab] = useState<Tab>("token");
   const [status, setStatus] = useState("");
+  // A character to open on the Character tab (set when a Warband roster row is clicked); cleared
+  // once CharacterLookup has consumed it, so it's a one-shot open.
+  const [selectedCharacter, setSelectedCharacter] = useState<{
+    realm: string;
+    characterName: string;
+  } | null>(null);
+
+  // Open a character's detail sheet from elsewhere (e.g. the Warband roster): switch to the tab and
+  // hand the selection to CharacterLookup.
+  function openCharacter(sel: { realm: string; characterName: string }) {
+    setSelectedCharacter(sel);
+    setTab("character");
+  }
 
   // Rebuilt when the region changes; children re-fetch against the new region.
   const bnet = useMemo(() => makeClient(region), [region]);
@@ -154,10 +167,16 @@ function App() {
       <ErrorBoundary resetKeys={[tab, region]}>
         {tab === "token" && <TokenPrice token={token} />}
         {tab === "realms" && <RealmStatus bnet={bnet} />}
-        {tab === "character" && <CharacterLookup bnet={bnet} />}
+        {tab === "character" && (
+          <CharacterLookup
+            bnet={bnet}
+            initial={selectedCharacter}
+            onConsumed={() => setSelectedCharacter(null)}
+          />
+        )}
         {tab === "guild" && <GuildLookup bnet={bnet} />}
         {tab === "auctions" && <AuctionHouse bnet={bnet} />}
-        {tab === "warband" && <Warband />}
+        {tab === "warband" && <Warband onOpenCharacter={openCharacter} />}
       </ErrorBoundary>
 
       <footer className="appfooter muted">{__BUILD_ID__}</footer>

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { CharacterLookup } from "./CharacterLookup";
 import { renderWithClient } from "../test/utils";
@@ -265,5 +265,51 @@ describe("CharacterLookup", () => {
     expect(screen.getByRole("button", { name: "Overview" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Gear" })).toBeInTheDocument();
     expect(screen.getByText("Horde")).toBeInTheDocument();
+  });
+
+  it("auto-opens a character passed via `initial` and calls onConsumed", async () => {
+    const { bnet, get } = mockBnet();
+    const onConsumed = vi.fn();
+    routeChar(get, { summary: { name: "Asmon", level: 70, realm: { name: "Tichondrius" } } });
+    renderWithClient(
+      <CharacterLookup
+        bnet={bnet}
+        initial={{ realm: "Tichondrius", characterName: "Asmon" }}
+        onConsumed={onConsumed}
+      />,
+    );
+
+    await screen.findByRole("heading", { name: /Asmon/ });
+    await waitFor(() => expect(onConsumed).toHaveBeenCalled());
+  });
+
+  it("resolves an `initial` realm through the realm index before opening", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockImplementation((path: string) =>
+      path === REALM_INDEX_PATH
+        ? Promise.resolve({
+            data: { realms: [{ name: "Aggra (Português)", slug: "aggra-portugues" }] },
+            response: mockResponse(200),
+          })
+        : Promise.resolve({ data: { name: "Asmon", level: 70 }, response: mockResponse(200) }),
+    );
+    renderWithClient(
+      <CharacterLookup
+        bnet={bnet}
+        initial={{ realm: "Aggra (Português)", characterName: "Asmon" }}
+        onConsumed={() => {}}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(get).toHaveBeenCalledWith(
+        CHARACTER_PATH,
+        expect.objectContaining({
+          params: expect.objectContaining({
+            path: { realmSlug: "aggra-portugues", characterName: "asmon" },
+          }),
+        }),
+      ),
+    );
   });
 });

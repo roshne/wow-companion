@@ -74,4 +74,27 @@ describe("App", () => {
     fireEvent.change(select, { target: { value: "kr" } });
     await waitFor(() => expect(localStorage.getItem("wow-companion:region")).toBe("kr"));
   });
+
+  it("opens a character's sheet from the Warband roster", async () => {
+    mockInvoke.mockImplementation((cmd: string) => {
+      if (cmd === "has_credentials") return Promise.resolve(true);
+      if (cmd === "get_warband")
+        return Promise.resolve({
+          account: "ACC",
+          source: "s",
+          characters: [{ name: "Kobrick", realm: "Eitrigg" }],
+        });
+      return Promise.resolve(undefined);
+    });
+    renderWithClient(<App />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Warband" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Kobrick" }));
+
+    // Switched to the Character tab, with the roster entry seeded into the lookup form.
+    await screen.findByRole("heading", { name: "Character Lookup" });
+    const realmInput = screen.getByPlaceholderText(/Realm/);
+    await waitFor(() => expect(realmInput).toHaveValue("Eitrigg"));
+    expect(screen.getByPlaceholderText("Character name")).toHaveValue("Kobrick");
+  });
 });
