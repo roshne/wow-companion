@@ -7,8 +7,8 @@
 
 use std::path::PathBuf;
 
-use mlua::{Lua, Table};
-use serde::Serialize;
+use mlua::{Lua, LuaSerdeExt, Table, Value};
+use serde::{Deserialize, Serialize};
 
 /// One character extracted from `WarbandeerCharDB.characters[name]`. Most fields are
 /// optional — not every alt has every field populated.
@@ -42,60 +42,126 @@ pub struct WarbandData {
     pub characters: Vec<WarbandCharacter>,
 }
 
-fn get_str(t: &Table, key: &str) -> Option<String> {
-    t.get::<Option<String>>(key).ok().flatten()
+// --- Raw deserialize model -------------------------------------------------
+//
+// A faithful mirror of the on-disk `characters[name]` table shape, deserialized
+// straight off the Lua value via `LuaSerdeExt::from_value`. Every field is
+// `Option<_>` (a missing key becomes `None`; unmodelled keys are ignored), and
+// **every numeric is `f64`**: WoW's Lua has no separate integer subtype, so a cell
+// can hold any double. serde's float visitor also accepts integer visits, making
+// `f64` total for every numeric cell — we cast to `i64` only when building the
+// public `WarbandCharacter` payload below.
+
+#[derive(Debug, Deserialize)]
+struct RawCharacter {
+    name: Option<String>,
+    realm: Option<String>,
+    guid: Option<String>,
+    #[serde(rename = "classId")]
+    class_id: Option<f64>,
+    #[serde(rename = "classKey")]
+    class_key: Option<String>,
+    #[serde(rename = "className")]
+    class_name: Option<String>,
+    #[serde(rename = "isAlliance")]
+    is_alliance: Option<bool>,
+    guild: Option<String>,
+    ilvl: Option<f64>,
+    basic: Option<RawBasic>,
+    equipment: Option<RawEquipment>,
 }
 
-fn get_int(t: &Table, key: &str) -> Option<i64> {
-    t.get::<Option<i64>>(key).ok().flatten()
+#[derive(Debug, Deserialize)]
+struct RawBasic {
+    level: Option<f64>,
+    specialization: Option<RawSpec>,
+    professions: Option<RawProfessions>,
 }
 
-fn get_table(t: &Table, key: &str) -> Option<Table> {
-    t.get::<Option<Table>>(key).ok().flatten()
+#[derive(Debug, Deserialize)]
+struct RawSpec {
+    active: Option<String>,
+    key: Option<String>,
+    role: Option<String>,
 }
 
-fn extract_character(name_key: String, c: &Table) -> WarbandCharacter {
-    let basic = get_table(c, "basic");
-    let spec = basic.as_ref().and_then(|b| get_table(b, "specialization"));
-    let profs = basic.as_ref().and_then(|b| get_table(b, "professions"));
-    let equipment = get_table(c, "equipment");
+#[derive(Debug, Deserialize)]
+struct RawProfessions {
+    primary: Option<RawProfession>,
+    secondary: Option<RawProfession>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RawProfession {
+    name: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RawEquipment {
+    ilvl: Option<f64>,
+}
+
+/// Fold a deserialized `RawCharacter` into the flat public payload, applying the
+/// fallbacks the file shape doesn't encode and casting numerics to `i64` here — at
+/// the payload edge — rather than at deserialize time.
+fn build_character(name_key: String, raw: RawCharacter) -> WarbandCharacter {
+    let RawCharacter {
+        name,
+        realm,
+        guid,
+        class_id,
+        class_key,
+        class_name,
+        is_alliance,
+        guild,
+        ilvl,
+        basic,
+        equipment,
+    } = raw;
+
+    let (level, spec, professions) = match basic {
+        Some(b) => (b.level, b.specialization, b.professions),
+        None => (None, None, None),
+    };
+    let (spec_active, spec_key, role) = match spec {
+        Some(s) => (s.active, s.key, s.role),
+        None => (None, None, None),
+    };
+    let (profession_primary, profession_secondary) = match professions {
+        Some(p) => (
+            p.primary.and_then(|x| x.name),
+            p.secondary.and_then(|x| x.name),
+        ),
+        None => (None, None),
+    };
 
     WarbandCharacter {
-        name: get_str(c, "name").unwrap_or(name_key),
-        realm: get_str(c, "realm").unwrap_or_default(),
-        guid: get_str(c, "guid"),
-        class_id: get_int(c, "classId"),
-        class_key: get_str(c, "classKey"),
-        class_name: get_str(c, "className"),
-        level: basic.as_ref().and_then(|b| get_int(b, "level")),
-        item_level: equipment
-            .as_ref()
-            .and_then(|e| get_int(e, "ilvl"))
-            .or_else(|| get_int(c, "ilvl")),
-        spec: spec
-            .as_ref()
-            .and_then(|s| get_str(s, "active").or_else(|| get_str(s, "key"))),
-        role: spec.as_ref().and_then(|s| get_str(s, "role")),
-        profession_primary: profs
-            .as_ref()
-            .and_then(|p| get_table(p, "primary"))
-            .and_then(|p| get_str(&p, "name")),
-        profession_secondary: profs
-            .as_ref()
-            .and_then(|p| get_table(p, "secondary"))
-            .and_then(|p| get_str(&p, "name")),
-        guild: get_str(c, "guild"),
-        faction: c
-            .get::<Option<bool>>("isAlliance")
-            .ok()
-            .flatten()
-            .map(|a| if a { "Alliance" } else { "Horde" }.to_string()),
+        // Prefer a non-empty in-entry name, else fall back to the table key.
+        name: name.filter(|s| !s.is_empty()).unwrap_or(name_key),
+        realm: realm.unwrap_or_default(),
+        guid,
+        class_id: class_id.map(|n| n as i64),
+        class_key,
+        class_name,
+        level: level.map(|n| n as i64),
+        // equipment.ilvl wins over the top-level ilvl.
+        item_level: equipment.and_then(|e| e.ilvl).or(ilvl).map(|n| n as i64),
+        // specialization.active wins over specialization.key.
+        spec: spec_active.or(spec_key),
+        role,
+        profession_primary,
+        profession_secondary,
+        guild,
+        faction: is_alliance.map(|a| if a { "Alliance" } else { "Horde" }.to_string()),
     }
 }
 
 /// Parse a `Warbandeer_Characters.lua` body into a name-sorted character list.
 fn parse_from_lua(content: &str) -> Result<Vec<WarbandCharacter>, String> {
     let lua = Lua::new();
+    // Load the chunk into an *empty* environment: the file can assign its data table
+    // but can't reach any Lua stdlib. The global is then read back from that env,
+    // never from `lua.globals()`.
     let env = lua.create_table().map_err(|e| e.to_string())?;
     lua.load(content)
         .set_name("Warbandeer_Characters.lua")
@@ -111,9 +177,13 @@ fn parse_from_lua(content: &str) -> Result<Vec<WarbandCharacter>, String> {
         .map_err(|_| "WarbandeerCharDB has no `characters` table".to_string())?;
 
     let mut out = Vec::new();
-    // `.flatten()` skips any malformed (Err) entry rather than failing the whole read.
-    for (name_key, c) in characters.pairs::<String, Table>().flatten() {
-        out.push(extract_character(name_key, &c));
+    // Deserialize each character on its own: `.flatten()` skips an unreadable pair,
+    // and `from_value` failing on one malformed entry drops just that character
+    // rather than failing the whole read.
+    for (name_key, value) in characters.pairs::<String, Value>().flatten() {
+        if let Ok(raw) = lua.from_value::<RawCharacter>(value) {
+            out.push(build_character(name_key, raw));
+        }
     }
     out.sort_by_key(|c| c.name.to_lowercase());
     Ok(out)
@@ -266,6 +336,49 @@ mod tests {
         assert_eq!(b.name, "Bravo");
         assert_eq!(b.level, Some(60));
         assert_eq!(b.item_level, None);
+    }
+
+    // One entry has a string where a numeric cell is expected, so its per-character
+    // `from_value` fails. The good entry must still render.
+    const FIXTURE_MALFORMED: &str = r#"
+        WarbandeerCharDB = {
+          ["characters"] = {
+            ["Good"] = { ["realm"] = "Eitrigg", ["classKey"] = "Mage" },
+            ["Broken"] = { ["realm"] = "Eitrigg", ["classId"] = "not-a-number" },
+          },
+        }
+    "#;
+
+    #[test]
+    fn skips_malformed_character_entry() {
+        let chars = parse_from_lua(FIXTURE_MALFORMED).expect("parse");
+        // The broken entry is dropped, not fatal; the well-formed one survives.
+        assert_eq!(chars.len(), 1);
+        assert_eq!(chars[0].name, "Good");
+        assert_eq!(chars[0].class_key.as_deref(), Some("Mage"));
+    }
+
+    // A fractional ilvl: the old `get_int`/`FromLua<i64>` path errored on the fraction
+    // and silently yielded `None`; the f64-then-cast path keeps it.
+    const FIXTURE_FRACTIONAL: &str = r#"
+        WarbandeerCharDB = {
+          ["characters"] = {
+            ["Frac"] = {
+              ["realm"] = "Eitrigg",
+              ["equipment"] = { ["ilvl"] = 445.5 },
+              ["basic"] = { ["level"] = 70 },
+            },
+          },
+        }
+    "#;
+
+    #[test]
+    fn keeps_fractional_numeric_the_old_i64_path_dropped() {
+        let chars = parse_from_lua(FIXTURE_FRACTIONAL).expect("parse");
+        assert_eq!(chars.len(), 1);
+        // 445.5 deserializes as f64 and casts to 445 at the payload edge.
+        assert_eq!(chars[0].item_level, Some(445));
+        assert_eq!(chars[0].level, Some(70));
     }
 
     /// Opt-in smoke test against a real install: reads the live SavedVariables via the
