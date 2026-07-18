@@ -17,7 +17,7 @@ concurrency:
 jobs:
   frontend:
     name: Frontend (lint · typecheck · test · build)
-    runs-on: [self-hosted, linux]      # NucBox G5 self-hosted runner (0 billed min)
+    runs-on: [self-hosted, linux] # NucBox G5 self-hosted runner (0 billed min)
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -37,7 +37,7 @@ jobs:
     # Windows-native app: keyring uses the windows-native backend and the
     # webview is WebView2, so we gate on the real target platform. This also
     # avoids installing the Linux webkit2gtk stack just to compile Tauri.
-    runs-on: [self-hosted, windows]    # dev-box self-hosted runner (0 billed min)
+    runs-on: [self-hosted, windows] # dev-box self-hosted runner (0 billed min)
     timeout-minutes: 30
     defaults:
       run:
@@ -60,7 +60,7 @@ jobs:
     # The Windows job above gates the shipping target; this job verifies the app also
     # compiles for Linux — chiefly the Linux-only keyring backend (Secret Service /
     # libdbus) that the Windows build never exercises.
-    runs-on: [self-hosted, linux]      # NucBox G5 self-hosted runner (0 billed min)
+    runs-on: [self-hosted, linux] # NucBox G5 self-hosted runner (0 billed min)
     timeout-minutes: 30
     defaults:
       run:

@@ -31,7 +31,7 @@ concurrency:
 jobs:
   windows-release:
     name: Windows release (NSIS + updater)
-    runs-on: [self-hosted, windows]    # dev-box self-hosted runner (0 billed min)
+    runs-on: [self-hosted, windows] # dev-box self-hosted runner (0 billed min)
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
