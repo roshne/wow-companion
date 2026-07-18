@@ -30,7 +30,12 @@ function compare(a: WarbandCharacter, b: WarbandCharacter, key: SortKey): number
   return String(av).localeCompare(String(bv));
 }
 
-export function Warband() {
+export function Warband({
+  onOpenCharacter,
+}: {
+  /** Open a character's detail sheet — the roster row's name button calls this. */
+  onOpenCharacter: (sel: { realm: string; characterName: string }) => void;
+}) {
   const [data, setData] = useState<WarbandData | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -123,8 +128,31 @@ export function Warband() {
                 const role = c.role ? (ROLE_LABEL[c.role] ?? c.role) : "";
                 return (
                   <tr key={c.guid ?? `${c.name}-${c.realm}`}>
-                    <td style={{ color, fontWeight: 600, whiteSpace: "nowrap" }}>
-                      {c.name}
+                    <td style={{ whiteSpace: "nowrap" }}>
+                      {c.realm ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onOpenCharacter({ realm: c.realm, characterName: c.name })
+                          }
+                          title={`Open ${c.name}`}
+                          style={{
+                            color,
+                            background: "none",
+                            border: "none",
+                            padding: 0,
+                            cursor: "pointer",
+                            fontFamily: "inherit",
+                            fontSize: "inherit",
+                            fontWeight: 600,
+                            textAlign: "left",
+                          }}
+                        >
+                          {c.name}
+                        </button>
+                      ) : (
+                        <span style={{ color, fontWeight: 600 }}>{c.name}</span>
+                      )}
                       {c.guild ? <span className="muted"> &lt;{c.guild}&gt;</span> : null}
                     </td>
                     <td>{c.realm || "—"}</td>

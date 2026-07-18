@@ -34,7 +34,17 @@ function titleCase(value: string): string {
 }
 
 /** Look up a character's profile summary (+ avatar) by realm slug and name (profile namespace). */
-export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
+export function CharacterLookup({
+  bnet,
+  initial,
+  onConsumed,
+}: {
+  bnet: BlizzardClient;
+  /** A character to open immediately (e.g. from a Warband row); its realm is resolved via the index. */
+  initial?: { realm: string; characterName: string } | null;
+  /** Called once `initial` has been applied, so the caller can clear it (one-shot open). */
+  onConsumed?: () => void;
+}) {
   const [realm, setRealm] = useState("");
   const [name, setName] = useState("");
   const [submitted, setSubmitted] = useState<Submitted | null>(null);
@@ -71,6 +81,21 @@ export function CharacterLookup({ bnet }: { bnet: BlizzardClient }) {
       setRecents(addRecentCharacter({ region: bnet.region, ...submitted }));
     }
   }, [submitted, charQuery.isSuccess, bnet.region]);
+
+  // Open a character handed in from outside (e.g. a Warband row click). Wait for the realm index to
+  // settle so display-name → slug resolution matches a normal search, then submit and let the caller
+  // clear the request (`onConsumed`) so it's a one-shot — re-entering the tab doesn't re-open it.
+  useEffect(() => {
+    if (!initial || realmIndex.isLoading) return;
+    const slug = resolveRealmSlug(initial.realm, realmIndex.data ?? []);
+    const character = toCharacterName(initial.characterName);
+    setRealm(initial.realm);
+    setName(initial.characterName);
+    setFormError("");
+    setFailedSrcs(new Set());
+    setSubmitted(slug && character ? { realmSlug: slug, characterName: character } : null);
+    onConsumed?.();
+  }, [initial, realmIndex.isLoading, realmIndex.data, onConsumed]);
 
   function lookup(e: FormEvent) {
     e.preventDefault();
