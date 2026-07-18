@@ -80,6 +80,29 @@ fn clear_credentials(state: State<AppState>) -> Result<(), String> {
     Ok(())
 }
 
+impl CachedToken {
+    /// Whether this cached token is still safe to use at `now` (unix seconds). Keeps a refresh
+    /// skew so we never hand out a token that could die mid-request.
+    fn is_valid_at(&self, now: u64) -> bool {
+        now + EXPIRY_SKEW_SECS < self.expires_at
+    }
+
+    /// Build a cached token from a fresh exchange response, stamping its absolute expiry off `now`.
+    fn from_response(tr: TokenResponse, now: u64) -> Self {
+        CachedToken {
+            access_token: tr.access_token,
+            expires_at: now + tr.expires_in,
+        }
+    }
+}
+
+/// Split a stored `"<id>\n<secret>"` credential blob into its two halves.
+fn parse_stored_credentials(payload: &str) -> Result<(&str, &str), String> {
+    payload
+        .split_once('\n')
+        .ok_or_else(|| "Stored credentials are malformed.".to_string())
+}
+
 /// Return a valid client-credentials access token, fetching and caching as needed.
 /// The secret is read from the keychain here and never returned to the frontend.
 #[tauri::command]
@@ -88,7 +111,7 @@ async fn get_access_token(state: State<'_, AppState>) -> Result<String, String> 
     {
         let guard = state.token.lock().unwrap();
         if let Some(t) = guard.as_ref() {
-            if now_secs() + EXPIRY_SKEW_SECS < t.expires_at {
+            if t.is_valid_at(now_secs()) {
                 return Ok(t.access_token.clone());
             }
         }
@@ -98,9 +121,7 @@ async fn get_access_token(state: State<'_, AppState>) -> Result<String, String> 
     let payload = cred_entry()?
         .get_password()
         .map_err(|_| "No Battle.net credentials saved. Add them in the app first.".to_string())?;
-    let (client_id, client_secret) = payload
-        .split_once('\n')
-        .ok_or_else(|| "Stored credentials are malformed.".to_string())?;
+    let (client_id, client_secret) = parse_stored_credentials(&payload)?;
 
     // 3. Exchange for a token.
     let resp = reqwest::Client::new()
@@ -120,11 +141,9 @@ async fn get_access_token(state: State<'_, AppState>) -> Result<String, String> 
         .await
         .map_err(|e| format!("could not parse token response: {e}"))?;
 
-    let token = tr.access_token.clone();
-    *state.token.lock().unwrap() = Some(CachedToken {
-        access_token: tr.access_token,
-        expires_at: now_secs() + tr.expires_in,
-    });
+    let cached = CachedToken::from_response(tr, now_secs());
+    let token = cached.access_token.clone();
+    *state.token.lock().unwrap() = Some(cached);
     Ok(token)
 }
 
@@ -146,4 +165,77 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn token(expires_at: u64) -> CachedToken {
+        CachedToken {
+            access_token: "abc".into(),
+            expires_at,
+        }
+    }
+
+    #[test]
+    fn cache_hit_while_outside_the_skew_window() {
+        let t = token(1000);
+        // now + EXPIRY_SKEW_SECS (60) < 1000 while now < 940.
+        assert!(t.is_valid_at(0));
+        assert!(t.is_valid_at(900));
+        assert!(t.is_valid_at(939));
+    }
+
+    #[test]
+    fn cache_miss_at_the_skew_boundary_and_after_expiry() {
+        let t = token(1000);
+        // Exactly at the boundary (now + 60 == 1000) is a miss — the check is strict `<`.
+        assert!(!t.is_valid_at(940));
+        // Inside the refresh window.
+        assert!(!t.is_valid_at(970));
+        // Past the real expiry.
+        assert!(!t.is_valid_at(1000));
+        assert!(!t.is_valid_at(1200));
+    }
+
+    #[test]
+    fn from_response_stamps_absolute_expiry_and_is_immediately_valid() {
+        let tr = TokenResponse {
+            access_token: "tok".into(),
+            expires_in: 3600,
+        };
+        let cached = CachedToken::from_response(tr, 1_000);
+        assert_eq!(cached.access_token, "tok");
+        assert_eq!(cached.expires_at, 4_600);
+        // Fresh token is usable right away: 1000 + 60 < 4600.
+        assert!(cached.is_valid_at(1_000));
+    }
+
+    #[test]
+    fn token_response_parses_and_ignores_extra_battlenet_fields() {
+        // Battle.net returns `token_type`/`scope`/`sub` too; we deserialize only what we use.
+        let json = r#"{"access_token":"xyz","token_type":"bearer","expires_in":86399,"sub":"..."}"#;
+        let tr: TokenResponse = serde_json::from_str(json).expect("parse token response");
+        assert_eq!(tr.access_token, "xyz");
+        assert_eq!(tr.expires_in, 86399);
+    }
+
+    #[test]
+    fn parse_stored_credentials_splits_on_the_first_newline() {
+        assert_eq!(
+            parse_stored_credentials("id123\nsecret456").unwrap(),
+            ("id123", "secret456")
+        );
+        // A secret containing a newline keeps everything after the first split point.
+        assert_eq!(
+            parse_stored_credentials("id\nsec\nret").unwrap(),
+            ("id", "sec\nret")
+        );
+    }
+
+    #[test]
+    fn parse_stored_credentials_rejects_a_blob_with_no_newline() {
+        assert!(parse_stored_credentials("no-newline-here").is_err());
+    }
 }
