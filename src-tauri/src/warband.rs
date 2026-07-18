@@ -312,7 +312,10 @@ mod tests {
     #[test]
     fn extracts_nested_fields() {
         let chars = parse_from_lua(FIXTURE).expect("parse");
-        let k = chars.iter().find(|c| c.name == "Testchar").expect("Testchar");
+        let k = chars
+            .iter()
+            .find(|c| c.name == "Testchar")
+            .expect("Testchar");
         assert_eq!(k.realm, "Testrealm");
         assert_eq!(k.class_key.as_deref(), Some("DeathKnight"));
         assert_eq!(k.level, Some(90));
