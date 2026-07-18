@@ -16,7 +16,7 @@ permissions:
 jobs:
   windows-installer:
     name: Windows installer (NSIS)
-    runs-on: [self-hosted, windows] # dev-box self-hosted runner (0 billed min)
+    runs-on: windows-latest
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
