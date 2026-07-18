@@ -21,7 +21,7 @@ describe("toRealmSlug", () => {
 
 describe("toCharacterName", () => {
   it("trims and lowercases", () => {
-    expect(toCharacterName("  Kobrick ")).toBe("kobrick");
+    expect(toCharacterName("  Testchar ")).toBe("testchar");
   });
 });
 

@@ -15,7 +15,7 @@ const onOpen = vi.fn();
 function character(overrides: Partial<WarbandCharacter> = {}): WarbandCharacter {
   return {
     name: "Nobody",
-    realm: "Eitrigg",
+    realm: "Testrealm",
     guid: null,
     classId: null,
     classKey: null,
@@ -32,7 +32,7 @@ function character(overrides: Partial<WarbandCharacter> = {}): WarbandCharacter 
   };
 }
 
-function warband(characters: WarbandCharacter[], account = "ROSHNE"): WarbandData {
+function warband(characters: WarbandCharacter[], account = "TESTACCOUNT"): WarbandData {
   return { account, source: "C:/wow/SavedVariables/Warbandeer_Characters.lua", characters };
 }
 
@@ -45,17 +45,17 @@ describe("Warband", () => {
   it("auto-loads on mount and renders a roster with the account summary", async () => {
     mockInvoke.mockResolvedValue(
       warband([
-        character({ name: "Kobrick", realm: "Eitrigg", level: 90, itemLevel: 278 }),
-        character({ name: "Bravo", realm: "Norgannon", level: 60, itemLevel: 150 }),
+        character({ name: "Testchar", realm: "Testrealm", level: 90, itemLevel: 278 }),
+        character({ name: "Altchar", realm: "Altrealm", level: 60, itemLevel: 150 }),
       ]),
     );
     render(<Warband onOpenCharacter={onOpen} />);
 
-    await screen.findByText("Kobrick");
-    expect(screen.getByText("Bravo")).toBeInTheDocument();
+    await screen.findByText("Testchar");
+    expect(screen.getByText("Altchar")).toBeInTheDocument();
     expect(mockInvoke).toHaveBeenCalledWith("get_warband");
     // "N characters · account" summary.
-    expect(screen.getByText(/2 characters ·\s*ROSHNE/)).toBeInTheDocument();
+    expect(screen.getByText(/2 characters ·\s*TESTACCOUNT/)).toBeInTheDocument();
   });
 
   it("shows a busy Refresh button while the load is pending", () => {
@@ -108,21 +108,21 @@ describe("Warband", () => {
   });
 
   it("re-invokes the command when Refresh is clicked", async () => {
-    mockInvoke.mockResolvedValue(warband([character({ name: "Kobrick" })]));
+    mockInvoke.mockResolvedValue(warband([character({ name: "Testchar" })]));
     render(<Warband onOpenCharacter={onOpen} />);
 
-    await screen.findByText("Kobrick");
+    await screen.findByText("Testchar");
     expect(mockInvoke).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
     await waitFor(() => expect(mockInvoke).toHaveBeenCalledTimes(2));
   });
 
   it("opens a character when its roster name is clicked", async () => {
-    mockInvoke.mockResolvedValue(warband([character({ name: "Kobrick", realm: "Eitrigg" })]));
+    mockInvoke.mockResolvedValue(warband([character({ name: "Testchar", realm: "Testrealm" })]));
     render(<Warband onOpenCharacter={onOpen} />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Kobrick" }));
-    expect(onOpen).toHaveBeenCalledWith({ realm: "Eitrigg", characterName: "Kobrick" });
+    fireEvent.click(await screen.findByRole("button", { name: "Testchar" }));
+    expect(onOpen).toHaveBeenCalledWith({ realm: "Testrealm", characterName: "Testchar" });
   });
 
   it("does not make a row clickable when it has no realm", async () => {
