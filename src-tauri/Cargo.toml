@@ -47,7 +47,12 @@ keyring = { version = "3", features = ["windows-native"] }
 # Linux CI jobs install `libdbus-1-dev`.
 keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
 
-# Any other target (e.g. macOS until `apple-native` is wired up) falls back to the in-memory
-# mock store so the crate still compiles.
-[target.'cfg(not(any(windows, target_os = "linux")))'.dependencies]
+[target.'cfg(target_os = "macos")'.dependencies]
+# macOS Keychain via the Security framework. Note: this backend is not exercised by our CI
+# (self-hosted Windows + Linux only) and macOS is not yet a build/release target, so it's
+# validated only at dependency-resolution time, not compiled or run.
+keyring = { version = "3", features = ["apple-native"] }
+
+# Any other target falls back to the in-memory mock store so the crate still compiles.
+[target.'cfg(not(any(windows, target_os = "linux", target_os = "macos")))'.dependencies]
 keyring = "3"
