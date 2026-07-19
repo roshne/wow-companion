@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import type { Region } from "../vendor/battlenet-wow-client";
 import type { WarbandCharacter, WarbandData } from "../lib/warband";
 import { CLASS_COLORS } from "../lib/wow";
+import { WarbandGearBoard } from "./WarbandGearBoard";
 
 const ROLE_LABEL: Record<string, string> = {
   TANK: "Tank",
@@ -32,14 +34,20 @@ function compare(a: WarbandCharacter, b: WarbandCharacter, key: SortKey): number
 
 export function Warband({
   onOpenCharacter,
+  region,
 }: {
   /** Open a character's detail sheet — the roster row's name button calls this. */
   onOpenCharacter: (sel: { realm: string; characterName: string }) => void;
+  /** The app's current region — the fallback for resolving each alt's region on the gear board. */
+  region: Region;
 }) {
   const [data, setData] = useState<WarbandData | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [sort, setSort] = useState<Sort>({ key: "itemLevel", dir: -1 });
+  // Roster (the default) vs. the warband-wide gear board. The board only mounts — and only then fetches
+  // every alt's equipment — when selected, so the fetch stays lazy.
+  const [view, setView] = useState<"roster" | "board">("roster");
 
   async function load() {
     setBusy(true);
@@ -109,7 +117,22 @@ export function Warband({
         <p className="muted">No characters recorded yet.</p>
       )}
 
-      {!error && rows.length > 0 && (
+      {!error && data && data.characters.length > 0 && (
+        <div className="row" style={{ gap: "0.25rem", marginBottom: "0.5rem" }}>
+          <button className={view === "roster" ? "" : "ghost"} onClick={() => setView("roster")}>
+            Roster
+          </button>
+          <button className={view === "board" ? "" : "ghost"} onClick={() => setView("board")}>
+            Gear board
+          </button>
+        </div>
+      )}
+
+      {!error && view === "board" && data && data.characters.length > 0 && (
+        <WarbandGearBoard characters={data.characters} region={region} />
+      )}
+
+      {!error && view === "roster" && rows.length > 0 && (
         <div style={{ overflowX: "auto" }}>
           <table className="grid">
             <thead>

@@ -187,7 +187,7 @@ function App() {
         )}
         {tab === "guild" && <GuildLookup bnet={bnet} />}
         {tab === "auctions" && <AuctionHouse bnet={bnet} />}
-        {tab === "warband" && <Warband onOpenCharacter={openCharacter} />}
+        {tab === "warband" && <Warband onOpenCharacter={openCharacter} region={region} />}
       </ErrorBoundary>
 
       <footer className="appfooter muted">{__BUILD_ID__}</footer>
