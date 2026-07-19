@@ -138,7 +138,9 @@ function Slot({
   icon: string | undefined;
 }) {
   if (!item) {
-    return <div className="doll-slot empty" aria-label={`${label}: empty`} title={`${label}: empty`} />;
+    return (
+      <div className="doll-slot empty" aria-label={`${label}: empty`} title={`${label}: empty`} />
+    );
   }
   const ilvl = item.level?.value;
   const name = item.name ?? "Unknown item";
