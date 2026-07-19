@@ -15,6 +15,7 @@ import {
   type GearFindingSeverity,
 } from "../lib/gearCheck";
 import { LEFT_SLOTS, RIGHT_SLOTS, WEAPON_SLOTS, ALL_SLOTS, type SlotSpec } from "../lib/slots";
+import { FixThesePanel } from "./FixThesePanel";
 
 /**
  * A compact-list row: a filled slot (its equipment entry + icon) or a flagged empty slot (`item`
@@ -100,6 +101,7 @@ export function PaperDoll({
     return (
       <>
         <GearSummary count={findings.length} />
+        <FixThesePanel findings={findings} equipment={equip.data} />
         <GearList rows={rows} openSlot={openSlot} onOpen={openItem} onClose={closePopover} />
       </>
     );
@@ -129,6 +131,7 @@ export function PaperDoll({
   return (
     <>
       <GearSummary count={findings.length} />
+      <FixThesePanel findings={findings} equipment={equip.data} />
       <div className="paper-doll">
         <div className="doll-col">{LEFT_SLOTS.map(renderSlot)}</div>
         <div className="doll-center">
