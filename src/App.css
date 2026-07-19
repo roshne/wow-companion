@@ -260,15 +260,27 @@ form.card input {
   background: var(--border);
   border-radius: 8px;
 }
-/* One equipment slot: a quality-bordered square holding the item icon + an item-level badge. */
+/* One equipment slot: a quality-bordered square holding the item icon + an item-level badge. A filled
+   slot is a <button> (opens the item-detail popover); the global button padding is reset away so it
+   keeps the fixed 42px square. */
 .doll-slot {
   position: relative;
   width: 42px;
   height: 42px;
+  padding: 0;
   border: 2px solid var(--border);
   border-radius: 6px;
   background: var(--card);
   overflow: hidden;
+}
+button.doll-slot:hover,
+button.doll-slot:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+/* The positioned wrapper that anchors a slot's popover just below the slot button. */
+.doll-slot-anchor {
+  position: relative;
 }
 .doll-slot img,
 .doll-slot .doll-icon-pending {
@@ -298,16 +310,74 @@ form.card input {
   border-top-left-radius: 4px;
   font-variant-numeric: tabular-nums;
 }
-/* Compact gear list (the narrow-viewport fallback for the doll): an item's icon inline with its name. */
+/* Compact gear list (the narrow-viewport fallback for the doll): an item's icon inline with its name.
+   The cell is a <button> (opens the item-detail popover), reset to read as plain text + icon. */
 .gear-list-item {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.gear-list-item:hover span,
+.gear-list-item:focus-visible span {
+  text-decoration: underline;
 }
 .gear-list-icon {
   width: 20px;
   height: 20px;
   border-radius: 4px;
+}
+/* The positioned wrapper that anchors a list row's popover just below its item button. */
+.gear-list-anchor {
+  position: relative;
+  display: inline-block;
+}
+
+/* Item-detail popover: a small card anchored below the slot / row that opened it. A dismissible
+   dialog showing the item's identity header (name, item level, binding); lifted above sibling slots. */
+.item-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  min-width: 12rem;
+  max-width: 16rem;
+  padding: 0.6rem 0.7rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  text-align: left;
+}
+.item-popover:focus {
+  outline: none;
+}
+.item-popover-close {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.15rem;
+  padding: 0 0.35rem;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--muted);
+}
+.item-popover-name {
+  margin: 0 1rem 0.25rem 0;
+  font-weight: 700;
+}
+.item-popover-ilvl {
+  margin: 0;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+.item-popover-binding {
+  margin: 0.2rem 0 0;
 }
 
 /* Auction house: a virtualized, item-aggregated list. Header and rows share one grid template so the
