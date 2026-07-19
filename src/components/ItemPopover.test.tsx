@@ -187,4 +187,37 @@ describe("ItemPopover", () => {
     // No body wrapper at all — the header stands alone.
     expect(container.querySelector(".item-popover-body")).toBeNull();
   });
+
+  it("lists the slot's gear-check findings, styled by severity", () => {
+    render(
+      <ItemPopover
+        item={item}
+        findings={[
+          {
+            slot: "FINGER_1",
+            kind: "missing-enchant",
+            label: "Missing enchant",
+            severity: "warning",
+          },
+          {
+            slot: "FINGER_1",
+            kind: "ilvl-outlier",
+            label: "Item level 450 (below average)",
+            severity: "info",
+          },
+        ]}
+        onClose={() => {}}
+      />,
+    );
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByText("Missing enchant")).toHaveClass("item-popover-finding-warning");
+    expect(within(dialog).getByText("Item level 450 (below average)")).toHaveClass(
+      "item-popover-finding-info",
+    );
+  });
+
+  it("renders no gear-check section when the slot has no findings", () => {
+    const { container } = render(<ItemPopover item={item} onClose={() => {}} />);
+    expect(container.querySelector(".item-popover-findings")).toBeNull();
+  });
 });

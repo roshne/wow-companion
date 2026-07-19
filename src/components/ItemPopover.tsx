@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, type ReactElement } from "react";
 import type { CharacterEquipment } from "../lib/queries";
+import type { GearFinding } from "../lib/gearCheck";
 import { QUALITY_COLORS } from "../lib/wow";
 
 /** One entry of the equipment doc's `equipped_items`. */
@@ -8,14 +9,23 @@ export type EquippedItem = NonNullable<CharacterEquipment["equipped_items"]>[num
 /**
  * The item-detail popover: a dismissible dialog anchored to the slot / row that opened it. Its header
  * shows the item's identity (quality-colored name, item level, binding); below it, the full detail
- * body — stats, sockets/gems, enchantments, set bonuses, and transmog — each section rendered from the
+ * body — stats, sockets/gems, enchantments, set bonuses, and transmog; and, last, any gear-check
+ * findings for the slot, so a flagged slot explains itself. Each section is rendered from the
  * already-fetched equipment entry and omitted (not errored on) when its field group is absent.
  *
  * Behaviour: focus moves into the dialog on open and returns to the trigger on close; it dismisses on
  * Escape and on a pointer press outside it. The parent renders it only while open and owns the
  * "one open at a time" invariant, so opening another slot simply swaps which popover is mounted.
  */
-export function ItemPopover({ item, onClose }: { item: EquippedItem; onClose: () => void }) {
+export function ItemPopover({
+  item,
+  findings,
+  onClose,
+}: {
+  item: EquippedItem;
+  findings?: GearFinding[];
+  onClose: () => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const nameId = useId();
 
@@ -77,6 +87,18 @@ export function ItemPopover({ item, onClose }: { item: EquippedItem; onClose: ()
       {ilvl ? <p className="item-popover-ilvl">{ilvl}</p> : null}
       {binding ? <p className="item-popover-binding muted">{binding}</p> : null}
       {sections.length > 0 ? <div className="item-popover-body">{sections}</div> : null}
+      {findings && findings.length > 0 ? (
+        <div className="item-popover-findings">
+          <p className="item-popover-findings-head muted">Gear check</p>
+          <ul>
+            {findings.map((f, i) => (
+              <li key={i} className={`item-popover-finding item-popover-finding-${f.severity}`}>
+                {f.label}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 }

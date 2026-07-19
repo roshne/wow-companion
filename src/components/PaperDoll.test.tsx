@@ -383,4 +383,32 @@ describe("PaperDoll", () => {
     await screen.findByLabelText(/^Head:/);
     expect(container.querySelectorAll(".gear-badge").length).toBe(0);
   });
+
+  it("summarizes the total finding count above the doll", async () => {
+    const { bnet, get } = mockBnet();
+    routeGet(get); // default fixture: Ring 1 is un-enchanted → exactly one finding.
+    renderWithClient(<PaperDoll bnet={bnet} realmSlug="r" characterName="Asmon" />);
+
+    expect(await screen.findByText("1 gear issue")).toBeInTheDocument();
+  });
+
+  it("reads 'All good' in the summary when nothing is flagged", async () => {
+    const { bnet, get } = mockBnet();
+    routeGet(get, { equipment: cleanSet });
+    renderWithClient(<PaperDoll bnet={bnet} realmSlug="r" characterName="Asmon" />);
+
+    expect(await screen.findByText("All good")).toBeInTheDocument();
+  });
+
+  it("lists a slot's gear-check findings inside its popover", async () => {
+    const { bnet, get } = mockBnet();
+    routeGet(get);
+    renderWithClient(<PaperDoll bnet={bnet} realmSlug="r" characterName="Asmon" />);
+
+    const ring = await screen.findByRole("button", { name: /^Ring 1: Band of Testing/ });
+    fireEvent.click(ring);
+
+    const dialog = screen.getByRole("dialog", { name: "Band of Testing" });
+    expect(within(dialog).getByText("Missing enchant")).toBeInTheDocument();
+  });
 });

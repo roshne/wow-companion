@@ -204,6 +204,19 @@ form.card input {
   margin: 0.35rem 0;
 }
 
+/* Gear-check summary: an at-a-glance line above the doll / list — a finding count, or "All good". */
+.gear-summary {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.gear-summary-issues {
+  color: var(--down);
+}
+.gear-summary-clean {
+  color: var(--up);
+}
+
 /* Paper doll: two equipment-slot columns flanking a centered full-body render, with the weapons row
    below. On narrow widths the three-column grid lets the columns sit close to the render (a proper
    list fallback for very narrow viewports + accessibility is a follow-up). */
@@ -458,6 +471,34 @@ button.doll-slot:focus-visible {
   margin: 0;
   font-size: 0.85rem;
   font-style: italic;
+  color: var(--muted);
+}
+/* Gear-check findings for the slot, listed below the detail body — the drill-down behind the badge. */
+.item-popover-findings {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+.item-popover-findings-head {
+  margin: 0 0 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.item-popover-findings ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.item-popover-finding {
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+.item-popover-finding-warning {
+  color: var(--down);
+}
+.item-popover-finding-info {
   color: var(--muted);
 }
 
