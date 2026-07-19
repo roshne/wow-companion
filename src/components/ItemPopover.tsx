@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactElement } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactElement } from "react";
 import type { CharacterEquipment } from "../lib/queries";
 import type { GearFinding } from "../lib/gearCheck";
 import { QUALITY_COLORS } from "../lib/wow";
@@ -28,6 +28,22 @@ export function ItemPopover({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const nameId = useId();
+  // Which way the popover is flipped to stay on-screen. Default anchoring is below-left of the
+  // trigger; measured once on open (see below) and flipped to right-aligned / above when it overflows.
+  const [flip, setFlip] = useState({ right: false, above: false });
+
+  // Keep the popover in the viewport: measure the default placement before paint and flip horizontally
+  // and/or vertically when its right/bottom edge overflows. One measurement is enough — the popover is
+  // short-lived, so we don't re-measure on resize/scroll.
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const margin = 8;
+    const right = rect.right > window.innerWidth - margin;
+    const above = rect.bottom > window.innerHeight - margin;
+    setFlip((prev) => (prev.right === right && prev.above === above ? prev : { right, above }));
+  }, []);
 
   // Move focus into the dialog on open; restore it to whatever was focused (the trigger) on close.
   useEffect(() => {
@@ -71,8 +87,12 @@ export function ItemPopover({
     renderTransmog(item),
   ].filter((s): s is ReactElement => s !== null);
 
+  const className = `item-popover${flip.right ? " item-popover-right" : ""}${
+    flip.above ? " item-popover-above" : ""
+  }`;
+
   return (
-    <div ref={ref} className="item-popover" role="dialog" aria-labelledby={nameId} tabIndex={-1}>
+    <div ref={ref} className={className} role="dialog" aria-labelledby={nameId} tabIndex={-1}>
       <button
         type="button"
         className="item-popover-close ghost"

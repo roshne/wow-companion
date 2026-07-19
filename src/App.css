@@ -407,6 +407,16 @@ button.doll-slot:focus-visible {
 .item-popover:focus {
   outline: none;
 }
+/* Viewport-aware flips (measured on open): right-align when the default below-left placement would
+   overflow the right edge; flip above the trigger when it would overflow the bottom. */
+.item-popover-right {
+  left: auto;
+  right: 0;
+}
+.item-popover-above {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
 .item-popover-close {
   position: absolute;
   top: 0.15rem;
