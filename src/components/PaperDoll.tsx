@@ -8,6 +8,12 @@ import { useMediaQuery } from "../lib/useMediaQuery";
 import { SkeletonLines } from "./Skeleton";
 import { EmptyState } from "./EmptyState";
 import { ItemPopover, type EquippedItem } from "./ItemPopover";
+import {
+  gearCheck,
+  groupBySlot,
+  type GearFinding,
+  type GearFindingSeverity,
+} from "../lib/gearCheck";
 
 /** A slot's API `slot.type` key and its display label. */
 interface SlotSpec {
@@ -15,12 +21,16 @@ interface SlotSpec {
   label: string;
 }
 
-/** A filled slot, resolved for the compact list: its slot key, label, equipment entry, and icon URL. */
+/**
+ * A compact-list row: a filled slot (its equipment entry + icon) or a flagged empty slot (`item`
+ * absent — e.g. a missing off-hand). Either way it carries the slot's gear-check findings.
+ */
 interface GearRow {
   type: string;
   label: string;
-  item: EquippedItem;
+  item: EquippedItem | undefined;
   icon: string | undefined;
+  findings: GearFinding[] | undefined;
 }
 
 // The 18 retail equipment slots in classic paper-doll order: two flanking columns and a weapons row.
@@ -92,6 +102,11 @@ export function PaperDoll({
     [items],
   );
   const icons = useItemIcons(bnet, ids);
+  // Gear-check findings grouped by `slot.type`, so each slot (filled or empty) can badge its own.
+  const findingsBySlot = useMemo(
+    () => (equip.data ? groupBySlot(gearCheck(equip.data)) : new Map<string, GearFinding[]>()),
+    [equip.data],
+  );
 
   if (equip.isError)
     return <EmptyState message={describeError(equip.error)} onRetry={() => void equip.refetch()} />;
@@ -107,9 +122,14 @@ export function PaperDoll({
 
   // Narrow viewport: the same gear as a compact, labeled table (accessible + width-friendly).
   if (compact) {
-    const rows: GearRow[] = ALL_SLOTS.flatMap((s) => {
+    const rows = ALL_SLOTS.flatMap<GearRow>((s) => {
       const item = bySlot.get(s.type);
-      return item ? [{ type: s.type, label: s.label, item, icon: iconFor(item) }] : [];
+      const findings = findingsBySlot.get(s.type);
+      if (item) return [{ type: s.type, label: s.label, item, icon: iconFor(item), findings }];
+      // A flagged empty slot (e.g. a missing off-hand) still earns a row, so the list mirrors the doll.
+      if (findings && findings.length > 0)
+        return [{ type: s.type, label: s.label, item: undefined, icon: undefined, findings }];
+      return [];
     });
     return <GearList rows={rows} openSlot={openSlot} onOpen={openItem} onClose={closePopover} />;
   }
@@ -127,6 +147,7 @@ export function PaperDoll({
         label={s.label}
         item={item}
         icon={iconFor(item)}
+        findings={findingsBySlot.get(s.type)}
         isOpen={openSlot === s.type}
         onOpen={() => openItem(s.type)}
         onClose={closePopover}
@@ -166,6 +187,7 @@ function Slot({
   label,
   item,
   icon,
+  findings,
   isOpen,
   onOpen,
   onClose,
@@ -173,20 +195,26 @@ function Slot({
   label: string;
   item: EquippedItem | undefined;
   icon: string | undefined;
+  findings: GearFinding[] | undefined;
   isOpen: boolean;
   onOpen: () => void;
   onClose: () => void;
 }) {
+  const summary = findingSummary(findings);
+  // An empty slot the engine flagged (e.g. a missing off-hand) still badges its muted frame.
   if (!item) {
+    const emptyName = `${label}: empty${summary}`;
     return (
-      <div className="doll-slot empty" aria-label={`${label}: empty`} title={`${label}: empty`} />
+      <div className="doll-slot empty" aria-label={emptyName} title={emptyName}>
+        <FindingBadge findings={findings} className="doll-badge" />
+      </div>
     );
   }
   const ilvl = item.level?.value;
   const name = item.name ?? "Unknown item";
   const quality = item.quality?.type;
   const border = quality ? QUALITY_COLORS[quality] : undefined;
-  const accessibleName = `${label}: ${name}${typeof ilvl === "number" ? ` (item level ${ilvl})` : ""}`;
+  const accessibleName = `${label}: ${name}${typeof ilvl === "number" ? ` (item level ${ilvl})` : ""}${summary}`;
 
   return (
     <div className="doll-slot-anchor">
@@ -206,6 +234,7 @@ function Slot({
           <div className="doll-icon-pending" aria-hidden="true" />
         )}
         {typeof ilvl === "number" ? <span className="doll-ilvl">{ilvl}</span> : null}
+        <FindingBadge findings={findings} className="doll-badge" />
       </button>
       {isOpen ? <ItemPopover item={item} onClose={onClose} /> : null}
     </div>
@@ -239,7 +268,22 @@ function GearList({
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ type, label, item, icon }) => {
+          {rows.map(({ type, label, item, icon, findings }) => {
+            // A flagged empty slot (e.g. a missing off-hand): the finding as muted text + a badge.
+            if (!item) {
+              return (
+                <tr key={type}>
+                  <td>{label}</td>
+                  <td>
+                    <span className="gear-list-item muted">
+                      {findingText(findings)}
+                      <FindingBadge findings={findings} className="gear-list-badge" />
+                    </span>
+                  </td>
+                  <td>—</td>
+                </tr>
+              );
+            }
             const quality = item.quality?.type;
             const name = item.name ?? "—";
             const isOpen = openSlot === type;
@@ -251,7 +295,7 @@ function GearList({
                     <button
                       type="button"
                       className="gear-list-item"
-                      aria-label={`${label}: ${name}`}
+                      aria-label={`${label}: ${name}${findingSummary(findings)}`}
                       aria-haspopup="dialog"
                       aria-expanded={isOpen}
                       onClick={() => onOpen(type)}
@@ -260,6 +304,7 @@ function GearList({
                       <span style={{ color: quality ? QUALITY_COLORS[quality] : undefined }}>
                         {name}
                       </span>
+                      <FindingBadge findings={findings} className="gear-list-badge" />
                     </button>
                     {isOpen ? <ItemPopover item={item} onClose={onClose} /> : null}
                   </div>
@@ -271,5 +316,44 @@ function GearList({
         </tbody>
       </table>
     </div>
+  );
+}
+
+/** The worst severity among a slot's findings — a single warning outranks any number of infos. */
+function worstSeverity(findings: GearFinding[]): GearFindingSeverity {
+  return findings.some((f) => f.severity === "warning") ? "warning" : "info";
+}
+
+/** A slot's findings as a comma-separated list of unique labels (empty string when there are none). */
+function findingText(findings: GearFinding[] | undefined): string {
+  if (!findings || findings.length === 0) return "";
+  return [...new Set(findings.map((f) => f.label))].join(", ");
+}
+
+/** The accessible-name suffix for a slot's findings — " — <labels>", or "" when there are none. */
+function findingSummary(findings: GearFinding[] | undefined): string {
+  const text = findingText(findings);
+  return text ? ` — ${text}` : "";
+}
+
+/**
+ * A small count chip flagging a slot's gear-check findings, colored by worst severity. Decorative
+ * (`aria-hidden`): the finding text itself lives in the slot's aria-label via {@link findingSummary}.
+ */
+function FindingBadge({
+  findings,
+  className,
+}: {
+  findings: GearFinding[] | undefined;
+  className?: string;
+}) {
+  if (!findings || findings.length === 0) return null;
+  return (
+    <span
+      className={`gear-badge gear-badge-${worstSeverity(findings)}${className ? ` ${className}` : ""}`}
+      aria-hidden="true"
+    >
+      {findings.length}
+    </span>
   );
 }
