@@ -204,6 +204,101 @@ form.card input {
   margin: 0.35rem 0;
 }
 
+/* Paper doll: two equipment-slot columns flanking a centered full-body render, with the weapons row
+   below. On narrow widths the three-column grid lets the columns sit close to the render (a proper
+   list fallback for very narrow viewports + accessibility is a follow-up). */
+.paper-doll {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: start;
+  justify-items: center;
+  margin-top: 0.5rem;
+}
+.doll-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.doll-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.doll-weapons {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+}
+/* The centered render: taller than the small character-card render. */
+.doll-render {
+  width: 150px;
+  height: auto;
+  max-height: 300px;
+  object-fit: contain;
+  object-position: top center;
+}
+/* When only the square avatar is available (no full-body render), size it as a portrait. */
+.doll-render.avatar-fallback {
+  width: 96px;
+  height: 96px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  object-fit: cover;
+}
+.doll-render-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 150px;
+  height: 220px;
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--border);
+  border-radius: 8px;
+}
+/* One equipment slot: a quality-bordered square holding the item icon + an item-level badge. */
+.doll-slot {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+  overflow: hidden;
+}
+.doll-slot img,
+.doll-slot .doll-icon-pending {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.doll-slot .doll-icon-pending {
+  background: var(--border);
+}
+.doll-slot.empty {
+  border-style: dashed;
+  opacity: 0.55;
+}
+/* Item-level badge: a small game-style chip in the slot's corner (fixed dark chip reads in both themes). */
+.doll-ilvl {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding: 0 2px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.68);
+  border-top-left-radius: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Auction house: a virtualized, item-aggregated list. Header and rows share one grid template so the
    columns line up across the (scrolling) list boundary. */
 .ah-head,
