@@ -347,7 +347,9 @@ button.doll-slot:focus-visible {
   left: 0;
   z-index: 30;
   min-width: 12rem;
-  max-width: 16rem;
+  max-width: 18rem;
+  max-height: 70vh;
+  overflow-y: auto;
   padding: 0.6rem 0.7rem;
   background: var(--card);
   border: 1px solid var(--border);
@@ -378,6 +380,51 @@ button.doll-slot:focus-visible {
 }
 .item-popover-binding {
   margin: 0.2rem 0 0;
+}
+/* The detail body below the identity header: stats, sockets, enchants, set bonuses, transmog. Each
+   section is a plain (bulletless) list; the wrapper only renders when a section has content. */
+.item-popover-body {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+.item-popover-body > * + * {
+  margin-top: 0.4rem;
+}
+.item-popover-body ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.item-popover-body li {
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+/* Secondary (equip-bonus) stats set apart from primaries; a theme token so it reads in both themes. */
+.item-popover-stats .stat-secondary {
+  color: var(--up);
+}
+.item-popover-sockets .socket-empty {
+  color: var(--muted);
+  font-style: italic;
+}
+.item-popover-set .set-name {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.item-popover-set ul {
+  margin-top: 0.15rem;
+}
+/* Inactive set effects (piece count not yet met) muted; active ones keep the default foreground. */
+.item-popover-set .set-effect-inactive {
+  color: var(--muted);
+}
+.item-popover-transmog {
+  margin: 0;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--muted);
 }
 
 /* Auction house: a virtualized, item-aggregated list. Header and rows share one grid template so the
