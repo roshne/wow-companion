@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { screen, waitFor, within } from "@testing-library/react";
+import { screen, waitFor, within, fireEvent } from "@testing-library/react";
 import { PaperDoll } from "./PaperDoll";
 import { renderWithClient } from "../test/utils";
 import { mockBnet, mockResponse } from "../test/mocks";
@@ -27,6 +27,7 @@ const equipment = {
       name: "Crown of Testing",
       quality: { type: "EPIC" },
       level: { value: 483 },
+      binding: { type: "ON_ACQUIRE", name: "Soulbound" },
       item: { id: 100 },
     },
     {
@@ -206,5 +207,93 @@ describe("PaperDoll", () => {
     expect(screen.getByRole("columnheader", { name: "Slot" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Item" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "iLvl" })).toBeInTheDocument();
+  });
+
+  it("the slot triggers are buttons carrying the per-slot aria-label (keyboard-operable)", async () => {
+    const { bnet, get } = mockBnet();
+    routeGet(get);
+    renderWithClient(<PaperDoll bnet={bnet} realmSlug="r" characterName="Asmon" />);
+
+    // Real <button> elements → the platform maps Enter/Space to activation; the aria-label is per-slot.
+    expect(
+      await screen.findByRole("button", { name: /^Head: Crown of Testing/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Ring 1: Band of Testing/ })).toBeInTheDocument();
+  });
+
+  it("opens the detail popover with the item's name / ilvl / binding when a slot is activated", async () => {
+    const { bnet, get } = mockBnet();
+    routeGet(get);
+    renderWithClient(<PaperDoll bnet={bnet} realmSlug="r" characterName="Asmon" />);
+
+    const head = await screen.findByRole("button", { name: /^Head: Crown of Testing/ });
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    fireEvent.click(head);
+
+    const dialog = screen.getByRole("dialog", { name: "Crown of Testing" });
+    expect(within(dialog).getByText("Item Level 483")).toBeInTheDocument();
+    expect(within(dialog).getByText("Soulbound")).toBeInTheDocument();
+  });
+
+  it("opens the detail popover from a compact list row too", async () => {
+    installMatchMedia(true);
+    const { bnet, get } = mockBnet();
+    routeGet(get);
+    renderWithClient(<PaperDoll bnet={bnet} realmSlug="r" characterName="Asmon" />);
+
+    const row = await screen.findByRole("button", { name: "Head: Crown of Testing" });
+    fireEvent.click(row);
+
+    expect(screen.getByRole("dialog", { name: "Crown of Testing" })).toBeInTheDocument();
+  });
+
+  it("closes the popover on Escape and returns focus to the trigger", async () => {
+    const { bnet, get } = mockBnet();
+    routeGet(get);
+    renderWithClient(<PaperDoll bnet={bnet} realmSlug="r" characterName="Asmon" />);
+
+    const head = await screen.findByRole("button", { name: /^Head: Crown of Testing/ });
+    head.focus();
+    fireEvent.click(head);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(head).toHaveFocus();
+  });
+
+  it("closes the popover on click-outside and returns focus to the trigger", async () => {
+    const { bnet, get } = mockBnet();
+    routeGet(get);
+    renderWithClient(<PaperDoll bnet={bnet} realmSlug="r" characterName="Asmon" />);
+
+    const head = await screen.findByRole("button", { name: /^Head: Crown of Testing/ });
+    head.focus();
+    fireEvent.click(head);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    fireEvent.mouseDown(document.body);
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(head).toHaveFocus();
+  });
+
+  it("swaps the popover to another slot's item — only one open at a time", async () => {
+    const { bnet, get } = mockBnet();
+    routeGet(get);
+    renderWithClient(<PaperDoll bnet={bnet} realmSlug="r" characterName="Asmon" />);
+
+    const head = await screen.findByRole("button", { name: /^Head: Crown of Testing/ });
+    fireEvent.click(head);
+    expect(screen.getByRole("dialog", { name: "Crown of Testing" })).toBeInTheDocument();
+
+    const ring = screen.getByRole("button", { name: /^Ring 1: Band of Testing/ });
+    fireEvent.click(ring);
+
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    expect(screen.getByRole("dialog", { name: "Band of Testing" })).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "Crown of Testing" })).toBeNull();
   });
 });

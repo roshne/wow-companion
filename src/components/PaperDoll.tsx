@@ -1,20 +1,13 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { BlizzardClient } from "../vendor/battlenet-wow-client";
-import {
-  characterEquipmentQuery,
-  characterMediaQuery,
-  describeError,
-  type CharacterEquipment,
-} from "../lib/queries";
+import { characterEquipmentQuery, characterMediaQuery, describeError } from "../lib/queries";
 import { QUALITY_COLORS } from "../lib/wow";
 import { useItemIcons } from "../lib/useItemIcons";
 import { useMediaQuery } from "../lib/useMediaQuery";
 import { SkeletonLines } from "./Skeleton";
 import { EmptyState } from "./EmptyState";
-
-/** One entry of the equipment doc's `equipped_items`. */
-type EquippedItem = NonNullable<CharacterEquipment["equipped_items"]>[number];
+import { ItemPopover, type EquippedItem } from "./ItemPopover";
 
 /** A slot's API `slot.type` key and its display label. */
 interface SlotSpec {
@@ -22,8 +15,9 @@ interface SlotSpec {
   label: string;
 }
 
-/** A filled slot, resolved for the compact list: its label, equipment entry, and (maybe) icon URL. */
+/** A filled slot, resolved for the compact list: its slot key, label, equipment entry, and icon URL. */
 interface GearRow {
+  type: string;
   label: string;
   item: EquippedItem;
   icon: string | undefined;
@@ -80,6 +74,9 @@ export function PaperDoll({
   const mediaQ = useQuery(characterMediaQuery(bnet, realmSlug, characterName));
   const [failedSrcs, setFailedSrcs] = useState<Set<string>>(new Set());
   const compact = useMediaQuery("(max-width: 640px)");
+  // Which slot's detail popover is open (by `slot.type`), or null — only one at a time, shared across
+  // both layouts. Opening another slot reassigns it, so the old popover unmounts and the new mounts.
+  const [openSlot, setOpenSlot] = useState<string | null>(null);
 
   const items = useMemo(
     () => (equip.data?.equipped_items ?? []).filter((it) => it.slot?.type),
@@ -105,13 +102,16 @@ export function PaperDoll({
     return typeof id === "number" ? icons[id] : undefined;
   };
 
+  const openItem = (type: string) => setOpenSlot(type);
+  const closePopover = () => setOpenSlot(null);
+
   // Narrow viewport: the same gear as a compact, labeled table (accessible + width-friendly).
   if (compact) {
     const rows: GearRow[] = ALL_SLOTS.flatMap((s) => {
       const item = bySlot.get(s.type);
-      return item ? [{ label: s.label, item, icon: iconFor(item) }] : [];
+      return item ? [{ type: s.type, label: s.label, item, icon: iconFor(item) }] : [];
     });
-    return <GearList rows={rows} />;
+    return <GearList rows={rows} openSlot={openSlot} onOpen={openItem} onClose={closePopover} />;
   }
 
   const media = mediaQ.data ?? { render: null, avatar: null };
@@ -121,7 +121,17 @@ export function PaperDoll({
 
   const renderSlot = (s: SlotSpec) => {
     const item = bySlot.get(s.type);
-    return <Slot key={s.type} label={s.label} item={item} icon={iconFor(item)} />;
+    return (
+      <Slot
+        key={s.type}
+        label={s.label}
+        item={item}
+        icon={iconFor(item)}
+        isOpen={openSlot === s.type}
+        onOpen={() => openItem(s.type)}
+        onClose={closePopover}
+      />
+    );
   };
 
   return (
@@ -147,15 +157,25 @@ export function PaperDoll({
   );
 }
 
-/** A single equipment slot: the item icon + quality border + ilvl badge, or a muted empty frame. */
+/**
+ * A single equipment slot. A filled slot is a real button (the item icon + quality border + ilvl
+ * badge) that opens the item-detail popover, anchored just below it; an empty slot is a muted,
+ * non-interactive frame.
+ */
 function Slot({
   label,
   item,
   icon,
+  isOpen,
+  onOpen,
+  onClose,
 }: {
   label: string;
   item: EquippedItem | undefined;
   icon: string | undefined;
+  isOpen: boolean;
+  onOpen: () => void;
+  onClose: () => void;
 }) {
   if (!item) {
     return (
@@ -169,14 +189,25 @@ function Slot({
   const accessibleName = `${label}: ${name}${typeof ilvl === "number" ? ` (item level ${ilvl})` : ""}`;
 
   return (
-    <div
-      className="doll-slot"
-      aria-label={accessibleName}
-      title={accessibleName}
-      style={border ? { borderColor: border } : undefined}
-    >
-      {icon ? <img src={icon} alt="" /> : <div className="doll-icon-pending" aria-hidden="true" />}
-      {typeof ilvl === "number" ? <span className="doll-ilvl">{ilvl}</span> : null}
+    <div className="doll-slot-anchor">
+      <button
+        type="button"
+        className="doll-slot"
+        aria-label={accessibleName}
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        title={accessibleName}
+        style={border ? { borderColor: border } : undefined}
+        onClick={onOpen}
+      >
+        {icon ? (
+          <img src={icon} alt="" />
+        ) : (
+          <div className="doll-icon-pending" aria-hidden="true" />
+        )}
+        {typeof ilvl === "number" ? <span className="doll-ilvl">{ilvl}</span> : null}
+      </button>
+      {isOpen ? <ItemPopover item={item} onClose={onClose} /> : null}
     </div>
   );
 }
@@ -184,9 +215,19 @@ function Slot({
 /**
  * The compact fallback for narrow viewports: the equipment as a labeled Slot / Item / iLvl table — a
  * semantic table with column headers, so gear stays keyboard- and screen-reader-reachable without the
- * visual doll. The item name is quality-colored, with the resolved icon inline.
+ * visual doll. Each item cell is a button that opens the same detail popover as the doll's slots.
  */
-function GearList({ rows }: { rows: GearRow[] }) {
+function GearList({
+  rows,
+  openSlot,
+  onOpen,
+  onClose,
+}: {
+  rows: GearRow[];
+  openSlot: string | null;
+  onOpen: (type: string) => void;
+  onClose: () => void;
+}) {
   return (
     <div style={{ overflowX: "auto" }}>
       <table className="grid gear-list" aria-label="Equipment">
@@ -198,18 +239,30 @@ function GearList({ rows }: { rows: GearRow[] }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ label, item, icon }) => {
+          {rows.map(({ type, label, item, icon }) => {
             const quality = item.quality?.type;
+            const name = item.name ?? "—";
+            const isOpen = openSlot === type;
             return (
-              <tr key={label}>
+              <tr key={type}>
                 <td>{label}</td>
                 <td>
-                  <span className="gear-list-item">
-                    {icon ? <img className="gear-list-icon" src={icon} alt="" /> : null}
-                    <span style={{ color: quality ? QUALITY_COLORS[quality] : undefined }}>
-                      {item.name ?? "—"}
-                    </span>
-                  </span>
+                  <div className="gear-list-anchor">
+                    <button
+                      type="button"
+                      className="gear-list-item"
+                      aria-label={`${label}: ${name}`}
+                      aria-haspopup="dialog"
+                      aria-expanded={isOpen}
+                      onClick={() => onOpen(type)}
+                    >
+                      {icon ? <img className="gear-list-icon" src={icon} alt="" /> : null}
+                      <span style={{ color: quality ? QUALITY_COLORS[quality] : undefined }}>
+                        {name}
+                      </span>
+                    </button>
+                    {isOpen ? <ItemPopover item={item} onClose={onClose} /> : null}
+                  </div>
                 </td>
                 <td>{item.level?.value ?? "—"}</td>
               </tr>
