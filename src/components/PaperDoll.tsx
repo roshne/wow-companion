@@ -14,12 +14,7 @@ import {
   type GearFinding,
   type GearFindingSeverity,
 } from "../lib/gearCheck";
-
-/** A slot's API `slot.type` key and its display label. */
-interface SlotSpec {
-  type: string;
-  label: string;
-}
+import { LEFT_SLOTS, RIGHT_SLOTS, WEAPON_SLOTS, ALL_SLOTS, type SlotSpec } from "../lib/slots";
 
 /**
  * A compact-list row: a filled slot (its equipment entry + icon) or a flagged empty slot (`item`
@@ -32,34 +27,6 @@ interface GearRow {
   icon: string | undefined;
   findings: GearFinding[] | undefined;
 }
-
-// The 18 retail equipment slots in classic paper-doll order: two flanking columns and a weapons row.
-const LEFT_SLOTS: SlotSpec[] = [
-  { type: "HEAD", label: "Head" },
-  { type: "NECK", label: "Neck" },
-  { type: "SHOULDER", label: "Shoulder" },
-  { type: "BACK", label: "Back" },
-  { type: "CHEST", label: "Chest" },
-  { type: "SHIRT", label: "Shirt" },
-  { type: "TABARD", label: "Tabard" },
-  { type: "WRIST", label: "Wrist" },
-];
-const RIGHT_SLOTS: SlotSpec[] = [
-  { type: "HANDS", label: "Hands" },
-  { type: "WAIST", label: "Waist" },
-  { type: "LEGS", label: "Legs" },
-  { type: "FEET", label: "Feet" },
-  { type: "FINGER_1", label: "Ring 1" },
-  { type: "FINGER_2", label: "Ring 2" },
-  { type: "TRINKET_1", label: "Trinket 1" },
-  { type: "TRINKET_2", label: "Trinket 2" },
-];
-const WEAPON_SLOTS: SlotSpec[] = [
-  { type: "MAIN_HAND", label: "Main Hand" },
-  { type: "OFF_HAND", label: "Off Hand" },
-];
-// Head-to-toe order for the compact list (left column, right column, then weapons).
-const ALL_SLOTS: SlotSpec[] = [...LEFT_SLOTS, ...RIGHT_SLOTS, ...WEAPON_SLOTS];
 
 /**
  * The Gear surface: the classic paper doll. The character's full-body render sits centered, with the
