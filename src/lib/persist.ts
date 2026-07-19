@@ -375,3 +375,45 @@ export function mergeItemNames(
   writeRaw(ITEM_NAMES_KEY, JSON.stringify(next));
   return next;
 }
+
+// --- Resolved item icons: the persistent cache behind the paper doll's viewport-only icon
+// resolution (see `useItemIcons`). An item's media (its icon URL) is en_US / region-independent, so —
+// like the item-name cache above — this is a single global map keyed by numeric item id, kept
+// indefinitely (an item's icon effectively never changes). Each value is the icon URL string. --------
+
+const ITEM_ICONS_KEY = "wow-companion:item-icons";
+
+/**
+ * The persisted item-icon cache, keyed by numeric item id (JSON object keys are strings; numeric
+ * lookups coerce, so `cache[123]` works). Each value is the icon URL. Invalid entries are dropped.
+ */
+export function loadItemIcons(): Record<number, string> {
+  const raw = readRaw(ITEM_ICONS_KEY);
+  if (!raw) return {};
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return {};
+    const out: Record<number, string> = {};
+    for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+      const id = Number(key);
+      if (Number.isInteger(id) && typeof value === "string" && value.length > 0) {
+        out[id] = value;
+      }
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Merge freshly resolved icon URLs into the persisted cache (new entries win), persist, and return
+ * the merged map. A no-op merge (nothing new) returns the current cache without a write.
+ */
+export function mergeItemIcons(entries: Record<number, string>): Record<number, string> {
+  const current = loadItemIcons();
+  if (Object.keys(entries).length === 0) return current;
+  const next = { ...current, ...entries };
+  writeRaw(ITEM_ICONS_KEY, JSON.stringify(next));
+  return next;
+}

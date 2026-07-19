@@ -27,6 +27,8 @@ import {
   TOKEN_HISTORY_CAP,
   loadItemNames,
   mergeItemNames,
+  loadItemIcons,
+  mergeItemIcons,
 } from "./persist";
 
 const char = (n: string, region: RecentCharacter["region"] = "us"): RecentCharacter => ({
@@ -261,5 +263,54 @@ describe("resolved item-name cache", () => {
   it("returns an empty map for corrupt JSON", () => {
     localStorage.setItem("wow-companion:item-names", "{not json");
     expect(loadItemNames()).toEqual({});
+  });
+});
+
+describe("resolved item-icon cache", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("is empty by default", () => {
+    expect(loadItemIcons()).toEqual({});
+  });
+
+  it("merges and round-trips icon URLs keyed by numeric id", () => {
+    mergeItemIcons({ 19019: "http://img/thunderfury.jpg" });
+    const cache = loadItemIcons();
+    expect(cache[19019]).toBe("http://img/thunderfury.jpg");
+  });
+
+  it("merges new entries over existing without clobbering", () => {
+    mergeItemIcons({ 1: "http://img/one.jpg" });
+    const merged = mergeItemIcons({ 2: "http://img/two.jpg" });
+    expect(merged[1]).toBe("http://img/one.jpg");
+    expect(merged[2]).toBe("http://img/two.jpg");
+    // The persisted cache reflects both.
+    expect(Object.keys(loadItemIcons()).sort()).toEqual(["1", "2"]);
+  });
+
+  it("does not write on an empty merge and returns the current cache", () => {
+    mergeItemIcons({ 5: "http://img/five.jpg" });
+    const before = localStorage.getItem("wow-companion:item-icons");
+    const result = mergeItemIcons({});
+    expect(result[5]).toBe("http://img/five.jpg");
+    expect(localStorage.getItem("wow-companion:item-icons")).toBe(before);
+  });
+
+  it("drops malformed values and non-integer keys on read", () => {
+    localStorage.setItem(
+      "wow-companion:item-icons",
+      JSON.stringify({
+        123: "http://img/valid.jpg",
+        456: "", // empty string → invalid
+        789: 42, // non-string value → invalid
+        abc: "http://img/nonnumeric.jpg", // non-integer key → dropped
+      }),
+    );
+    expect(loadItemIcons()).toEqual({ 123: "http://img/valid.jpg" });
+  });
+
+  it("returns an empty map for corrupt JSON", () => {
+    localStorage.setItem("wow-companion:item-icons", "{not json");
+    expect(loadItemIcons()).toEqual({});
   });
 });
