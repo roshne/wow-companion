@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { makeClient } from "./lib/bnet";
 import { onUnauthorized } from "./lib/auth";
 import { useTokenHistory } from "./lib/useTokenHistory";
+import { fetchRegionRealmIndexes, resolveCharacterRegion } from "./lib/region";
 import { loadRegion, saveRegion } from "./lib/persist";
 import type { Region } from "./vendor/battlenet-wow-client";
 import { TokenPrice } from "./components/TokenPrice";
@@ -32,11 +34,20 @@ function App() {
     characterName: string;
   } | null>(null);
 
-  // Open a character's detail sheet from elsewhere (e.g. the Warband roster): switch to the tab and
-  // hand the selection to CharacterLookup.
+  const queryClient = useQueryClient();
+
+  // Open a character's detail sheet from elsewhere (e.g. the Warband roster). The Warbandeer export
+  // carries no region, so detect which region actually lists the alt's realm (best-effort, falling
+  // back to the current region on an ambiguous or unknown realm) and switch the selector to it before
+  // opening — otherwise a same-named realm in another region would 404. Kept void-returning; the
+  // per-region index fetch is cached, so only a cold region touches the network.
   function openCharacter(sel: { realm: string; characterName: string }) {
-    setSelectedCharacter(sel);
-    setTab("character");
+    void (async () => {
+      const indexes = await fetchRegionRealmIndexes(queryClient);
+      setRegion(resolveCharacterRegion(sel.realm, indexes, region).region);
+      setSelectedCharacter(sel);
+      setTab("character");
+    })();
   }
 
   // Rebuilt when the region changes; children re-fetch against the new region.
