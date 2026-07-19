@@ -217,6 +217,44 @@ form.card input {
   color: var(--up);
 }
 
+/* "Fix these" panel: the prioritized gear-fix checklist below the summary — most-impactful first, a
+   severity dot per row. Hidden entirely for a clean character (the summary's "All good" covers that). */
+.fix-these {
+  margin: 0.4rem 0 0;
+}
+.fix-these-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.fix-these-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.fix-these-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+.fix-these-dot {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+}
+.fix-these-dot-warning {
+  background: var(--down);
+}
+.fix-these-dot-info {
+  background: var(--accent);
+}
+
 /* Paper doll: two equipment-slot columns flanking a centered full-body render, with the weapons row
    below. On narrow widths the three-column grid lets the columns sit close to the render (a proper
    list fallback for very narrow viewports + accessibility is a follow-up). */
