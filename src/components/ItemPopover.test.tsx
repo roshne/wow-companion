@@ -1,7 +1,24 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { ItemPopover, type EquippedItem } from "./ItemPopover";
 import { QUALITY_COLORS } from "../lib/wow";
+
+/** A DOMRect with the given edges (the rest zeroed) — for stubbing the popover's measured geometry. */
+const rectAt = (overrides: Partial<DOMRect>): DOMRect =>
+  ({
+    x: 0,
+    y: 0,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: 0,
+    height: 0,
+    toJSON: () => ({}),
+    ...overrides,
+  }) as DOMRect;
+
+afterEach(() => vi.restoreAllMocks());
 
 /** An epic head item (ilvl 483, Soulbound) — the common fixture for the header assertions. */
 const item: EquippedItem = {
@@ -219,5 +236,32 @@ describe("ItemPopover", () => {
   it("renders no gear-check section when the slot has no findings", () => {
     const { container } = render(<ItemPopover item={item} onClose={() => {}} />);
     expect(container.querySelector(".item-popover-findings")).toBeNull();
+  });
+
+  it("keeps the default placement when the popover fits in the viewport", () => {
+    render(<ItemPopover item={item} onClose={() => {}} />);
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).not.toHaveClass("item-popover-right");
+    expect(dialog).not.toHaveClass("item-popover-above");
+  });
+
+  it("flips to right-aligned when it would overflow the right edge", () => {
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(
+      rectAt({ right: window.innerWidth + 100, bottom: 50 }),
+    );
+    render(<ItemPopover item={item} onClose={() => {}} />);
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveClass("item-popover-right");
+    expect(dialog).not.toHaveClass("item-popover-above");
+  });
+
+  it("flips above the trigger when it would overflow the bottom edge", () => {
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(
+      rectAt({ right: 50, bottom: window.innerHeight + 100 }),
+    );
+    render(<ItemPopover item={item} onClose={() => {}} />);
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveClass("item-popover-above");
+    expect(dialog).not.toHaveClass("item-popover-right");
   });
 });
