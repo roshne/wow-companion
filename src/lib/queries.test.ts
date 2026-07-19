@@ -34,6 +34,7 @@ import {
   fetchRealmAuctions,
   fetchCommodities,
   fetchItemName,
+  fetchItemMedia,
   realmAuctionsQuery,
   commoditiesQuery,
 } from "./queries";
@@ -591,6 +592,42 @@ describe("fetchItemName", () => {
     const { bnet, get } = mockBnet();
     get.mockResolvedValue({ data: { id: 1 }, response: mockResponse(200) });
     await expect(fetchItemName(bnet, 1)).resolves.toBeNull();
+  });
+});
+
+describe("fetchItemMedia", () => {
+  it("requests the static namespace with a numeric item id and returns the icon URL", async () => {
+    const { bnet, get } = mockBnet("us");
+    get.mockResolvedValue({
+      data: {
+        id: 19019,
+        assets: [
+          { key: "icon", value: "http://img/icon.jpg" },
+          { key: "large", value: "http://img/large.jpg" },
+        ],
+      },
+      response: mockResponse(200),
+    });
+    const icon = await fetchItemMedia(bnet, 19019);
+    expect(icon).toBe("http://img/icon.jpg");
+    expect(get).toHaveBeenCalledWith("/data/wow/media/item/{itemId}", {
+      params: { path: { itemId: 19019 }, query: { namespace: "static-us", locale: "en_US" } },
+    });
+  });
+
+  it("returns null (best-effort) on a non-OK response instead of throwing", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: undefined, response: mockResponse(404) });
+    await expect(fetchItemMedia(bnet, 1)).resolves.toBeNull();
+  });
+
+  it("returns null when the body has no icon asset", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({
+      data: { assets: [{ key: "large", value: "http://img/large.jpg" }] },
+      response: mockResponse(200),
+    });
+    await expect(fetchItemMedia(bnet, 1)).resolves.toBeNull();
   });
 });
 

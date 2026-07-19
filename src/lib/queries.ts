@@ -442,6 +442,24 @@ export async function fetchItemName(
   return typeof quality === "string" ? { name: data.name, quality } : { name: data.name };
 }
 
+/**
+ * Resolve one item's icon URL from its media document (static namespace, `locale=en_US`). Best-effort:
+ * returns `null` on any non-OK response or a body with no `icon` asset. Backs the paper doll's
+ * viewport-only `useItemIcons` resolver. (This path types `itemId` as a number, unlike the string id
+ * `fetchItemName` passes for `/data/wow/item/{itemId}`.)
+ */
+export async function fetchItemMedia(bnet: BlizzardClient, itemId: number): Promise<string | null> {
+  const { data, response } = await bnet.api.GET("/data/wow/media/item/{itemId}", {
+    params: {
+      path: { itemId },
+      query: { namespace: bnet.namespace("static"), locale: "en_US" },
+    },
+  });
+  if (!response.ok) return null;
+  const icon = data?.assets?.find((a) => a.key === "icon")?.value;
+  return typeof icon === "string" && icon.length > 0 ? icon : null;
+}
+
 // Query-option factories: region-scoped keys + per-endpoint staleTime. Components call these and
 // spread the result into `useQuery`. staleTime is the main lever for staying under the rate limits —
 // the token/realm docs move slowly (~5 min), character data a little faster (~60 s), and a
