@@ -13,6 +13,20 @@ export function toCharacterName(input: string): string {
 }
 
 /**
+ * Find the realm index entry a typed value refers to — by display name (what the autocomplete fills
+ * in) or by an already-slugged value — or `undefined` when nothing matches. Shared by realm-slug
+ * resolution and cross-region detection so both agree on what counts as a match.
+ */
+export function findRealm<T extends { name: string; slug: string }>(
+  input: string,
+  realms: T[],
+): T | undefined {
+  const derived = toRealmSlug(input);
+  const typed = input.trim().toLowerCase();
+  return realms.find((r) => r.name.toLowerCase() === typed || r.slug === derived);
+}
+
+/**
  * Resolve a typed realm value to its true API slug using the realm index. When the input matches an
  * index entry — by display name (what the autocomplete fills in) or by an already-slugged value — that
  * entry's real `slug` is used, which is correct even for realms whose slug isn't just the hyphenated
@@ -20,10 +34,7 @@ export function toCharacterName(input: string): string {
  * input with no match, so an out-of-list realm still submits as before.
  */
 export function resolveRealmSlug(input: string, realms: { name: string; slug: string }[]): string {
-  const derived = toRealmSlug(input);
-  const typed = input.trim().toLowerCase();
-  const match = realms.find((r) => r.name.toLowerCase() === typed || r.slug === derived);
-  return match ? match.slug : derived;
+  return findRealm(input, realms)?.slug ?? toRealmSlug(input);
 }
 
 /**

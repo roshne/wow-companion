@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { toRealmSlug, toCharacterName, toGuildNameSlug, resolveRealmSlug } from "./slug";
+import { toRealmSlug, toCharacterName, toGuildNameSlug, resolveRealmSlug, findRealm } from "./slug";
 
 describe("toRealmSlug", () => {
   it("trims and lowercases", () => {
@@ -50,6 +50,28 @@ describe("resolveRealmSlug", () => {
 
   it("falls back to the derived slug when the index is empty", () => {
     expect(resolveRealmSlug("Argent Dawn", [])).toBe("argent-dawn");
+  });
+});
+
+describe("findRealm", () => {
+  const REALMS = [
+    { name: "Argent Dawn", slug: "argent-dawn" },
+    { name: "Aggra (Português)", slug: "aggra-portugues" },
+  ];
+
+  it("matches by display name (case-insensitively)", () => {
+    expect(findRealm("argent dawn", REALMS)).toEqual({ name: "Argent Dawn", slug: "argent-dawn" });
+  });
+
+  it("matches by an already-slugged value", () => {
+    expect(findRealm("aggra-portugues", REALMS)).toEqual({
+      name: "Aggra (Português)",
+      slug: "aggra-portugues",
+    });
+  });
+
+  it("returns undefined when nothing matches", () => {
+    expect(findRealm("Tichondrius", REALMS)).toBeUndefined();
   });
 });
 
