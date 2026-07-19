@@ -11,6 +11,48 @@ const item: EquippedItem = {
   binding: { type: "ON_ACQUIRE", name: "Soulbound" },
 };
 
+/** A fully-populated item exercising every body section: stats, sockets, enchant, set, transmog. */
+const fullItem: EquippedItem = {
+  name: "Crown of Testing",
+  quality: { type: "EPIC" },
+  level: { value: 483, display_string: "Item Level 483" },
+  binding: { name: "Soulbound" },
+  armor: { value: 1200, display: { display_string: "1,200 Armor" } },
+  stats: [
+    {
+      type: { type: "STAMINA" },
+      display: { display_string: "+800 Stamina" },
+      is_equip_bonus: false,
+    },
+    {
+      type: { type: "CRIT_RATING" },
+      display: { display_string: "+176 Critical Strike" },
+      is_equip_bonus: true,
+    },
+  ],
+  sockets: [
+    {
+      socket_type: { type: "PRISMATIC", name: "Prismatic" },
+      item: { name: "Quick Sapphire" },
+      display_string: "+176 Haste",
+    },
+    { socket_type: { type: "PRISMATIC", name: "Prismatic" } },
+  ],
+  enchantments: [{ display_string: "Enchanted: +200 Haste" }],
+  set: {
+    item_set: { name: "Vestments of Testing" },
+    items: [
+      { item: { name: "Crown of Testing" }, is_equipped: true },
+      { item: { name: "Robe of Testing" }, is_equipped: false },
+    ],
+    effects: [
+      { display_string: "(2) Set: +1000 Stamina", required_count: 2, is_active: true },
+      { display_string: "(4) Set: Something Big", required_count: 4, is_active: false },
+    ],
+  },
+  transmog: { item: { name: "Hidden Helm" }, display_string: "Transmogrified to: Hidden Helm" },
+};
+
 describe("ItemPopover", () => {
   it("renders a dialog labelled by the item name, with a quality-colored name", () => {
     render(<ItemPopover item={item} onClose={() => {}} />);
@@ -85,5 +127,64 @@ describe("ItemPopover", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("surfaces stats, a socketed gem, an empty socket, an enchant, set bonuses, and transmog", () => {
+    const { container } = render(<ItemPopover item={fullItem} onClose={() => {}} />);
+    const dialog = screen.getByRole("dialog");
+
+    // Stats — armor + a primary stat, with the secondary (equip-bonus) stat flagged distinctly.
+    expect(within(dialog).getByText("1,200 Armor")).toBeInTheDocument();
+    expect(within(dialog).getByText("+800 Stamina")).toBeInTheDocument();
+    expect(within(dialog).getByText("+176 Critical Strike")).toHaveClass("stat-secondary");
+
+    // Sockets — the gem name, plus the empty socket shown as such (not omitted).
+    expect(within(dialog).getByText("Quick Sapphire")).toBeInTheDocument();
+    expect(within(dialog).getByText("Empty Prismatic Socket")).toHaveClass("socket-empty");
+
+    // Enchant.
+    expect(within(dialog).getByText("Enchanted: +200 Haste")).toBeInTheDocument();
+
+    // Set — name + equipped piece count, with active vs. inactive effects styled apart.
+    expect(within(dialog).getByText("Vestments of Testing (1/2)")).toBeInTheDocument();
+    expect(within(dialog).getByText("(2) Set: +1000 Stamina")).toHaveClass("set-effect-active");
+    expect(within(dialog).getByText("(4) Set: Something Big")).toHaveClass("set-effect-inactive");
+
+    // Transmog.
+    expect(within(dialog).getByText("Transmogrified to: Hidden Helm")).toBeInTheDocument();
+
+    expect(container.querySelector(".item-popover-body")).toBeInTheDocument();
+  });
+
+  it("renders weapon damage / attack speed / dps under stats", () => {
+    const weapon: EquippedItem = {
+      name: "Blade of Testing",
+      quality: { type: "EPIC" },
+      level: { value: 480 },
+      weapon: {
+        damage: { display_string: "234 - 351 Damage" },
+        attack_speed: { display_string: "Speed 2.60" },
+        dps: { display_string: "(112.5 damage per second)" },
+      },
+    };
+    render(<ItemPopover item={weapon} onClose={() => {}} />);
+    const dialog = screen.getByRole("dialog");
+
+    expect(within(dialog).getByText("234 - 351 Damage")).toBeInTheDocument();
+    expect(within(dialog).getByText("Speed 2.60")).toBeInTheDocument();
+    expect(within(dialog).getByText("(112.5 damage per second)")).toBeInTheDocument();
+  });
+
+  it("omits every body section (no crash) for a bare item, leaving just the header", () => {
+    const bare: EquippedItem = {
+      name: "Plain Cloak",
+      quality: { type: "UNCOMMON" },
+      level: { value: 400 },
+    };
+    const { container } = render(<ItemPopover item={bare} onClose={() => {}} />);
+
+    expect(screen.getByRole("dialog", { name: "Plain Cloak" })).toBeInTheDocument();
+    // No body wrapper at all — the header stands alone.
+    expect(container.querySelector(".item-popover-body")).toBeNull();
   });
 });
