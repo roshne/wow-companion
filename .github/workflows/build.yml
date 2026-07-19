@@ -18,7 +18,7 @@ concurrency:
 jobs:
   windows-exe:
     name: Windows exe
-    runs-on: [self-hosted, windows] # dev-box self-hosted runner (0 billed min)
+    runs-on: windows-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -42,13 +42,27 @@ jobs:
 
   linux-bin:
     name: Linux binary
-    runs-on: [self-hosted, linux] # NucBox G5 self-hosted runner (0 billed min)
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      # Tauri's webview (webkitgtk) and keyring Secret Service backend (libdbus-1) are
-      # linked at build time; they're pre-installed on the self-hosted runner (same dep
-      # set as ci.yml's rust-linux job), so there's no apt step here.
+      # Tauri's webview (webkitgtk) and the keyring Secret Service backend (libdbus-1)
+      # are system libraries the cargo build links against — install them first.
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libdbus-1-dev \
+            pkg-config
       - uses: actions/setup-node@v4
         with:
           node-version: 22
