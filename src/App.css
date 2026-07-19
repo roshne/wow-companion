@@ -310,6 +310,40 @@ button.doll-slot:focus-visible {
   border-top-left-radius: 4px;
   font-variant-numeric: tabular-nums;
 }
+/* Gear-check badge: a small count chip flagging a slot's findings (empty socket, missing enchant,
+   missing off-hand, ilvl outlier), colored by worst severity. Decorative — the detail rides in the
+   slot's aria-label. */
+.gear-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0.95rem;
+  height: 0.95rem;
+  padding: 0 0.2rem;
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.gear-badge-warning {
+  background: var(--down);
+}
+.gear-badge-info {
+  background: var(--accent);
+}
+/* On a doll slot: pinned to the top-left corner, inset a touch so the slot's overflow:hidden doesn't
+   clip it. Absolute, so an unflagged slot has no layout shift. */
+.doll-badge {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+}
+/* In the compact list: inline, trailing the item name / finding text. */
+.gear-list-badge {
+  margin-left: 0.35rem;
+}
 /* Compact gear list (the narrow-viewport fallback for the doll): an item's icon inline with its name.
    The cell is a <button> (opens the item-detail popover), reset to read as plain text + icon. */
 .gear-list-item {
