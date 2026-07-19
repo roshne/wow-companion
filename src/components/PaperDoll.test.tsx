@@ -1,9 +1,23 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import { PaperDoll } from "./PaperDoll";
 import { renderWithClient } from "../test/utils";
 import { mockBnet, mockResponse } from "../test/mocks";
 import { QUALITY_COLORS } from "../lib/wow";
+
+/** Install a `window.matchMedia` reporting the given match state (drives the narrow-viewport switch). */
+function installMatchMedia(matches: boolean) {
+  window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+    matches,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  })) as unknown as typeof window.matchMedia;
+}
 
 /** A two-item equipment doc: an epic head (ilvl 483) and a rare ring (ilvl 470). */
 const equipment = {
@@ -48,6 +62,11 @@ function routeGet(
 
 describe("PaperDoll", () => {
   beforeEach(() => localStorage.clear());
+  // Most tests want the wide (doll) layout, which is the default when matchMedia is absent; the
+  // narrow-viewport tests install it, so clear it back to undefined afterwards.
+  afterEach(() => {
+    delete (window as Partial<Window & typeof globalThis>).matchMedia;
+  });
 
   it("places each equipped item in its slot by slot.type, with its resolved icon", async () => {
     const { bnet, get } = mockBnet();
@@ -142,5 +161,50 @@ describe("PaperDoll", () => {
     renderWithClient(<PaperDoll bnet={bnet} realmSlug="r" characterName="Asmon" />);
 
     await waitFor(() => expect(screen.getByText("Failed (HTTP 500).")).toBeInTheDocument());
+  });
+
+  it("renders the compact list — not the doll — on a narrow viewport", async () => {
+    installMatchMedia(true);
+    const { bnet, get } = mockBnet();
+    routeGet(get);
+    const { container } = renderWithClient(
+      <PaperDoll bnet={bnet} realmSlug="r" characterName="Asmon" />,
+    );
+
+    const table = await screen.findByRole("table", { name: "Equipment" });
+    expect(table).toBeInTheDocument();
+    // The 2D doll is not in the DOM — this is a real swap, not a CSS hide.
+    expect(container.querySelector(".paper-doll")).toBeNull();
+    expect(within(table).getByText("Crown of Testing")).toBeInTheDocument();
+    expect(within(table).getByText("Head")).toBeInTheDocument();
+    expect(within(table).getByText("483")).toBeInTheDocument();
+  });
+
+  it("the list carries the same slot / item / ilvl data as the doll", async () => {
+    installMatchMedia(true);
+    const { bnet, get } = mockBnet();
+    routeGet(get);
+    renderWithClient(<PaperDoll bnet={bnet} realmSlug="r" characterName="Asmon" />);
+
+    const table = await screen.findByRole("table", { name: "Equipment" });
+    // Both equipped items appear, each with its slot label, quality-colored name, and item level.
+    expect(within(table).getByText("Head")).toBeInTheDocument();
+    expect(within(table).getByText("Ring 1")).toBeInTheDocument();
+    expect(within(table).getByText("Crown of Testing")).toHaveStyle({ color: QUALITY_COLORS.EPIC });
+    expect(within(table).getByText("483")).toBeInTheDocument();
+    expect(within(table).getByText("Band of Testing")).toHaveStyle({ color: QUALITY_COLORS.RARE });
+    expect(within(table).getByText("470")).toBeInTheDocument();
+  });
+
+  it("exposes the list as a labeled table with column headers", async () => {
+    installMatchMedia(true);
+    const { bnet, get } = mockBnet();
+    routeGet(get);
+    renderWithClient(<PaperDoll bnet={bnet} realmSlug="r" characterName="Asmon" />);
+
+    await screen.findByRole("table", { name: "Equipment" });
+    expect(screen.getByRole("columnheader", { name: "Slot" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Item" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "iLvl" })).toBeInTheDocument();
   });
 });
