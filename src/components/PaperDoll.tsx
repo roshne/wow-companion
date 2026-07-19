@@ -9,6 +9,7 @@ import {
 } from "../lib/queries";
 import { QUALITY_COLORS } from "../lib/wow";
 import { useItemIcons } from "../lib/useItemIcons";
+import { useMediaQuery } from "../lib/useMediaQuery";
 import { SkeletonLines } from "./Skeleton";
 import { EmptyState } from "./EmptyState";
 
@@ -19,6 +20,13 @@ type EquippedItem = NonNullable<CharacterEquipment["equipped_items"]>[number];
 interface SlotSpec {
   type: string;
   label: string;
+}
+
+/** A filled slot, resolved for the compact list: its label, equipment entry, and (maybe) icon URL. */
+interface GearRow {
+  label: string;
+  item: EquippedItem;
+  icon: string | undefined;
 }
 
 // The 18 retail equipment slots in classic paper-doll order: two flanking columns and a weapons row.
@@ -46,6 +54,8 @@ const WEAPON_SLOTS: SlotSpec[] = [
   { type: "MAIN_HAND", label: "Main Hand" },
   { type: "OFF_HAND", label: "Off Hand" },
 ];
+// Head-to-toe order for the compact list (left column, right column, then weapons).
+const ALL_SLOTS: SlotSpec[] = [...LEFT_SLOTS, ...RIGHT_SLOTS, ...WEAPON_SLOTS];
 
 /**
  * The Gear surface: the classic paper doll. The character's full-body render sits centered, with the
@@ -53,6 +63,9 @@ const WEAPON_SLOTS: SlotSpec[] = [
  * border, and an item-level badge; empty slots muted. Equipment is the primary fetch (its error/pending
  * gate the view); the render is best-effort (render → avatar → a name-initial placeholder), and icons
  * resolve lazily through the persisted `useItemIcons` cache.
+ *
+ * On narrow viewports the 2D doll can't breathe, so it degrades to a compact, accessible list of the
+ * same gear (`GearList`) — driven by a JS media query so the switch is a real DOM swap, not just CSS.
  */
 export function PaperDoll({
   bnet,
@@ -66,6 +79,7 @@ export function PaperDoll({
   const equip = useQuery(characterEquipmentQuery(bnet, realmSlug, characterName));
   const mediaQ = useQuery(characterMediaQuery(bnet, realmSlug, characterName));
   const [failedSrcs, setFailedSrcs] = useState<Set<string>>(new Set());
+  const compact = useMediaQuery("(max-width: 640px)");
 
   const items = useMemo(
     () => (equip.data?.equipped_items ?? []).filter((it) => it.slot?.type),
@@ -86,6 +100,20 @@ export function PaperDoll({
     return <EmptyState message={describeError(equip.error)} onRetry={() => void equip.refetch()} />;
   if (equip.isPending || !equip.data) return <SkeletonLines lines={6} />;
 
+  const iconFor = (item: EquippedItem | undefined) => {
+    const id = item?.item?.id;
+    return typeof id === "number" ? icons[id] : undefined;
+  };
+
+  // Narrow viewport: the same gear as a compact, labeled table (accessible + width-friendly).
+  if (compact) {
+    const rows: GearRow[] = ALL_SLOTS.flatMap((s) => {
+      const item = bySlot.get(s.type);
+      return item ? [{ label: s.label, item, icon: iconFor(item) }] : [];
+    });
+    return <GearList rows={rows} />;
+  }
+
   const media = mediaQ.data ?? { render: null, avatar: null };
   // Prefer the full-body render, then the avatar; skip any source that already failed to load.
   const imageSrc = [media.render, media.avatar].find((s): s is string => !!s && !failedSrcs.has(s));
@@ -93,15 +121,7 @@ export function PaperDoll({
 
   const renderSlot = (s: SlotSpec) => {
     const item = bySlot.get(s.type);
-    const id = item?.item?.id;
-    return (
-      <Slot
-        key={s.type}
-        label={s.label}
-        item={item}
-        icon={typeof id === "number" ? icons[id] : undefined}
-      />
-    );
+    return <Slot key={s.type} label={s.label} item={item} icon={iconFor(item)} />;
   };
 
   return (
@@ -157,6 +177,46 @@ function Slot({
     >
       {icon ? <img src={icon} alt="" /> : <div className="doll-icon-pending" aria-hidden="true" />}
       {typeof ilvl === "number" ? <span className="doll-ilvl">{ilvl}</span> : null}
+    </div>
+  );
+}
+
+/**
+ * The compact fallback for narrow viewports: the equipment as a labeled Slot / Item / iLvl table — a
+ * semantic table with column headers, so gear stays keyboard- and screen-reader-reachable without the
+ * visual doll. The item name is quality-colored, with the resolved icon inline.
+ */
+function GearList({ rows }: { rows: GearRow[] }) {
+  return (
+    <div style={{ overflowX: "auto" }}>
+      <table className="grid gear-list" aria-label="Equipment">
+        <thead>
+          <tr>
+            <th>Slot</th>
+            <th>Item</th>
+            <th>iLvl</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(({ label, item, icon }) => {
+            const quality = item.quality?.type;
+            return (
+              <tr key={label}>
+                <td>{label}</td>
+                <td>
+                  <span className="gear-list-item">
+                    {icon ? <img className="gear-list-icon" src={icon} alt="" /> : null}
+                    <span style={{ color: quality ? QUALITY_COLORS[quality] : undefined }}>
+                      {item.name ?? "—"}
+                    </span>
+                  </span>
+                </td>
+                <td>{item.level?.value ?? "—"}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }

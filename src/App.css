@@ -298,6 +298,17 @@ form.card input {
   border-top-left-radius: 4px;
   font-variant-numeric: tabular-nums;
 }
+/* Compact gear list (the narrow-viewport fallback for the doll): an item's icon inline with its name. */
+.gear-list-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.gear-list-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+}
 
 /* Auction house: a virtualized, item-aggregated list. Header and rows share one grid template so the
    columns line up across the (scrolling) list boundary. */
