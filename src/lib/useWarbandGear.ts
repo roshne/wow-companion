@@ -3,12 +3,18 @@ import type { Region } from "../vendor/battlenet-wow-client";
 import { makeClient } from "./bnet";
 import { characterEquipmentQuery, type CharacterEquipment } from "./queries";
 import { fetchRegionRealmIndexes, resolveCharacterRegion } from "./region";
-import { gearCheck, type GearFinding } from "./gearCheck";
+import { gearCheck, ILVL_OUTLIER_THRESHOLD, type GearFinding } from "./gearCheck";
 import type { WarbandCharacter } from "./warband";
 
+/** The character's largest equipped set — a proxy for their tier set (see {@link tierSetInfo}). */
+export interface TierSet {
+  name: string;
+  pieces: number;
+}
+
 /** One warband character's derived gear: the region/realm it was fetched from, its per-slot item
- *  levels, and its gear-check findings. `failed` marks a character whose equipment fetch errored — a
- *  placeholder row, not real data. */
+ *  levels, its gear-check findings, and its largest equipped set. `failed` marks a character whose
+ *  equipment fetch errored — a placeholder row, not real data. */
 export interface WarbandGear {
   character: WarbandCharacter;
   region: Region;
@@ -16,6 +22,7 @@ export interface WarbandGear {
   /** `slot.type` → item level, for the slots this character has equipped. */
   itemLevels: Record<string, number>;
   findings: GearFinding[];
+  tierSet: TierSet | null;
   failed: boolean;
 }
 
@@ -31,6 +38,40 @@ export function deriveItemLevels(equipment: CharacterEquipment): Record<string, 
     if (slot && typeof value === "number") itemLevels[slot] = value;
   }
   return itemLevels;
+}
+
+/**
+ * The character's weakest slot(s): the slot type(s) at the minimum item level — but only when that
+ * minimum is more than {@link ILVL_OUTLIER_THRESHOLD} below their average, so an even set (or a single
+ * slot) has no "weakest". Ties return every slot at the minimum.
+ */
+export function weakestSlots(itemLevels: Record<string, number>): string[] {
+  const entries = Object.entries(itemLevels);
+  if (entries.length < 2) return [];
+  const values = entries.map(([, v]) => v);
+  const min = Math.min(...values);
+  const average = values.reduce((sum, v) => sum + v, 0) / values.length;
+  if (average - min <= ILVL_OUTLIER_THRESHOLD) return [];
+  return entries.filter(([, v]) => v === min).map(([slot]) => slot);
+}
+
+/**
+ * The character's largest equipped set — a proxy for their tier set. A character can wear pieces of
+ * more than one set, so group the equipped items by `set.item_set.id` and return the one with the most
+ * pieces (no maintained tier-id list). Null when nothing equipped carries set data.
+ */
+export function tierSetInfo(equipment: CharacterEquipment): TierSet | null {
+  const counts = new Map<number, TierSet>();
+  for (const item of equipment.equipped_items ?? []) {
+    const id = item.set?.item_set?.id;
+    if (typeof id !== "number") continue;
+    const existing = counts.get(id);
+    if (existing) existing.pieces += 1;
+    else counts.set(id, { name: item.set?.item_set?.name ?? "Set", pieces: 1 });
+  }
+  let best: TierSet | null = null;
+  for (const set of counts.values()) if (!best || set.pieces > best.pieces) best = set;
+  return best;
 }
 
 /** Run `task` over `items` with at most `limit` in flight at once, preserving input order. */
@@ -76,10 +117,19 @@ export async function fetchWarbandGear(
         realmSlug,
         itemLevels: deriveItemLevels(equipment),
         findings: gearCheck(equipment),
+        tierSet: tierSetInfo(equipment),
         failed: false,
       };
     } catch {
-      return { character, region, realmSlug, itemLevels: {}, findings: [], failed: true };
+      return {
+        character,
+        region,
+        realmSlug,
+        itemLevels: {},
+        findings: [],
+        tierSet: null,
+        failed: true,
+      };
     }
   });
 }

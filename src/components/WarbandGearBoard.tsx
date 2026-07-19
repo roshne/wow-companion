@@ -1,6 +1,6 @@
 import type { Region } from "../vendor/battlenet-wow-client";
 import type { WarbandCharacter } from "../lib/warband";
-import { useWarbandGear, type WarbandGear } from "../lib/useWarbandGear";
+import { useWarbandGear, weakestSlots, type WarbandGear } from "../lib/useWarbandGear";
 import { BOARD_SLOTS } from "../lib/slots";
 import { ILVL_OUTLIER_THRESHOLD } from "../lib/gearCheck";
 import { CLASS_COLORS } from "../lib/wow";
@@ -33,6 +33,9 @@ export function WarbandGearBoard({
         <thead>
           <tr>
             <th>Character</th>
+            <th className="warband-board-slot" title="Largest equipped set (tier-set proxy)">
+              Set
+            </th>
             {BOARD_SLOTS.map((s) => (
               <th key={s.type} className="warband-board-slot">
                 {s.label}
@@ -64,7 +67,7 @@ function WarbandBoardRow({ gear }: { gear: WarbandGear }) {
     return (
       <tr>
         {name}
-        <td colSpan={BOARD_SLOTS.length} className="muted">
+        <td colSpan={BOARD_SLOTS.length + 1} className="muted">
           Couldn't load gear
         </td>
       </tr>
@@ -72,17 +75,30 @@ function WarbandBoardRow({ gear }: { gear: WarbandGear }) {
   }
 
   const average = boardAverage(gear.itemLevels);
+  const weakest = new Set(weakestSlots(gear.itemLevels));
+  const tier = gear.tierSet;
   return (
     <tr>
       {name}
+      <td className="warband-board-set">
+        {tier && tier.pieces >= 2 ? <span title={tier.name}>{tier.pieces}pc</span> : "—"}
+      </td>
       {BOARD_SLOTS.map((s) => {
         const value = gear.itemLevels[s.type];
         const low =
           typeof value === "number" && average !== null && average - value > ILVL_OUTLIER_THRESHOLD;
+        const className = [
+          "warband-board-cell",
+          low ? "warband-board-cell-low" : "",
+          weakest.has(s.type) ? "warband-board-cell-weakest" : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
         return (
           <td
             key={s.type}
-            className={low ? "warband-board-cell warband-board-cell-low" : "warband-board-cell"}
+            className={className}
+            title={weakest.has(s.type) ? "Weakest slot" : undefined}
           >
             {value ?? "—"}
           </td>

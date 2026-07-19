@@ -7,7 +7,7 @@ import type { WarbandCharacter } from "./warband";
 // needed (the real network call is short-circuited by the fake QueryClient's `fetchQuery`).
 vi.mock("./bnet", () => ({ makeClient: (region: Region) => ({ region }) }));
 
-import { fetchWarbandGear, deriveItemLevels } from "./useWarbandGear";
+import { fetchWarbandGear, deriveItemLevels, weakestSlots, tierSetInfo } from "./useWarbandGear";
 
 // Realm indexes: "Tichondrius" is US-only, "Aggra (Português)" is EU-only (slug differs from the
 // naive derivation). KR/TW list nothing.
@@ -24,8 +24,17 @@ function equipmentFor(name: string) {
   if (name === "Tank")
     return {
       equipped_items: [
-        { slot: { type: "HEAD" }, level: { value: 480 } },
-        { slot: { type: "FINGER_1" }, level: { value: 470 } }, // enchantable + un-enchanted → a finding
+        {
+          slot: { type: "HEAD" },
+          level: { value: 480 },
+          set: { item_set: { id: 99, name: "Tier of Testing" } },
+        },
+        // FINGER_1 is enchantable + un-enchanted → a finding; same set as HEAD → a 2-piece tier set.
+        {
+          slot: { type: "FINGER_1" },
+          level: { value: 470 },
+          set: { item_set: { id: 99, name: "Tier of Testing" } },
+        },
       ],
     };
   if (name === "Healer")
@@ -69,6 +78,8 @@ describe("fetchWarbandGear", () => {
     expect(gear[0].itemLevels).toEqual({ HEAD: 480, FINGER_1: 470 });
     // FINGER_1 is enchantable and un-enchanted → a missing-enchant finding.
     expect(gear[0].findings.some((f) => f.kind === "missing-enchant")).toBe(true);
+    // HEAD + FINGER_1 share a set → a 2-piece tier set.
+    expect(gear[0].tierSet).toEqual({ name: "Tier of Testing", pieces: 2 });
     expect(gear[0].failed).toBe(false);
   });
 
@@ -96,7 +107,7 @@ describe("fetchWarbandGear", () => {
     );
 
     expect(gear[0].failed).toBe(false);
-    expect(gear[1]).toMatchObject({ failed: true, itemLevels: {}, findings: [] });
+    expect(gear[1]).toMatchObject({ failed: true, itemLevels: {}, findings: [], tierSet: null });
     expect(gear[1].character.name).toBe("Broken");
   });
 
@@ -106,5 +117,40 @@ describe("fetchWarbandGear", () => {
 
     const keys = fetchQuery.mock.calls.map((c) => c[0].queryKey);
     expect(keys).toContainEqual(["character-equipment", "us", "tichondrius", "Tank"]);
+  });
+});
+
+describe("weakestSlots", () => {
+  it("returns the slot(s) at the minimum when meaningfully below average", () => {
+    // average 470 → LEGS (450) is 20 below → the weakest.
+    expect(weakestSlots({ HEAD: 480, CHEST: 480, LEGS: 450 })).toEqual(["LEGS"]);
+  });
+
+  it("returns nothing for an even set or a single slot", () => {
+    expect(weakestSlots({ HEAD: 480, CHEST: 478 })).toEqual([]); // spread within the threshold
+    expect(weakestSlots({ HEAD: 480 })).toEqual([]);
+    expect(weakestSlots({})).toEqual([]);
+  });
+});
+
+describe("tierSetInfo", () => {
+  const equip = (items: unknown[]) =>
+    ({ equipped_items: items }) as Parameters<typeof tierSetInfo>[0];
+
+  it("counts pieces of the dominant equipped set, picking the largest when several", () => {
+    const info = tierSetInfo(
+      equip([
+        { set: { item_set: { id: 1, name: "Tier" } } },
+        { set: { item_set: { id: 1, name: "Tier" } } },
+        { set: { item_set: { id: 1, name: "Tier" } } },
+        { set: { item_set: { id: 2, name: "Crafted" } } }, // a smaller, competing set
+        { level: { value: 480 } }, // no set → ignored
+      ]),
+    );
+    expect(info).toEqual({ name: "Tier", pieces: 3 });
+  });
+
+  it("returns null when nothing equipped carries set data", () => {
+    expect(tierSetInfo(equip([{ slot: { type: "HEAD" } }, {}]))).toBeNull();
   });
 });
