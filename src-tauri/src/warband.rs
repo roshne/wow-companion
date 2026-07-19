@@ -207,7 +207,7 @@ fn candidate_roots() -> Vec<PathBuf> {
 }
 
 /// All `Warbandeer_Characters.lua` files found under any client version / account,
-/// paired with the account-folder name (e.g. `ROSHNE`).
+/// paired with the account-folder name (e.g. `TESTACCOUNT`).
 fn find_sv_files() -> Vec<(PathBuf, String)> {
     let mut out = Vec::new();
     for root in candidate_roots() {
@@ -271,15 +271,15 @@ mod tests {
         WarbandeerCharDB = {
           ["numCharacters"] = 2,
           ["characters"] = {
-            ["Kobrick"] = {
-              ["name"] = "Kobrick",
-              ["realm"] = "Eitrigg",
-              ["guid"] = "Player-47-043DE0BE",
+            ["Testchar"] = {
+              ["name"] = "Testchar",
+              ["realm"] = "Testrealm",
+              ["guid"] = "Player-0-00000000",
               ["classId"] = 6,
               ["classKey"] = "DeathKnight",
               ["className"] = "Death Knight",
               ["isAlliance"] = true,
-              ["guild"] = "We Know",
+              ["guild"] = "Test Guild",
               ["ilvl"] = 644,
               ["basic"] = {
                 ["level"] = 90,
@@ -291,8 +291,8 @@ mod tests {
               },
               ["equipment"] = { ["ilvl"] = 278 },
             },
-            ["Bravo"] = {
-              ["realm"] = "Norgannon",
+            ["Altchar"] = {
+              ["realm"] = "Altrealm",
               ["classKey"] = "Warrior",
               ["basic"] = { ["level"] = 60 },
             },
@@ -304,16 +304,19 @@ mod tests {
     fn parses_and_sorts_characters() {
         let chars = parse_from_lua(FIXTURE).expect("parse");
         assert_eq!(chars.len(), 2);
-        // Sorted case-insensitively by name: Bravo before Kobrick.
-        assert_eq!(chars[0].name, "Bravo");
-        assert_eq!(chars[1].name, "Kobrick");
+        // Sorted case-insensitively by name: Altchar before Testchar.
+        assert_eq!(chars[0].name, "Altchar");
+        assert_eq!(chars[1].name, "Testchar");
     }
 
     #[test]
     fn extracts_nested_fields() {
         let chars = parse_from_lua(FIXTURE).expect("parse");
-        let k = chars.iter().find(|c| c.name == "Kobrick").expect("Kobrick");
-        assert_eq!(k.realm, "Eitrigg");
+        let k = chars
+            .iter()
+            .find(|c| c.name == "Testchar")
+            .expect("Testchar");
+        assert_eq!(k.realm, "Testrealm");
         assert_eq!(k.class_key.as_deref(), Some("DeathKnight"));
         assert_eq!(k.level, Some(90));
         // equipment.ilvl wins over the top-level ilvl.
@@ -330,10 +333,10 @@ mod tests {
         let chars = parse_from_lua(FIXTURE).expect("parse");
         let b = chars
             .iter()
-            .find(|c| c.realm == "Norgannon")
-            .expect("Bravo");
+            .find(|c| c.realm == "Altrealm")
+            .expect("Altchar");
         // name missing in the entry -> falls back to the table key.
-        assert_eq!(b.name, "Bravo");
+        assert_eq!(b.name, "Altchar");
         assert_eq!(b.level, Some(60));
         assert_eq!(b.item_level, None);
     }
@@ -343,8 +346,8 @@ mod tests {
     const FIXTURE_MALFORMED: &str = r#"
         WarbandeerCharDB = {
           ["characters"] = {
-            ["Good"] = { ["realm"] = "Eitrigg", ["classKey"] = "Mage" },
-            ["Broken"] = { ["realm"] = "Eitrigg", ["classId"] = "not-a-number" },
+            ["Good"] = { ["realm"] = "Testrealm", ["classKey"] = "Mage" },
+            ["Broken"] = { ["realm"] = "Testrealm", ["classId"] = "not-a-number" },
           },
         }
     "#;
@@ -364,7 +367,7 @@ mod tests {
         WarbandeerCharDB = {
           ["characters"] = {
             ["Frac"] = {
-              ["realm"] = "Eitrigg",
+              ["realm"] = "Testrealm",
               ["equipment"] = { ["ilvl"] = 445.5 },
               ["basic"] = { ["level"] = 70 },
             },

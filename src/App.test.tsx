@@ -82,19 +82,19 @@ describe("App", () => {
         return Promise.resolve({
           account: "ACC",
           source: "s",
-          characters: [{ name: "Kobrick", realm: "Eitrigg" }],
+          characters: [{ name: "Testchar", realm: "Testrealm" }],
         });
       return Promise.resolve(undefined);
     });
     renderWithClient(<App />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Warband" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Kobrick" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Testchar" }));
 
     // Switched to the Character tab, with the roster entry seeded into the lookup form.
     await screen.findByRole("heading", { name: "Character Lookup" });
     const realmInput = screen.getByPlaceholderText(/Realm/);
-    await waitFor(() => expect(realmInput).toHaveValue("Eitrigg"));
-    expect(screen.getByPlaceholderText("Character name")).toHaveValue("Kobrick");
+    await waitFor(() => expect(realmInput).toHaveValue("Testrealm"));
+    expect(screen.getByPlaceholderText("Character name")).toHaveValue("Testchar");
   });
 });
