@@ -1,8 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 
-// Drive the board off a controlled useWarbandGear result — no fetching / QueryClient needed.
-vi.mock("../lib/useWarbandGear", () => ({ useWarbandGear: vi.fn() }));
+// Drive the board off a controlled useWarbandGear result — no fetching / QueryClient needed — while
+// keeping the real pure derivations (weakestSlots) the board also calls.
+vi.mock("../lib/useWarbandGear", async (importActual) => ({
+  ...(await importActual<typeof import("../lib/useWarbandGear")>()),
+  useWarbandGear: vi.fn(),
+}));
 
 import { WarbandGearBoard } from "./WarbandGearBoard";
 import { useWarbandGear, type WarbandGear } from "../lib/useWarbandGear";
@@ -22,6 +26,7 @@ function gearRow(
     realmSlug: "testrealm",
     itemLevels,
     findings: [],
+    tierSet: null,
     failed: false,
     ...over,
   };
@@ -84,5 +89,38 @@ describe("WarbandGearBoard", () => {
     render(<WarbandGearBoard characters={[]} region="us" />);
 
     expect(screen.queryByRole("table")).toBeNull();
+  });
+
+  it("highlights the character's weakest slot", () => {
+    mockResult({
+      isPending: false,
+      isError: false,
+      // average 470 → LEGS (450) is the weakest (20 below); the 480s are not.
+      data: [gearRow("Tank", { HEAD: 480, CHEST: 480, LEGS: 450 })],
+    });
+    render(<WarbandGearBoard characters={[]} region="us" />);
+
+    expect(screen.getByText("450")).toHaveClass("warband-board-cell-weakest");
+    expect(
+      screen.getAllByText("480").every((c) => !c.classList.contains("warband-board-cell-weakest")),
+    ).toBe(true);
+  });
+
+  it("shows the tier-set piece count for a tiered character and a dash for none", () => {
+    mockResult({
+      isPending: false,
+      isError: false,
+      data: [
+        gearRow("Tiered", { HEAD: 480 }, { tierSet: { name: "Tier of Testing", pieces: 4 } }),
+        gearRow("Plain", { HEAD: 470 }),
+      ],
+    });
+    render(<WarbandGearBoard characters={[]} region="us" />);
+
+    const table = screen.getByRole("table");
+    expect(within(table).getByRole("columnheader", { name: "Set" })).toBeInTheDocument();
+    // The tiered character's Set cell reads "4pc"; the plain one has none.
+    const tieredRow = within(table).getByText("Tiered").closest("tr") as HTMLElement;
+    expect(within(tieredRow).getByText("4pc")).toBeInTheDocument();
   });
 });

@@ -533,6 +533,16 @@ button.doll-slot:focus-visible {
   color: var(--down);
   font-weight: 600;
 }
+/* The single weakest slot (min ilvl, meaningfully below average): a tinted background on top of the
+   below-average text color, so the one to upgrade stands out. */
+.warband-board-cell-weakest {
+  background: rgba(200, 40, 40, 0.16);
+  font-weight: 700;
+}
+.warband-board-set {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
 
 /* Auction house: a virtualized, item-aggregated list. Header and rows share one grid template so the
    columns line up across the (scrolling) list boundary. */
