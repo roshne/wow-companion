@@ -102,11 +102,10 @@ export function PaperDoll({
     [items],
   );
   const icons = useItemIcons(bnet, ids);
-  // Gear-check findings grouped by `slot.type`, so each slot (filled or empty) can badge its own.
-  const findingsBySlot = useMemo(
-    () => (equip.data ? groupBySlot(gearCheck(equip.data)) : new Map<string, GearFinding[]>()),
-    [equip.data],
-  );
+  // Gear-check findings: the flat list drives the character summary count; grouped by `slot.type` so
+  // each slot (filled or empty) can badge and detail its own.
+  const findings = useMemo(() => (equip.data ? gearCheck(equip.data) : []), [equip.data]);
+  const findingsBySlot = useMemo(() => groupBySlot(findings), [findings]);
 
   if (equip.isError)
     return <EmptyState message={describeError(equip.error)} onRetry={() => void equip.refetch()} />;
@@ -131,7 +130,12 @@ export function PaperDoll({
         return [{ type: s.type, label: s.label, item: undefined, icon: undefined, findings }];
       return [];
     });
-    return <GearList rows={rows} openSlot={openSlot} onOpen={openItem} onClose={closePopover} />;
+    return (
+      <>
+        <GearSummary count={findings.length} />
+        <GearList rows={rows} openSlot={openSlot} onOpen={openItem} onClose={closePopover} />
+      </>
+    );
   }
 
   const media = mediaQ.data ?? { render: null, avatar: null };
@@ -156,25 +160,28 @@ export function PaperDoll({
   };
 
   return (
-    <div className="paper-doll">
-      <div className="doll-col">{LEFT_SLOTS.map(renderSlot)}</div>
-      <div className="doll-center">
-        {imageSrc ? (
-          <img
-            className={usingRender ? "doll-render" : "doll-render avatar-fallback"}
-            src={imageSrc}
-            alt=""
-            onError={() => setFailedSrcs((prev) => new Set(prev).add(imageSrc))}
-          />
-        ) : (
-          <div className="doll-render-placeholder" aria-hidden="true">
-            {characterName?.[0]?.toUpperCase() ?? "?"}
-          </div>
-        )}
+    <>
+      <GearSummary count={findings.length} />
+      <div className="paper-doll">
+        <div className="doll-col">{LEFT_SLOTS.map(renderSlot)}</div>
+        <div className="doll-center">
+          {imageSrc ? (
+            <img
+              className={usingRender ? "doll-render" : "doll-render avatar-fallback"}
+              src={imageSrc}
+              alt=""
+              onError={() => setFailedSrcs((prev) => new Set(prev).add(imageSrc))}
+            />
+          ) : (
+            <div className="doll-render-placeholder" aria-hidden="true">
+              {characterName?.[0]?.toUpperCase() ?? "?"}
+            </div>
+          )}
+        </div>
+        <div className="doll-col">{RIGHT_SLOTS.map(renderSlot)}</div>
+        <div className="doll-weapons">{WEAPON_SLOTS.map(renderSlot)}</div>
       </div>
-      <div className="doll-col">{RIGHT_SLOTS.map(renderSlot)}</div>
-      <div className="doll-weapons">{WEAPON_SLOTS.map(renderSlot)}</div>
-    </div>
+    </>
   );
 }
 
@@ -236,7 +243,7 @@ function Slot({
         {typeof ilvl === "number" ? <span className="doll-ilvl">{ilvl}</span> : null}
         <FindingBadge findings={findings} className="doll-badge" />
       </button>
-      {isOpen ? <ItemPopover item={item} onClose={onClose} /> : null}
+      {isOpen ? <ItemPopover item={item} findings={findings} onClose={onClose} /> : null}
     </div>
   );
 }
@@ -306,7 +313,9 @@ function GearList({
                       </span>
                       <FindingBadge findings={findings} className="gear-list-badge" />
                     </button>
-                    {isOpen ? <ItemPopover item={item} onClose={onClose} /> : null}
+                    {isOpen ? (
+                      <ItemPopover item={item} findings={findings} onClose={onClose} />
+                    ) : null}
                   </div>
                 </td>
                 <td>{item.level?.value ?? "—"}</td>
@@ -316,6 +325,19 @@ function GearList({
         </tbody>
       </table>
     </div>
+  );
+}
+
+/**
+ * An at-a-glance gear-check summary above the doll: the total finding count across all slots, or
+ * "All good" when the character is clean — so the whole state reads without opening each slot.
+ */
+function GearSummary({ count }: { count: number }) {
+  if (count === 0) return <p className="gear-summary gear-summary-clean">All good</p>;
+  return (
+    <p className="gear-summary gear-summary-issues">
+      {count} gear {count === 1 ? "issue" : "issues"}
+    </p>
   );
 }
 
