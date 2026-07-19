@@ -3,6 +3,10 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 // Warband loads the local Warbandeer export via the `get_warband` Tauri command; mock it.
 vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
+// Stub the gear board so these tests exercise the toggle without its data-fetching internals.
+vi.mock("./WarbandGearBoard", () => ({
+  WarbandGearBoard: () => <div data-testid="gear-board">board</div>,
+}));
 
 import { Warband } from "./Warband";
 import { invoke } from "@tauri-apps/api/core";
@@ -49,7 +53,7 @@ describe("Warband", () => {
         character({ name: "Altchar", realm: "Altrealm", level: 60, itemLevel: 150 }),
       ]),
     );
-    render(<Warband onOpenCharacter={onOpen} />);
+    render(<Warband onOpenCharacter={onOpen} region="us" />);
 
     await screen.findByText("Testchar");
     expect(screen.getByText("Altchar")).toBeInTheDocument();
@@ -60,7 +64,7 @@ describe("Warband", () => {
 
   it("shows a busy Refresh button while the load is pending", () => {
     mockInvoke.mockReturnValue(new Promise(() => {})); // never resolves
-    render(<Warband onOpenCharacter={onOpen} />);
+    render(<Warband onOpenCharacter={onOpen} region="us" />);
 
     const button = screen.getByRole("button");
     expect(button).toHaveTextContent("…");
@@ -69,7 +73,7 @@ describe("Warband", () => {
 
   it("surfaces an error and renders no table when the command fails", async () => {
     mockInvoke.mockRejectedValue("Could not find Warbandeer_Characters.lua.");
-    render(<Warband onOpenCharacter={onOpen} />);
+    render(<Warband onOpenCharacter={onOpen} region="us" />);
 
     await screen.findByText("Could not find Warbandeer_Characters.lua.");
     expect(screen.queryByRole("table")).toBeNull();
@@ -77,7 +81,7 @@ describe("Warband", () => {
 
   it("shows an empty state when the export has no characters", async () => {
     mockInvoke.mockResolvedValue(warband([]));
-    render(<Warband onOpenCharacter={onOpen} />);
+    render(<Warband onOpenCharacter={onOpen} region="us" />);
 
     await screen.findByText("No characters recorded yet.");
     expect(screen.getByText(/0 characters/)).toBeInTheDocument();
@@ -90,7 +94,7 @@ describe("Warband", () => {
         character({ name: "Zzz", itemLevel: 500 }),
       ]),
     );
-    render(<Warband onOpenCharacter={onOpen} />);
+    render(<Warband onOpenCharacter={onOpen} region="us" />);
 
     await screen.findByText("Aaa");
     const bodyNames = () =>
@@ -109,7 +113,7 @@ describe("Warband", () => {
 
   it("re-invokes the command when Refresh is clicked", async () => {
     mockInvoke.mockResolvedValue(warband([character({ name: "Testchar" })]));
-    render(<Warband onOpenCharacter={onOpen} />);
+    render(<Warband onOpenCharacter={onOpen} region="us" />);
 
     await screen.findByText("Testchar");
     expect(mockInvoke).toHaveBeenCalledTimes(1);
@@ -119,7 +123,7 @@ describe("Warband", () => {
 
   it("opens a character when its roster name is clicked", async () => {
     mockInvoke.mockResolvedValue(warband([character({ name: "Testchar", realm: "Testrealm" })]));
-    render(<Warband onOpenCharacter={onOpen} />);
+    render(<Warband onOpenCharacter={onOpen} region="us" />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Testchar" }));
     expect(onOpen).toHaveBeenCalledWith({ realm: "Testrealm", characterName: "Testchar" });
@@ -127,9 +131,25 @@ describe("Warband", () => {
 
   it("does not make a row clickable when it has no realm", async () => {
     mockInvoke.mockResolvedValue(warband([character({ name: "Ghost", realm: "" })]));
-    render(<Warband onOpenCharacter={onOpen} />);
+    render(<Warband onOpenCharacter={onOpen} region="us" />);
 
     await screen.findByText("Ghost");
     expect(screen.queryByRole("button", { name: "Ghost" })).toBeNull();
+  });
+
+  it("toggles between the roster and the gear board", async () => {
+    mockInvoke.mockResolvedValue(warband([character({ name: "Testchar", realm: "Testrealm" })]));
+    render(<Warband onOpenCharacter={onOpen} region="us" />);
+
+    await screen.findByText("Testchar"); // roster is the default view
+    expect(screen.queryByTestId("gear-board")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Gear board" }));
+    expect(screen.getByTestId("gear-board")).toBeInTheDocument();
+    expect(screen.queryByText("Testchar")).toBeNull(); // roster table gone
+
+    fireEvent.click(screen.getByRole("button", { name: "Roster" }));
+    expect(screen.getByText("Testchar")).toBeInTheDocument();
+    expect(screen.queryByTestId("gear-board")).toBeNull();
   });
 });

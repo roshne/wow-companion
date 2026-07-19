@@ -512,6 +512,28 @@ button.doll-slot:focus-visible {
   color: var(--muted);
 }
 
+/* Warband gear board: a characters × slots item-level matrix. Compact numeric cells, class-colored
+   row headers, and a subtle tint on cells well below the character's own average. */
+.warband-board {
+  font-variant-numeric: tabular-nums;
+}
+.warband-board th,
+.warband-board td {
+  white-space: nowrap;
+  text-align: center;
+}
+.warband-board-slot {
+  font-size: 0.78rem;
+}
+.warband-board-name {
+  text-align: left;
+  font-weight: 600;
+}
+.warband-board-cell-low {
+  color: var(--down);
+  font-weight: 600;
+}
+
 /* Auction house: a virtualized, item-aggregated list. Header and rows share one grid template so the
    columns line up across the (scrolling) list boundary. */
 .ah-head,
