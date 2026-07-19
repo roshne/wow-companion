@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { CharacterDetail } from "./CharacterDetail";
 import { renderWithClient } from "../test/utils";
@@ -14,6 +14,9 @@ const summary = {
 } as CharacterSummary;
 
 describe("CharacterDetail", () => {
+  // The Gear tab's paper doll writes the persisted item-icon cache; keep tests isolated.
+  beforeEach(() => localStorage.clear());
+
   it("shows Overview from the summary without fetching", () => {
     const { bnet, get } = mockBnet();
     renderWithClient(
@@ -43,20 +46,26 @@ describe("CharacterDetail", () => {
     expect(screen.getByText("Horde")).toHaveStyle({ color: FACTION_COLORS.HORDE });
   });
 
-  it("lazily fetches gear only when the Gear tab is selected", async () => {
+  it("lazily fetches gear only when the Gear tab is selected, rendering the paper doll", async () => {
     const { bnet, get } = mockBnet();
-    get.mockResolvedValue({
-      data: {
-        equipped_items: [
-          {
-            slot: { name: "Head", type: "HEAD" },
-            name: "Crown of Testing",
-            quality: { type: "EPIC" },
-            level: { value: 483 },
+    // The doll fetches equipment + character media + per-item icons; route by path.
+    get.mockImplementation((path: string) => {
+      if (path.endsWith("/equipment"))
+        return Promise.resolve({
+          data: {
+            equipped_items: [
+              {
+                slot: { name: "Head", type: "HEAD" },
+                name: "Crown of Testing",
+                quality: { type: "EPIC" },
+                level: { value: 483 },
+                item: { id: 100 },
+              },
+            ],
           },
-        ],
-      },
-      response: mockResponse(200),
+          response: mockResponse(200),
+        });
+      return Promise.resolve({ data: { assets: [] }, response: mockResponse(200) });
     });
     renderWithClient(
       <CharacterDetail
@@ -70,8 +79,10 @@ describe("CharacterDetail", () => {
     expect(get).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Gear" }));
 
-    await waitFor(() => expect(screen.getByText("Crown of Testing")).toBeInTheDocument());
-    expect(screen.getByText("Head")).toBeInTheDocument();
+    // The head item lands in its slot (item name via the slot's aria-label) with a visible ilvl badge.
+    await waitFor(() =>
+      expect(screen.getByLabelText(/^Head: Crown of Testing/)).toBeInTheDocument(),
+    );
     expect(screen.getByText("483")).toBeInTheDocument();
   });
 

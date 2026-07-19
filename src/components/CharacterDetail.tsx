@@ -2,17 +2,17 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { BlizzardClient } from "../vendor/battlenet-wow-client";
 import { loc } from "../lib/types";
-import { QUALITY_COLORS, FACTION_COLORS } from "../lib/wow";
+import { FACTION_COLORS } from "../lib/wow";
 import {
-  characterEquipmentQuery,
   characterMythicKeystoneQuery,
   characterPvpSummaryQuery,
   characterProfessionsQuery,
   describeError,
   type CharacterSummary,
 } from "../lib/queries";
-import { SkeletonTable, SkeletonLines } from "./Skeleton";
+import { SkeletonLines } from "./Skeleton";
 import { EmptyState } from "./EmptyState";
+import { PaperDoll } from "./PaperDoll";
 
 type DetailTab = "overview" | "gear" | "mplus" | "pvp" | "professions";
 
@@ -69,7 +69,9 @@ export function CharacterDetail({
         ))}
       </nav>
       {tab === "overview" && <Overview summary={summary} />}
-      {tab === "gear" && <Gear bnet={bnet} realmSlug={realmSlug} characterName={characterName} />}
+      {tab === "gear" && (
+        <PaperDoll bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
+      )}
       {tab === "mplus" && (
         <MythicPlus bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
       )}
@@ -112,51 +114,6 @@ function Overview({ summary }: { summary: CharacterSummary }) {
         </div>
       ) : null}
     </dl>
-  );
-}
-
-function Gear({
-  bnet,
-  realmSlug,
-  characterName,
-}: {
-  bnet: BlizzardClient;
-  realmSlug: string;
-  characterName: string;
-}) {
-  const { data, isPending, isError, error, refetch } = useQuery(
-    characterEquipmentQuery(bnet, realmSlug, characterName),
-  );
-
-  if (isError) return <EmptyState message={describeError(error)} onRetry={() => void refetch()} />;
-  if (isPending || !data) return <SkeletonTable rows={8} columns={3} />;
-
-  const items = (data.equipped_items ?? []).filter((it) => it.slot?.name);
-  if (items.length === 0) return <EmptyState message="No equipped items." />;
-
-  return (
-    <div style={{ overflowX: "auto" }}>
-      <table className="grid">
-        <thead>
-          <tr>
-            <th>Slot</th>
-            <th>Item</th>
-            <th>iLvl</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((it, i) => (
-            <tr key={it.slot?.type ?? i}>
-              <td>{loc(it.slot?.name)}</td>
-              <td style={{ color: it.quality?.type ? QUALITY_COLORS[it.quality.type] : undefined }}>
-                {it.name ?? "—"}
-              </td>
-              <td>{it.level?.value ?? "—"}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
   );
 }
 
