@@ -1,6 +1,6 @@
 [package]
 name = "wow-companion"
-version = "0.1.0"
+version = "0.5.0"
 description = "WoW Companion — a Battle.net Web API desktop client"
 authors = ["roshne"]
 edition = "2021"
