@@ -23,6 +23,7 @@ import { latestRaidProgress } from "../lib/raids";
 import { SkeletonLines } from "./Skeleton";
 import { EmptyState } from "./EmptyState";
 import { PaperDoll } from "./PaperDoll";
+import { Achievements } from "./Achievements";
 
 type DetailTab =
   | "overview"
@@ -33,7 +34,8 @@ type DetailTab =
   | "professions"
   | "reputations"
   | "collections"
-  | "raids";
+  | "raids"
+  | "achievements";
 
 const TABS: { key: DetailTab; label: string }[] = [
   { key: "overview", label: "Overview" },
@@ -45,6 +47,7 @@ const TABS: { key: DetailTab; label: string }[] = [
   { key: "reputations", label: "Reputations" },
   { key: "collections", label: "Collections" },
   { key: "raids", label: "Raids" },
+  { key: "achievements", label: "Achievements" },
 ];
 
 /**
@@ -112,6 +115,9 @@ export function CharacterDetail({
         <Collections bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
       )}
       {tab === "raids" && <Raids bnet={bnet} realmSlug={realmSlug} characterName={characterName} />}
+      {tab === "achievements" && (
+        <Achievements bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
+      )}
     </div>
   );
 }

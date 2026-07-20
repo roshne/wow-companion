@@ -455,4 +455,30 @@ describe("CharacterDetail", () => {
     fireEvent.click(screen.getByRole("button", { name: "Raids" }));
     await waitFor(() => expect(screen.getByText("No raid progression.")).toBeInTheDocument());
   });
+
+  it("lazily fetches achievements only when the Achievements tab is selected, rendering the totals", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({
+      data: {
+        total_quantity: 987,
+        total_points: 15000,
+        achievements: [{ achievement: { id: 1, name: "The Loremaster" }, completed_timestamp: 1 }],
+      },
+      response: mockResponse(200),
+    });
+    renderWithClient(
+      <CharacterDetail
+        bnet={bnet}
+        realmSlug="tichondrius"
+        characterName="asmon"
+        summary={summary}
+      />,
+    );
+
+    expect(get).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Achievements" }));
+
+    await waitFor(() => expect(screen.getByText("987")).toBeInTheDocument());
+    expect(screen.getByText("15,000")).toBeInTheDocument();
+  });
 });
