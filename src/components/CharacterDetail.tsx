@@ -8,15 +8,17 @@ import {
   characterPvpSummaryQuery,
   characterProfessionsQuery,
   characterSpecializationsQuery,
+  characterReputationsQuery,
   describeError,
   type CharacterSummary,
 } from "../lib/queries";
 import { activeBuild } from "../lib/specializations";
+import { reputationRows } from "../lib/reputations";
 import { SkeletonLines } from "./Skeleton";
 import { EmptyState } from "./EmptyState";
 import { PaperDoll } from "./PaperDoll";
 
-type DetailTab = "overview" | "spec" | "gear" | "mplus" | "pvp" | "professions";
+type DetailTab = "overview" | "spec" | "gear" | "mplus" | "pvp" | "professions" | "reputations";
 
 const TABS: { key: DetailTab; label: string }[] = [
   { key: "overview", label: "Overview" },
@@ -25,6 +27,7 @@ const TABS: { key: DetailTab; label: string }[] = [
   { key: "mplus", label: "M+" },
   { key: "pvp", label: "PvP" },
   { key: "professions", label: "Professions" },
+  { key: "reputations", label: "Reputations" },
 ];
 
 /**
@@ -84,6 +87,9 @@ export function CharacterDetail({
       {tab === "pvp" && <Pvp bnet={bnet} realmSlug={realmSlug} characterName={characterName} />}
       {tab === "professions" && (
         <Professions bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
+      )}
+      {tab === "reputations" && (
+        <Reputations bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
       )}
     </div>
   );
@@ -324,6 +330,49 @@ function Professions({
           )}
         </div>
       ))}
+    </div>
+  );
+}
+
+function Reputations({
+  bnet,
+  realmSlug,
+  characterName,
+}: {
+  bnet: BlizzardClient;
+  realmSlug: string;
+  characterName: string;
+}) {
+  const { data, isPending, isError, error, refetch } = useQuery(
+    characterReputationsQuery(bnet, realmSlug, characterName),
+  );
+
+  if (isError) return <EmptyState message={describeError(error)} onRetry={() => void refetch()} />;
+  if (isPending || !data) return <SkeletonLines lines={4} />;
+
+  const rows = reputationRows(data);
+  if (rows.length === 0) return <EmptyState message="No reputations." />;
+
+  return (
+    <div style={{ overflowX: "auto" }}>
+      <table className="grid">
+        <thead>
+          <tr>
+            <th>Faction</th>
+            <th>Standing</th>
+            <th>Progress</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.factionName}>
+              <td>{r.factionName}</td>
+              <td>{r.standing}</td>
+              <td>{r.progress}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

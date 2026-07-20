@@ -287,4 +287,56 @@ describe("CharacterDetail", () => {
     fireEvent.click(screen.getByRole("button", { name: "Professions" }));
     await waitFor(() => expect(screen.getByText("Failed (HTTP 500).")).toBeInTheDocument());
   });
+
+  it("lazily fetches reputations only when the Reputations tab is selected, rendering a faction row", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({
+      data: {
+        reputations: [
+          {
+            faction: { id: 2510, name: "Valdrakken Accord" },
+            standing: { name: "Exalted", value: 2400, max: 3000 },
+          },
+        ],
+      },
+      response: mockResponse(200),
+    });
+    renderWithClient(
+      <CharacterDetail
+        bnet={bnet}
+        realmSlug="tichondrius"
+        characterName="asmon"
+        summary={summary}
+      />,
+    );
+
+    expect(get).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Reputations" }));
+
+    await waitFor(() => expect(screen.getByText("Valdrakken Accord")).toBeInTheDocument());
+    expect(screen.getByText("Exalted")).toBeInTheDocument();
+    expect(screen.getByText("2,400 / 3,000")).toBeInTheDocument();
+  });
+
+  it("shows an error when reputations fail to load", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: undefined, response: mockResponse(500) });
+    renderWithClient(
+      <CharacterDetail bnet={bnet} realmSlug="r" characterName="n" summary={summary} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Reputations" }));
+    await waitFor(() => expect(screen.getByText("Failed (HTTP 500).")).toBeInTheDocument());
+  });
+
+  it("shows the empty state when there are no reputations", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: { reputations: [] }, response: mockResponse(200) });
+    renderWithClient(
+      <CharacterDetail bnet={bnet} realmSlug="r" characterName="n" summary={summary} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Reputations" }));
+    await waitFor(() => expect(screen.getByText("No reputations.")).toBeInTheDocument());
+  });
 });
