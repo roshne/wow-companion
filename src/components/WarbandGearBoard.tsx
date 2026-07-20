@@ -13,6 +13,7 @@ import { ILVL_OUTLIER_THRESHOLD } from "../lib/gearCheck";
 import { CLASS_COLORS } from "../lib/wow";
 import { describeError } from "../lib/queries";
 import { EmptyState } from "./EmptyState";
+import { WarbandNeedsAttention } from "./WarbandNeedsAttention";
 
 /** The sortable dimensions and their default direction (strongest / most-flagged first for numbers). */
 const SORT_OPTIONS: { key: WarbandSortKey; label: string; defaultDir: 1 | -1 }[] = [
@@ -73,6 +74,7 @@ export function WarbandGearBoard({
 
   return (
     <>
+      <WarbandNeedsAttention rows={rows} />
       <div className="warband-controls">
         <label className="warband-filter">
           <span className="muted">Class</span>

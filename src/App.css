@@ -631,6 +631,19 @@ button.doll-slot:focus-visible {
   font-weight: 600;
 }
 
+/* Warband "needs attention" roll-up: a headline gear-fix count above the board. */
+.warband-attention {
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.warband-attention-issues {
+  color: var(--down);
+}
+.warband-attention-clean {
+  color: var(--up);
+}
+
 /* Warband gear board: a characters × slots item-level matrix. Compact numeric cells, class-colored
    row headers, and a subtle tint on cells well below the character's own average. */
 .warband-board {
