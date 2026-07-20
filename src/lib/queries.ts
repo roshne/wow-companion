@@ -55,6 +55,18 @@ export type CharacterSpecializations =
 export type CharacterReputations =
   paths["/profile/wow/character/{realmSlug}/{characterName}/reputations"]["get"]["responses"][200]["content"]["application/json"];
 
+/** Character mount collection (the `mounts` array lists each collected mount). */
+export type CharacterMounts =
+  paths["/profile/wow/character/{realmSlug}/{characterName}/collections/mounts"]["get"]["responses"][200]["content"]["application/json"];
+
+/** Character battle-pet collection (the `pets` array lists each collected pet). */
+export type CharacterPets =
+  paths["/profile/wow/character/{realmSlug}/{characterName}/collections/pets"]["get"]["responses"][200]["content"]["application/json"];
+
+/** Character toy collection (the `toys` array lists each collected toy). */
+export type CharacterToys =
+  paths["/profile/wow/character/{realmSlug}/{characterName}/collections/toys"]["get"]["responses"][200]["content"]["application/json"];
+
 /** Guild summary (profile namespace): name, faction, member count, achievement points, realm, crest. */
 export type GuildSummary =
   paths["/data/wow/guild/{realmSlug}/{nameSlug}"]["get"]["responses"][200]["content"]["application/json"];
@@ -164,6 +176,12 @@ export const queryKeys = {
     ["character-specializations", region, realmSlug, characterName] as const,
   characterReputations: (region: Region, realmSlug: string, characterName: string) =>
     ["character-reputations", region, realmSlug, characterName] as const,
+  characterMounts: (region: Region, realmSlug: string, characterName: string) =>
+    ["character-mounts", region, realmSlug, characterName] as const,
+  characterPets: (region: Region, realmSlug: string, characterName: string) =>
+    ["character-pets", region, realmSlug, characterName] as const,
+  characterToys: (region: Region, realmSlug: string, characterName: string) =>
+    ["character-toys", region, realmSlug, characterName] as const,
   guild: (region: Region, realmSlug: string, nameSlug: string) =>
     ["guild", region, realmSlug, nameSlug] as const,
   guildRoster: (region: Region, realmSlug: string, nameSlug: string) =>
@@ -334,6 +352,60 @@ export async function fetchCharacterReputations(
 ): Promise<CharacterReputations> {
   const { data, response } = await bnet.api.GET(
     "/profile/wow/character/{realmSlug}/{characterName}/reputations",
+    {
+      params: {
+        path: { realmSlug, characterName },
+        query: { namespace: bnet.namespace("profile"), locale: "en_US" },
+      },
+    },
+  );
+  return unwrap(data, response);
+}
+
+/** Fetch a character's mount collection. */
+export async function fetchCharacterMounts(
+  bnet: BlizzardClient,
+  realmSlug: string,
+  characterName: string,
+): Promise<CharacterMounts> {
+  const { data, response } = await bnet.api.GET(
+    "/profile/wow/character/{realmSlug}/{characterName}/collections/mounts",
+    {
+      params: {
+        path: { realmSlug, characterName },
+        query: { namespace: bnet.namespace("profile"), locale: "en_US" },
+      },
+    },
+  );
+  return unwrap(data, response);
+}
+
+/** Fetch a character's battle-pet collection. */
+export async function fetchCharacterPets(
+  bnet: BlizzardClient,
+  realmSlug: string,
+  characterName: string,
+): Promise<CharacterPets> {
+  const { data, response } = await bnet.api.GET(
+    "/profile/wow/character/{realmSlug}/{characterName}/collections/pets",
+    {
+      params: {
+        path: { realmSlug, characterName },
+        query: { namespace: bnet.namespace("profile"), locale: "en_US" },
+      },
+    },
+  );
+  return unwrap(data, response);
+}
+
+/** Fetch a character's toy collection. */
+export async function fetchCharacterToys(
+  bnet: BlizzardClient,
+  realmSlug: string,
+  characterName: string,
+): Promise<CharacterToys> {
+  const { data, response } = await bnet.api.GET(
+    "/profile/wow/character/{realmSlug}/{characterName}/collections/toys",
     {
       params: {
         path: { realmSlug, characterName },
@@ -597,6 +669,39 @@ export const characterReputationsQuery = (
   queryOptions({
     queryKey: queryKeys.characterReputations(bnet.region, realmSlug, characterName),
     queryFn: () => fetchCharacterReputations(bnet, realmSlug, characterName),
+    staleTime: 2 * MINUTE,
+  });
+
+export const characterMountsQuery = (
+  bnet: BlizzardClient,
+  realmSlug: string,
+  characterName: string,
+) =>
+  queryOptions({
+    queryKey: queryKeys.characterMounts(bnet.region, realmSlug, characterName),
+    queryFn: () => fetchCharacterMounts(bnet, realmSlug, characterName),
+    staleTime: 2 * MINUTE,
+  });
+
+export const characterPetsQuery = (
+  bnet: BlizzardClient,
+  realmSlug: string,
+  characterName: string,
+) =>
+  queryOptions({
+    queryKey: queryKeys.characterPets(bnet.region, realmSlug, characterName),
+    queryFn: () => fetchCharacterPets(bnet, realmSlug, characterName),
+    staleTime: 2 * MINUTE,
+  });
+
+export const characterToysQuery = (
+  bnet: BlizzardClient,
+  realmSlug: string,
+  characterName: string,
+) =>
+  queryOptions({
+    queryKey: queryKeys.characterToys(bnet.region, realmSlug, characterName),
+    queryFn: () => fetchCharacterToys(bnet, realmSlug, characterName),
     staleTime: 2 * MINUTE,
   });
 

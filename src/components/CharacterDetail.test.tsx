@@ -339,4 +339,58 @@ describe("CharacterDetail", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reputations" }));
     await waitFor(() => expect(screen.getByText("No reputations.")).toBeInTheDocument());
   });
+
+  it("lazily fetches the collections only when the Collections tab is selected, rendering counts", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockImplementation((path: string) => {
+      if (path.endsWith("/collections/mounts"))
+        return Promise.resolve({ data: { mounts: [{}, {}, {}] }, response: mockResponse(200) });
+      if (path.endsWith("/collections/pets"))
+        return Promise.resolve({ data: { pets: [{}, {}] }, response: mockResponse(200) });
+      if (path.endsWith("/collections/toys"))
+        return Promise.resolve({ data: { toys: [{}] }, response: mockResponse(200) });
+      return Promise.resolve({ data: {}, response: mockResponse(200) });
+    });
+    renderWithClient(
+      <CharacterDetail
+        bnet={bnet}
+        realmSlug="tichondrius"
+        characterName="asmon"
+        summary={summary}
+      />,
+    );
+
+    expect(get).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Collections" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("3")).toBeInTheDocument();
+      expect(screen.getByText("2")).toBeInTheDocument();
+      expect(screen.getByText("1")).toBeInTheDocument();
+    });
+  });
+
+  it("shows an empty collection as 0 and a failed one as a dash, independently", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockImplementation((path: string) => {
+      if (path.endsWith("/collections/mounts"))
+        return Promise.resolve({ data: { mounts: [{}, {}] }, response: mockResponse(200) });
+      if (path.endsWith("/collections/pets"))
+        return Promise.resolve({ data: { pets: [] }, response: mockResponse(200) });
+      if (path.endsWith("/collections/toys"))
+        return Promise.resolve({ data: undefined, response: mockResponse(500) });
+      return Promise.resolve({ data: {}, response: mockResponse(200) });
+    });
+    renderWithClient(
+      <CharacterDetail bnet={bnet} realmSlug="r" characterName="n" summary={summary} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Collections" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("2")).toBeInTheDocument(); // mounts
+      expect(screen.getByText("0")).toBeInTheDocument(); // pets (empty)
+      expect(screen.getByText("—")).toBeInTheDocument(); // toys (errored)
+    });
+  });
 });

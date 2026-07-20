@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import type { BlizzardClient } from "../vendor/battlenet-wow-client";
 import { loc } from "../lib/types";
 import { FACTION_COLORS } from "../lib/wow";
@@ -9,16 +9,21 @@ import {
   characterProfessionsQuery,
   characterSpecializationsQuery,
   characterReputationsQuery,
+  characterMountsQuery,
+  characterPetsQuery,
+  characterToysQuery,
   describeError,
   type CharacterSummary,
 } from "../lib/queries";
 import { activeBuild } from "../lib/specializations";
 import { reputationRows } from "../lib/reputations";
+import { mountCount, petCount, toyCount } from "../lib/collections";
 import { SkeletonLines } from "./Skeleton";
 import { EmptyState } from "./EmptyState";
 import { PaperDoll } from "./PaperDoll";
 
-type DetailTab = "overview" | "spec" | "gear" | "mplus" | "pvp" | "professions" | "reputations";
+type DetailTab =
+  "overview" | "spec" | "gear" | "mplus" | "pvp" | "professions" | "reputations" | "collections";
 
 const TABS: { key: DetailTab; label: string }[] = [
   { key: "overview", label: "Overview" },
@@ -28,6 +33,7 @@ const TABS: { key: DetailTab; label: string }[] = [
   { key: "pvp", label: "PvP" },
   { key: "professions", label: "Professions" },
   { key: "reputations", label: "Reputations" },
+  { key: "collections", label: "Collections" },
 ];
 
 /**
@@ -90,6 +96,9 @@ export function CharacterDetail({
       )}
       {tab === "reputations" && (
         <Reputations bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
+      )}
+      {tab === "collections" && (
+        <Collections bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
       )}
     </div>
   );
@@ -374,5 +383,45 @@ function Reputations({
         </tbody>
       </table>
     </div>
+  );
+}
+
+/** A collection stat's display value: "—" on error, "…" while loading, else the localized count. */
+function collectionStat<T>(query: UseQueryResult<T>, count: (data: T) => number): string {
+  if (query.isError) return "—";
+  if (!query.data) return "…";
+  return count(query.data).toLocaleString();
+}
+
+function Collections({
+  bnet,
+  realmSlug,
+  characterName,
+}: {
+  bnet: BlizzardClient;
+  realmSlug: string;
+  characterName: string;
+}) {
+  // Three independent collection reads: each stat shows its own count/loading/error, so one slow or
+  // failed sub-document never blanks the whole tab.
+  const mounts = useQuery(characterMountsQuery(bnet, realmSlug, characterName));
+  const pets = useQuery(characterPetsQuery(bnet, realmSlug, characterName));
+  const toys = useQuery(characterToysQuery(bnet, realmSlug, characterName));
+
+  return (
+    <dl className="stats">
+      <div>
+        <dt>Mounts</dt>
+        <dd>{collectionStat(mounts, mountCount)}</dd>
+      </div>
+      <div>
+        <dt>Pets</dt>
+        <dd>{collectionStat(pets, petCount)}</dd>
+      </div>
+      <div>
+        <dt>Toys</dt>
+        <dd>{collectionStat(toys, toyCount)}</dd>
+      </div>
+    </dl>
   );
 }
