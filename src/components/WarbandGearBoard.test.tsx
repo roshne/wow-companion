@@ -14,16 +14,25 @@ import type { WarbandCharacter } from "../lib/warband";
 
 const mockUseWarbandGear = vi.mocked(useWarbandGear);
 
-const character = (name: string): WarbandCharacter =>
-  ({ name, realm: "Testrealm", classKey: null }) as WarbandCharacter;
+const character = (name: string, over: Partial<WarbandCharacter> = {}): WarbandCharacter =>
+  ({
+    name,
+    realm: "Testrealm",
+    classKey: null,
+    className: null,
+    role: null,
+    itemLevel: null,
+    ...over,
+  }) as WarbandCharacter;
 
 /** A resolved row for one character; only the fields the board reads need to be real. */
 function loadedRow(
   name: string,
   itemLevels: Record<string, number>,
   over: Partial<WarbandGear> = {},
+  charOver: Partial<WarbandCharacter> = {},
 ): WarbandRow {
-  const c = character(name);
+  const c = character(name, charOver);
   return {
     character: c,
     gear: {
@@ -155,5 +164,35 @@ describe("WarbandGearBoard", () => {
     expect(screen.queryByRole("table")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("filters the rows by class", () => {
+    mockResult({
+      rows: [
+        loadedRow("Warr", { HEAD: 480 }, {}, { classKey: "WARRIOR", className: "Warrior" }),
+        loadedRow("Dudu", { HEAD: 470 }, {}, { classKey: "DRUID", className: "Druid" }),
+      ],
+    });
+    render(<WarbandGearBoard characters={[]} region="us" />);
+
+    expect(screen.getByText("Warr")).toBeInTheDocument();
+    expect(screen.getByText("Dudu")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Filter by class"), { target: { value: "DRUID" } });
+
+    expect(screen.queryByText("Warr")).not.toBeInTheDocument();
+    expect(screen.getByText("Dudu")).toBeInTheDocument();
+  });
+
+  it("reorders the rows when a sort control is toggled", () => {
+    mockResult({ rows: [loadedRow("Low", { HEAD: 450 }), loadedRow("High", { HEAD: 490 })] });
+    render(<WarbandGearBoard characters={[]} region="us" />);
+
+    // Default sort is item level descending → the higher-ilvl character first.
+    expect(screen.getAllByRole("rowheader").map((th) => th.textContent)).toEqual(["High", "Low"]);
+
+    // Toggle item level to ascending.
+    fireEvent.click(screen.getByRole("button", { name: /Item level/ }));
+    expect(screen.getAllByRole("rowheader").map((th) => th.textContent)).toEqual(["Low", "High"]);
   });
 });
