@@ -32,18 +32,29 @@ React webview  ──invoke("get_access_token")──►  Rust (Tauri)
 
 ## Features
 
-- **WoW Token** — the current token price.
+- **WoW Token** — the current token price, with an in-app price history.
 - **Realm Status** — every connected realm's status (UP/DOWN), population, and login queue, with a filter.
-- **Character** — look up a character's profile summary (level, race/class/spec, faction, guild, item
-  level, achievements) plus avatar, by realm + name.
+- **Character** — look up a character by realm + name, into a sub-tabbed detail sheet:
+  - **Overview** — profile summary (level, race/class/spec, faction, guild, item level, achievements) + avatar.
+  - **Gear** — a **paper doll** (per-slot items, quality borders, item levels, sockets/enchants in a
+    popover) with a **gear check** (empty sockets, missing enchants, a missing off-hand, item-level
+    outliers) surfaced as slot badges, a summary, and a prioritized **"fix these"** panel.
+  - **Spec** (active spec + talent loadout), **M+**, **PvP**, **Professions**, **Reputations**
+    (standing / renown), **Collections** (mounts / pets / toys), **Raids** (per-difficulty boss
+    progress), and **Achievements** (a virtualized, filterable browser).
 - **Guild** — look up a guild by realm + name: a summary card (faction, member count, achievement
   points) and a sub-tabbed detail — a sortable **roster** (name/class colour, rank, level, race,
   class, realm), guild **achievements**, and recent **activity**.
+- **Auctions** — a connected realm's auction house (or the region-wide commodities), aggregated by
+  item and sortable over a virtualized list.
 - **Warband** — a warband-wide roster (name, class colour, level, item level, spec, professions for
-  every alt) read locally from the [Warbandeer](https://github.com/nazumods/wow) addon — no API call.
+  every alt) read locally from the [Warbandeer](https://github.com/nazumods/wow) addon — no API call —
+  plus a **gear board**: a characters × slots item-level matrix that streams in row by row,
+  sorts/filters by item level / issues / class / role, and shows a warband-wide **"needs attention"**
+  gear-fix roll-up.
 
-The first four tabs are typed by the vendored Web API client, and the region (US/EU/KR/TW) is
-switchable in the header.
+Every tab except Warband is typed by the vendored Web API client (Warband is local addon data), and
+the region (US/EU/KR/TW) is switchable in the header.
 
 ### Warband tab — local addon data
 
@@ -121,18 +132,22 @@ tag → the release workflow drafts a GitHub Release) and signing-key setup are 
 ```
 src/                     # React frontend
   App.tsx                # app shell: credentials gate, region picker, tab nav
-  components/            # TokenPrice, RealmStatus, CharacterLookup, GuildLookup
+  components/            # per-tab UIs — CharacterDetail (+ PaperDoll / ItemPopover),
+                         #   AuctionHouse, Warband (+ WarbandGearBoard), TokenPrice, RealmStatus, …
+  lib/                   # data + logic — queries (TanStack Query), gearCheck / gearFix,
+                         #   useWarbandGear, region resolution, persistence, hooks
   lib/bnet.ts            # builds the typed client (token from Rust, fetch via Tauri HTTP)
-  lib/types.ts           # local response shapes (the spec omits response schemas)
   vendor/battlenet-wow-client/   # vendored typed client (generated types + auth + factory)
 src-tauri/               # Rust backend
   src/lib.rs             # keychain + OAuth token commands
+  src/warband.rs         # Warbandeer SavedVariables parser (sandboxed mlua VM)
   capabilities/          # HTTP scope for *.api.blizzard.com
 ```
 
 ## Status
 
-Compiles end-to-end (`cargo check` + `tsc` + `vite build` all pass) and the UI renders. Response
-bodies are cast from local types (`lib/types.ts`) because the OpenAPI spec omits response schemas —
-once those are captured upstream and re-vendored, responses become fully typed with no UI changes.
-Exercising the live data views needs your Battle.net credentials (see above).
+**Beta (0.5.0).** Compiles end-to-end (`cargo check` + `tsc` + `vite build` all pass), the test suite
+is green, and every tab is live. Response bodies for the endpoints the app uses are now typed by the
+vendored client — captured upstream and re-vendored through the `battlenet-api-research` pipeline — so
+data flows through the typed client end-to-end. Exercising the live data views needs your Battle.net
+credentials (see above). Heading to **1.0** after a couple of clean installs.
