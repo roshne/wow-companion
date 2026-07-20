@@ -195,4 +195,12 @@ describe("WarbandGearBoard", () => {
     fireEvent.click(screen.getByRole("button", { name: /Item level/ }));
     expect(screen.getAllByRole("rowheader").map((th) => th.textContent)).toEqual(["Low", "High"]);
   });
+
+  it("shows the warband needs-attention roll-up above the board", () => {
+    mockResult({ rows: [loadedRow("Tank", { HEAD: 480 })] });
+    render(<WarbandGearBoard characters={[]} region="us" />);
+
+    // A clean roster reads "All set"; the summary is wired to the board's rows.
+    expect(screen.getByText(/All set/)).toBeInTheDocument();
+  });
 });
