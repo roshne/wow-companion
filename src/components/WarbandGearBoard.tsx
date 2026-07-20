@@ -1,18 +1,19 @@
 import type { Region } from "../vendor/battlenet-wow-client";
 import type { WarbandCharacter } from "../lib/warband";
-import { useWarbandGear, weakestSlots, type WarbandGear } from "../lib/useWarbandGear";
+import { useWarbandGear, weakestSlots, type WarbandRow } from "../lib/useWarbandGear";
 import { BOARD_SLOTS } from "../lib/slots";
 import { ILVL_OUTLIER_THRESHOLD } from "../lib/gearCheck";
 import { CLASS_COLORS } from "../lib/wow";
 import { describeError } from "../lib/queries";
-import { SkeletonLines } from "./Skeleton";
 import { EmptyState } from "./EmptyState";
 
 /**
  * The warband gear board: a characters × slots item-level matrix. Each row is a warband character and
  * each column an equipment slot; a cell shows that slot's item level, subtly tinted when it's well
- * below the character's own average (a relative-strength cue — explicit weakest-slot callouts are a
- * sibling issue). Best-effort per character: a row whose equipment failed to load says so.
+ * below the character's own average (a relative-strength cue). Rows stream in independently — a row
+ * shows "Loading…" until its own equipment fetch settles — so the board fills as each character
+ * resolves rather than waiting on the whole roster. Best-effort per character: a row whose equipment
+ * failed to load says so.
  */
 export function WarbandGearBoard({
   characters,
@@ -21,11 +22,9 @@ export function WarbandGearBoard({
   characters: WarbandCharacter[];
   region: Region;
 }) {
-  const gear = useWarbandGear(characters, region);
+  const { rows, error, refetch } = useWarbandGear(characters, region);
 
-  if (gear.isPending) return <SkeletonLines lines={6} />;
-  if (gear.isError)
-    return <EmptyState message={describeError(gear.error)} onRetry={() => void gear.refetch()} />;
+  if (error) return <EmptyState message={describeError(error)} onRetry={() => void refetch()} />;
 
   return (
     <div style={{ overflowX: "auto" }}>
@@ -44,8 +43,8 @@ export function WarbandGearBoard({
           </tr>
         </thead>
         <tbody>
-          {gear.data.map((g) => (
-            <WarbandBoardRow key={`${g.character.realm}/${g.character.name}`} gear={g} />
+          {rows.map((row) => (
+            <WarbandBoardRow key={`${row.character.realm}/${row.character.name}`} row={row} />
           ))}
         </tbody>
       </table>
@@ -53,15 +52,30 @@ export function WarbandGearBoard({
   );
 }
 
-/** One character's row: the class-colored name, then a per-slot item-level cell (or a failed notice). */
-function WarbandBoardRow({ gear }: { gear: WarbandGear }) {
-  const { character } = gear;
+/**
+ * One character's row: the class-colored name (always available from the roster), then a per-slot
+ * item-level cell — or a "Loading…" notice while its fetch is in flight, or a "Couldn't load gear"
+ * notice if it failed.
+ */
+function WarbandBoardRow({ row }: { row: WarbandRow }) {
+  const { character, gear } = row;
   const color = (character.classKey && CLASS_COLORS[character.classKey]) || undefined;
   const name = (
     <th scope="row" className="warband-board-name" style={{ color }} title={character.realm}>
       {character.name}
     </th>
   );
+
+  if (!gear) {
+    return (
+      <tr>
+        {name}
+        <td colSpan={BOARD_SLOTS.length + 1} className="muted">
+          Loading…
+        </td>
+      </tr>
+    );
+  }
 
   if (gear.failed) {
     return (

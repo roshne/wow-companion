@@ -1,8 +1,8 @@
-import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Region } from "../vendor/battlenet-wow-client";
 import { makeClient } from "./bnet";
 import { characterEquipmentQuery, type CharacterEquipment } from "./queries";
-import { fetchRegionRealmIndexes, resolveCharacterRegion } from "./region";
+import { fetchRegionRealmIndexes, resolveCharacterRegion, type RegionRealmIndexes } from "./region";
 import { gearCheck, ILVL_OUTLIER_THRESHOLD, type GearFinding } from "./gearCheck";
 import type { WarbandCharacter } from "./warband";
 
@@ -26,8 +26,22 @@ export interface WarbandGear {
   failed: boolean;
 }
 
-/** How many characters' equipment to fetch at once — a big roster shouldn't be one giant burst. */
-const CONCURRENCY = 6;
+/**
+ * One board row: a warband character and its gear once resolved. `gear` is `null` while that
+ * character's equipment fetch is still in flight, so each row can render its own loading state and
+ * appear independently — the board no longer waits on the whole roster.
+ */
+export interface WarbandRow {
+  character: WarbandCharacter;
+  gear: WarbandGear | null;
+}
+
+/** A resolved fetch target for a warband character: which region's host and the realm slug within it. */
+export interface WarbandTarget {
+  character: WarbandCharacter;
+  region: Region;
+  realmSlug: string;
+}
 
 /** `slot.type` → item level for each equipped slot that reports one (skips slots without a value). */
 export function deriveItemLevels(equipment: CharacterEquipment): Record<string, number> {
@@ -74,85 +88,109 @@ export function tierSetInfo(equipment: CharacterEquipment): TierSet | null {
   return best;
 }
 
-/** Run `task` over `items` with at most `limit` in flight at once, preserving input order. */
-async function mapWithConcurrency<T, R>(
-  items: T[],
-  limit: number,
-  task: (item: T) => Promise<R>,
-): Promise<R[]> {
-  const results = new Array<R>(items.length);
-  let next = 0;
-  async function worker() {
-    while (next < items.length) {
-      const index = next++;
-      results[index] = await task(items[index]);
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
-  return results;
+/** Derive one character's gear from its equipment document (the non-failed row). */
+export function deriveGear(
+  character: WarbandCharacter,
+  region: Region,
+  realmSlug: string,
+  equipment: CharacterEquipment,
+): WarbandGear {
+  return {
+    character,
+    region,
+    realmSlug,
+    itemLevels: deriveItemLevels(equipment),
+    findings: gearCheck(equipment),
+    tierSet: tierSetInfo(equipment),
+    failed: false,
+  };
 }
 
 /**
- * Fetch and derive each warband character's gear. The Warbandeer export carries only a realm *name*, so
- * each character's region is resolved (best-effort, current region as fallback) before fetching its
- * equipment — cached per character under `["character-equipment", region, slug, name]`, so it's shared
- * with the paper doll. Best-effort: a character whose fetch throws comes back `failed` with empty data
- * rather than failing the whole board, and fetches run with a small concurrency cap.
+ * Resolve each roster character to a fetch target — the region whose host holds it and the realm slug
+ * within it — from the loaded realm indexes. The Warbandeer export carries only a realm *name*, so the
+ * region is matched best-effort (current region as fallback); see {@link resolveCharacterRegion}.
  */
-export async function fetchWarbandGear(
-  queryClient: QueryClient,
+export function resolveWarbandTargets(
   characters: WarbandCharacter[],
+  indexes: RegionRealmIndexes,
   fallbackRegion: Region,
-): Promise<WarbandGear[]> {
-  const indexes = await fetchRegionRealmIndexes(queryClient);
-  return mapWithConcurrency(characters, CONCURRENCY, async (character) => {
+): WarbandTarget[] {
+  return characters.map((character) => {
     const { region, realmSlug } = resolveCharacterRegion(character.realm, indexes, fallbackRegion);
-    try {
-      const equipment = await queryClient.fetchQuery(
-        characterEquipmentQuery(makeClient(region), realmSlug, character.name),
-      );
-      return {
-        character,
-        region,
-        realmSlug,
-        itemLevels: deriveItemLevels(equipment),
-        findings: gearCheck(equipment),
-        tierSet: tierSetInfo(equipment),
-        failed: false,
-      };
-    } catch {
-      return {
-        character,
-        region,
-        realmSlug,
-        itemLevels: {},
-        findings: [],
-        tierSet: null,
-        failed: true,
-      };
-    }
+    return { character, region, realmSlug };
   });
 }
 
-/** A stable, order-independent cache key for a roster. */
-function rosterKey(characters: WarbandCharacter[]): string {
-  return characters
-    .map((c) => `${c.realm}/${c.name}`)
-    .sort()
-    .join(",");
+/** A placeholder gear row for a character whose equipment fetch failed — no data, `failed: true`. */
+function failedGear(
+  character: WarbandCharacter,
+  target: WarbandTarget | undefined,
+  fallback: Region,
+): WarbandGear {
+  return {
+    character,
+    region: target?.region ?? fallback,
+    realmSlug: target?.realmSlug ?? "",
+    itemLevels: {},
+    findings: [],
+    tierSet: null,
+    failed: true,
+  };
 }
 
 /**
- * The whole warband's gear as one cached query — the data source for the gear board. Lazy (only when
- * there's a roster), keyed on the roster + fallback region; each character's underlying equipment is
- * also cached individually via {@link fetchWarbandGear}.
+ * The whole warband's gear, streamed **row by row**. The near-static realm indexes load once (shared,
+ * cached); then each character's equipment is fetched as its own query — keyed
+ * `["character-equipment", region, slug, name]`, so it's shared with the paper doll — and derived via
+ * {@link deriveGear}. Each row surfaces independently: `gear` is `null` until that character's fetch
+ * settles, then the derived gear (or a `failed` placeholder), so early rows render without waiting on
+ * slow ones. Lazy (only when there's a roster).
  */
 export function useWarbandGear(characters: WarbandCharacter[], fallbackRegion: Region) {
   const queryClient = useQueryClient();
-  return useQuery({
-    queryKey: ["warband-gear", fallbackRegion, rosterKey(characters)] as const,
-    queryFn: () => fetchWarbandGear(queryClient, characters, fallbackRegion),
-    enabled: characters.length > 0,
-    staleTime: 2 * 60_000,
+
+  // The realm indexes are the shared prerequisite for resolving each character's region — one fetch,
+  // not one per row.
+  const indexesQuery = useQuery({
+    queryKey: ["region-realm-indexes"] as const,
+    queryFn: () => fetchRegionRealmIndexes(queryClient),
+    staleTime: 60 * 60_000,
   });
+  const targets = indexesQuery.data
+    ? resolveWarbandTargets(characters, indexesQuery.data, fallbackRegion)
+    : null;
+
+  // One query per character (only once targets are known); each shares the paper doll's per-character
+  // equipment cache and derives its gear in `select`.
+  const results = useQueries({
+    queries: (targets ?? []).map((target) => ({
+      ...characterEquipmentQuery(
+        makeClient(target.region),
+        target.realmSlug,
+        target.character.name,
+      ),
+      select: (equipment: CharacterEquipment) =>
+        deriveGear(target.character, target.region, target.realmSlug, equipment),
+    })),
+  });
+
+  const rows: WarbandRow[] = characters.map((character, i) => {
+    const result = results[i];
+    if (result?.isSuccess) return { character, gear: result.data };
+    if (result?.isError)
+      return { character, gear: failedGear(character, targets?.[i], fallbackRegion) };
+    return { character, gear: null };
+  });
+
+  return {
+    rows,
+    // A whole-board error only when the shared realm-index prerequisite hard-fails; per-character
+    // equipment failures stay per-row (a `failed` gear placeholder).
+    error: indexesQuery.isError ? indexesQuery.error : null,
+    refetch: () => {
+      void indexesQuery.refetch();
+      for (const result of results) void result.refetch();
+    },
+  };
 }

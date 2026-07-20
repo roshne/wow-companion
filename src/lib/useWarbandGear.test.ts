@@ -1,122 +1,79 @@
-import { describe, it, expect, vi } from "vitest";
-import type { QueryClient } from "@tanstack/react-query";
-import type { Region } from "../vendor/battlenet-wow-client";
+import { describe, it, expect } from "vitest";
 import type { WarbandCharacter } from "./warband";
-
-// `fetchWarbandGear` builds a per-region client via `makeClient`; stub it so no Tauri backend is
-// needed (the real network call is short-circuited by the fake QueryClient's `fetchQuery`).
-vi.mock("./bnet", () => ({ makeClient: (region: Region) => ({ region }) }));
-
-import { fetchWarbandGear, deriveItemLevels, weakestSlots, tierSetInfo } from "./useWarbandGear";
-
-// Realm indexes: "Tichondrius" is US-only, "Aggra (Português)" is EU-only (slug differs from the
-// naive derivation). KR/TW list nothing.
-const INDEXES: Record<string, { name: string; slug: string }[]> = {
-  us: [{ name: "Tichondrius", slug: "tichondrius" }],
-  eu: [{ name: "Aggra (Português)", slug: "aggra-portugues" }],
-  kr: [],
-  tw: [],
-};
-
-/** Equipment docs by character name; "Broken" throws to exercise the best-effort path. */
-function equipmentFor(name: string) {
-  if (name === "Broken") throw new Error("equipment failed (HTTP 500)");
-  if (name === "Tank")
-    return {
-      equipped_items: [
-        {
-          slot: { type: "HEAD" },
-          level: { value: 480 },
-          set: { item_set: { id: 99, name: "Tier of Testing" } },
-        },
-        // FINGER_1 is enchantable + un-enchanted → a finding; same set as HEAD → a 2-piece tier set.
-        {
-          slot: { type: "FINGER_1" },
-          level: { value: 470 },
-          set: { item_set: { id: 99, name: "Tier of Testing" } },
-        },
-      ],
-    };
-  if (name === "Healer")
-    return { equipped_items: [{ slot: { type: "HEAD" }, level: { value: 470 } }] };
-  return { equipped_items: [] };
-}
-
-/** A fake QueryClient that answers realm-index and character-equipment queries from the fixtures. */
-function fakeClient() {
-  const fetchQuery = vi.fn(async (opts: { queryKey: readonly unknown[] }) => {
-    const [kind, region, , name] = opts.queryKey as [string, Region, string, string];
-    if (kind === "realm-index") return INDEXES[region];
-    if (kind === "character-equipment") return equipmentFor(name);
-    throw new Error(`unexpected query ${String(kind)}`);
-  });
-  return { queryClient: { fetchQuery } as unknown as QueryClient, fetchQuery };
-}
+import type { RegionRealmIndexes } from "./region";
+import type { CharacterEquipment } from "./queries";
+import {
+  deriveItemLevels,
+  weakestSlots,
+  tierSetInfo,
+  deriveGear,
+  resolveWarbandTargets,
+} from "./useWarbandGear";
 
 const char = (name: string, realm: string): WarbandCharacter =>
   ({ name, realm }) as WarbandCharacter;
 
+const equip = (items: unknown[]): CharacterEquipment =>
+  ({ equipped_items: items }) as CharacterEquipment;
+
 describe("deriveItemLevels", () => {
   it("maps each equipped slot to its item level and skips slots without one", () => {
-    const levels = deriveItemLevels({
-      equipped_items: [
+    const levels = deriveItemLevels(
+      equip([
         { slot: { type: "HEAD" }, level: { value: 480 } },
         { slot: { type: "SHIRT" } }, // no level → skipped
         { level: { value: 400 } }, // no slot → skipped
-      ],
-    } as Parameters<typeof deriveItemLevels>[0]);
+      ]),
+    );
     expect(levels).toEqual({ HEAD: 480 });
   });
 });
 
-describe("fetchWarbandGear", () => {
-  it("derives per-slot item levels and gear-check findings per character", async () => {
-    const { queryClient } = fakeClient();
-    const gear = await fetchWarbandGear(queryClient, [char("Tank", "Tichondrius")], "us");
+describe("deriveGear", () => {
+  it("derives item levels, findings, and the tier set for a character (not failed)", () => {
+    const equipment = equip([
+      {
+        slot: { type: "HEAD" },
+        level: { value: 480 },
+        set: { item_set: { id: 99, name: "Tier of Testing" } },
+      },
+      // FINGER_1 is enchantable + un-enchanted → a finding; same set as HEAD → a 2-piece tier set.
+      {
+        slot: { type: "FINGER_1" },
+        level: { value: 470 },
+        set: { item_set: { id: 99, name: "Tier of Testing" } },
+      },
+    ]);
+    const gear = deriveGear(char("Tank", "Tichondrius"), "us", "tichondrius", equipment);
 
-    expect(gear).toHaveLength(1);
-    expect(gear[0].itemLevels).toEqual({ HEAD: 480, FINGER_1: 470 });
-    // FINGER_1 is enchantable and un-enchanted → a missing-enchant finding.
-    expect(gear[0].findings.some((f) => f.kind === "missing-enchant")).toBe(true);
-    // HEAD + FINGER_1 share a set → a 2-piece tier set.
-    expect(gear[0].tierSet).toEqual({ name: "Tier of Testing", pieces: 2 });
-    expect(gear[0].failed).toBe(false);
+    expect(gear).toMatchObject({ region: "us", realmSlug: "tichondrius", failed: false });
+    expect(gear.itemLevels).toEqual({ HEAD: 480, FINGER_1: 470 });
+    expect(gear.findings.some((f) => f.kind === "missing-enchant")).toBe(true);
+    expect(gear.tierSet).toEqual({ name: "Tier of Testing", pieces: 2 });
   });
+});
 
-  it("resolves each character's region from its realm (falling back to the current region)", async () => {
-    const { queryClient } = fakeClient();
-    const gear = await fetchWarbandGear(
-      queryClient,
+describe("resolveWarbandTargets", () => {
+  // "Tichondrius" is US-only; "Aggra (Português)" is EU-only (slug differs from the naive derivation).
+  const indexes: RegionRealmIndexes = {
+    us: [{ name: "Tichondrius", slug: "tichondrius" }],
+    eu: [{ name: "Aggra (Português)", slug: "aggra-portugues" }],
+  };
+
+  it("resolves each character's region + true slug, falling back for unknown realms", () => {
+    const targets = resolveWarbandTargets(
       [char("Tank", "Tichondrius"), char("Healer", "Aggra (Português)"), char("Lost", "Nowhere")],
+      indexes,
       "us",
     );
 
     // Unique realms resolve to their region + the index's true slug.
-    expect(gear[0]).toMatchObject({ region: "us", realmSlug: "tichondrius" });
-    expect(gear[1]).toMatchObject({ region: "eu", realmSlug: "aggra-portugues" });
+    expect(targets[0]).toMatchObject({ region: "us", realmSlug: "tichondrius" });
+    expect(targets[1]).toMatchObject({ region: "eu", realmSlug: "aggra-portugues" });
     // An unknown realm falls back to the current region, slug derived.
-    expect(gear[2]).toMatchObject({ region: "us", realmSlug: "nowhere" });
-  });
-
-  it("is best-effort — a failed fetch yields a failed row without sinking the rest", async () => {
-    const { queryClient } = fakeClient();
-    const gear = await fetchWarbandGear(
-      queryClient,
-      [char("Tank", "Tichondrius"), char("Broken", "Tichondrius")],
-      "us",
-    );
-
-    expect(gear[0].failed).toBe(false);
-    expect(gear[1]).toMatchObject({ failed: true, itemLevels: {}, findings: [], tierSet: null });
-    expect(gear[1].character.name).toBe("Broken");
-  });
-
-  it("fetches each character's equipment under its own region+realm+name cache key", async () => {
-    const { queryClient, fetchQuery } = fakeClient();
-    await fetchWarbandGear(queryClient, [char("Tank", "Tichondrius")], "us");
-
-    const keys = fetchQuery.mock.calls.map((c) => c[0].queryKey);
-    expect(keys).toContainEqual(["character-equipment", "us", "tichondrius", "Tank"]);
+    expect(targets[2]).toMatchObject({ region: "us", realmSlug: "nowhere" });
+    // Each target carries its originating character.
+    expect(targets[0].character.name).toBe("Tank");
   });
 });
 
@@ -134,9 +91,6 @@ describe("weakestSlots", () => {
 });
 
 describe("tierSetInfo", () => {
-  const equip = (items: unknown[]) =>
-    ({ equipped_items: items }) as Parameters<typeof tierSetInfo>[0];
-
   it("counts pieces of the dominant equipped set, picking the largest when several", () => {
     const info = tierSetInfo(
       equip([
