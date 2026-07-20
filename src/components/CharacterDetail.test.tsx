@@ -393,4 +393,66 @@ describe("CharacterDetail", () => {
       expect(screen.getByText("—")).toBeInTheDocument(); // toys (errored)
     });
   });
+
+  it("lazily fetches raids only when the Raids tab is selected, rendering per-difficulty progress", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({
+      data: {
+        expansions: [
+          {
+            expansion: { name: "The War Within" },
+            instances: [
+              {
+                instance: { name: "Nerub-ar Palace" },
+                modes: [
+                  {
+                    difficulty: { name: "Heroic" },
+                    progress: { completed_count: 5, total_count: 8 },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      response: mockResponse(200),
+    });
+    renderWithClient(
+      <CharacterDetail
+        bnet={bnet}
+        realmSlug="tichondrius"
+        characterName="asmon"
+        summary={summary}
+      />,
+    );
+
+    expect(get).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Raids" }));
+
+    await waitFor(() => expect(screen.getByText("Nerub-ar Palace")).toBeInTheDocument());
+    expect(screen.getByText("Heroic")).toBeInTheDocument();
+    expect(screen.getByText("5 / 8")).toBeInTheDocument();
+  });
+
+  it("shows an error when raids fail to load", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: undefined, response: mockResponse(500) });
+    renderWithClient(
+      <CharacterDetail bnet={bnet} realmSlug="r" characterName="n" summary={summary} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Raids" }));
+    await waitFor(() => expect(screen.getByText("Failed (HTTP 500).")).toBeInTheDocument());
+  });
+
+  it("shows the empty state when there is no raid progression", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: { expansions: [] }, response: mockResponse(200) });
+    renderWithClient(
+      <CharacterDetail bnet={bnet} realmSlug="r" characterName="n" summary={summary} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Raids" }));
+    await waitFor(() => expect(screen.getByText("No raid progression.")).toBeInTheDocument());
+  });
 });
