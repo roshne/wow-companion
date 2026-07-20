@@ -67,6 +67,10 @@ export type CharacterPets =
 export type CharacterToys =
   paths["/profile/wow/character/{realmSlug}/{characterName}/collections/toys"]["get"]["responses"][200]["content"]["application/json"];
 
+/** Character raid encounters (per-expansion instances, each with per-difficulty boss progress). */
+export type CharacterRaids =
+  paths["/profile/wow/character/{realmSlug}/{characterName}/encounters/raids"]["get"]["responses"][200]["content"]["application/json"];
+
 /** Guild summary (profile namespace): name, faction, member count, achievement points, realm, crest. */
 export type GuildSummary =
   paths["/data/wow/guild/{realmSlug}/{nameSlug}"]["get"]["responses"][200]["content"]["application/json"];
@@ -182,6 +186,8 @@ export const queryKeys = {
     ["character-pets", region, realmSlug, characterName] as const,
   characterToys: (region: Region, realmSlug: string, characterName: string) =>
     ["character-toys", region, realmSlug, characterName] as const,
+  characterRaids: (region: Region, realmSlug: string, characterName: string) =>
+    ["character-raids", region, realmSlug, characterName] as const,
   guild: (region: Region, realmSlug: string, nameSlug: string) =>
     ["guild", region, realmSlug, nameSlug] as const,
   guildRoster: (region: Region, realmSlug: string, nameSlug: string) =>
@@ -406,6 +412,24 @@ export async function fetchCharacterToys(
 ): Promise<CharacterToys> {
   const { data, response } = await bnet.api.GET(
     "/profile/wow/character/{realmSlug}/{characterName}/collections/toys",
+    {
+      params: {
+        path: { realmSlug, characterName },
+        query: { namespace: bnet.namespace("profile"), locale: "en_US" },
+      },
+    },
+  );
+  return unwrap(data, response);
+}
+
+/** Fetch a character's raid encounters (per-expansion, per-difficulty boss progress). */
+export async function fetchCharacterRaids(
+  bnet: BlizzardClient,
+  realmSlug: string,
+  characterName: string,
+): Promise<CharacterRaids> {
+  const { data, response } = await bnet.api.GET(
+    "/profile/wow/character/{realmSlug}/{characterName}/encounters/raids",
     {
       params: {
         path: { realmSlug, characterName },
@@ -702,6 +726,17 @@ export const characterToysQuery = (
   queryOptions({
     queryKey: queryKeys.characterToys(bnet.region, realmSlug, characterName),
     queryFn: () => fetchCharacterToys(bnet, realmSlug, characterName),
+    staleTime: 2 * MINUTE,
+  });
+
+export const characterRaidsQuery = (
+  bnet: BlizzardClient,
+  realmSlug: string,
+  characterName: string,
+) =>
+  queryOptions({
+    queryKey: queryKeys.characterRaids(bnet.region, realmSlug, characterName),
+    queryFn: () => fetchCharacterRaids(bnet, realmSlug, characterName),
     staleTime: 2 * MINUTE,
   });
 

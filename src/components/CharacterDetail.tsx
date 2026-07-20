@@ -12,18 +12,28 @@ import {
   characterMountsQuery,
   characterPetsQuery,
   characterToysQuery,
+  characterRaidsQuery,
   describeError,
   type CharacterSummary,
 } from "../lib/queries";
 import { activeBuild } from "../lib/specializations";
 import { reputationRows } from "../lib/reputations";
 import { mountCount, petCount, toyCount } from "../lib/collections";
+import { latestRaidProgress } from "../lib/raids";
 import { SkeletonLines } from "./Skeleton";
 import { EmptyState } from "./EmptyState";
 import { PaperDoll } from "./PaperDoll";
 
 type DetailTab =
-  "overview" | "spec" | "gear" | "mplus" | "pvp" | "professions" | "reputations" | "collections";
+  | "overview"
+  | "spec"
+  | "gear"
+  | "mplus"
+  | "pvp"
+  | "professions"
+  | "reputations"
+  | "collections"
+  | "raids";
 
 const TABS: { key: DetailTab; label: string }[] = [
   { key: "overview", label: "Overview" },
@@ -34,6 +44,7 @@ const TABS: { key: DetailTab; label: string }[] = [
   { key: "professions", label: "Professions" },
   { key: "reputations", label: "Reputations" },
   { key: "collections", label: "Collections" },
+  { key: "raids", label: "Raids" },
 ];
 
 /**
@@ -100,6 +111,7 @@ export function CharacterDetail({
       {tab === "collections" && (
         <Collections bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
       )}
+      {tab === "raids" && <Raids bnet={bnet} realmSlug={realmSlug} characterName={characterName} />}
     </div>
   );
 }
@@ -423,5 +435,60 @@ function Collections({
         <dd>{collectionStat(toys, toyCount)}</dd>
       </div>
     </dl>
+  );
+}
+
+function Raids({
+  bnet,
+  realmSlug,
+  characterName,
+}: {
+  bnet: BlizzardClient;
+  realmSlug: string;
+  characterName: string;
+}) {
+  const { data, isPending, isError, error, refetch } = useQuery(
+    characterRaidsQuery(bnet, realmSlug, characterName),
+  );
+
+  if (isError) return <EmptyState message={describeError(error)} onRetry={() => void refetch()} />;
+  if (isPending || !data) return <SkeletonLines lines={4} />;
+
+  const progress = latestRaidProgress(data);
+  const hasRows = progress?.instances.some((i) => i.modes.length > 0) ?? false;
+  if (!progress || !hasRows) return <EmptyState message="No raid progression." />;
+
+  return (
+    <>
+      {progress.expansionName ? (
+        <p className="muted" style={{ margin: "0.25rem 0 0" }}>
+          {progress.expansionName}
+        </p>
+      ) : null}
+      <div style={{ overflowX: "auto" }}>
+        <table className="grid">
+          <thead>
+            <tr>
+              <th>Raid</th>
+              <th>Difficulty</th>
+              <th>Bosses</th>
+            </tr>
+          </thead>
+          <tbody>
+            {progress.instances.flatMap((inst) =>
+              inst.modes.map((m) => (
+                <tr key={`${inst.name}-${m.difficulty}`}>
+                  <td>{inst.name}</td>
+                  <td>{m.difficulty}</td>
+                  <td>
+                    {m.completed} / {m.total}
+                  </td>
+                </tr>
+              )),
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
