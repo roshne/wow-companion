@@ -47,6 +47,10 @@ export type CharacterPvpSummary =
 export type CharacterProfessions =
   paths["/profile/wow/character/{realmSlug}/{characterName}/professions"]["get"]["responses"][200]["content"]["application/json"];
 
+/** Character specializations (active spec, active hero talent tree, and per-spec talent loadouts). */
+export type CharacterSpecializations =
+  paths["/profile/wow/character/{realmSlug}/{characterName}/specializations"]["get"]["responses"][200]["content"]["application/json"];
+
 /** Guild summary (profile namespace): name, faction, member count, achievement points, realm, crest. */
 export type GuildSummary =
   paths["/data/wow/guild/{realmSlug}/{nameSlug}"]["get"]["responses"][200]["content"]["application/json"];
@@ -152,6 +156,8 @@ export const queryKeys = {
     ["character-pvp-summary", region, realmSlug, characterName] as const,
   characterProfessions: (region: Region, realmSlug: string, characterName: string) =>
     ["character-professions", region, realmSlug, characterName] as const,
+  characterSpecializations: (region: Region, realmSlug: string, characterName: string) =>
+    ["character-specializations", region, realmSlug, characterName] as const,
   guild: (region: Region, realmSlug: string, nameSlug: string) =>
     ["guild", region, realmSlug, nameSlug] as const,
   guildRoster: (region: Region, realmSlug: string, nameSlug: string) =>
@@ -286,6 +292,24 @@ export async function fetchCharacterProfessions(
 ): Promise<CharacterProfessions> {
   const { data, response } = await bnet.api.GET(
     "/profile/wow/character/{realmSlug}/{characterName}/professions",
+    {
+      params: {
+        path: { realmSlug, characterName },
+        query: { namespace: bnet.namespace("profile"), locale: "en_US" },
+      },
+    },
+  );
+  return unwrap(data, response);
+}
+
+/** Fetch a character's specializations (active spec + hero talents + per-spec talent loadouts). */
+export async function fetchCharacterSpecializations(
+  bnet: BlizzardClient,
+  realmSlug: string,
+  characterName: string,
+): Promise<CharacterSpecializations> {
+  const { data, response } = await bnet.api.GET(
+    "/profile/wow/character/{realmSlug}/{characterName}/specializations",
     {
       params: {
         path: { realmSlug, characterName },
@@ -527,6 +551,17 @@ export const characterProfessionsQuery = (
   queryOptions({
     queryKey: queryKeys.characterProfessions(bnet.region, realmSlug, characterName),
     queryFn: () => fetchCharacterProfessions(bnet, realmSlug, characterName),
+    staleTime: 2 * MINUTE,
+  });
+
+export const characterSpecializationsQuery = (
+  bnet: BlizzardClient,
+  realmSlug: string,
+  characterName: string,
+) =>
+  queryOptions({
+    queryKey: queryKeys.characterSpecializations(bnet.region, realmSlug, characterName),
+    queryFn: () => fetchCharacterSpecializations(bnet, realmSlug, characterName),
     staleTime: 2 * MINUTE,
   });
 

@@ -46,6 +46,68 @@ describe("CharacterDetail", () => {
     expect(screen.getByText("Horde")).toHaveStyle({ color: FACTION_COLORS.HORDE });
   });
 
+  it("lazily fetches specializations only when the Spec tab is selected, rendering the active build", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({
+      data: {
+        active_specialization: { id: 65, name: "Holy" },
+        active_hero_talent_tree: { id: 1, name: "Herald of the Sun" },
+        specializations: [
+          {
+            specialization: { id: 65, name: "Holy" },
+            loadouts: [
+              {
+                is_active: true,
+                talent_loadout_code: "CODE-XYZ",
+                selected_class_talents: [{ id: 1 }, { id: 2 }],
+                selected_hero_talents: [{ id: 9 }],
+              },
+            ],
+          },
+        ],
+      },
+      response: mockResponse(200),
+    });
+    renderWithClient(
+      <CharacterDetail
+        bnet={bnet}
+        realmSlug="tichondrius"
+        characterName="asmon"
+        summary={summary}
+      />,
+    );
+
+    expect(get).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Spec" }));
+
+    await waitFor(() => expect(screen.getByText("Holy")).toBeInTheDocument());
+    expect(screen.getByText("Herald of the Sun")).toBeInTheDocument();
+    expect(screen.getByText(/2 class .+ 1 hero/)).toBeInTheDocument();
+    expect(screen.getByText("CODE-XYZ")).toBeInTheDocument();
+  });
+
+  it("shows an error when specializations fail to load", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: undefined, response: mockResponse(500) });
+    renderWithClient(
+      <CharacterDetail bnet={bnet} realmSlug="r" characterName="n" summary={summary} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Spec" }));
+    await waitFor(() => expect(screen.getByText("Failed (HTTP 500).")).toBeInTheDocument());
+  });
+
+  it("shows the empty state when there is no active specialization", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: { specializations: [] }, response: mockResponse(200) });
+    renderWithClient(
+      <CharacterDetail bnet={bnet} realmSlug="r" characterName="n" summary={summary} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Spec" }));
+    await waitFor(() => expect(screen.getByText("No specialization data.")).toBeInTheDocument());
+  });
+
   it("lazily fetches gear only when the Gear tab is selected, rendering the paper doll", async () => {
     const { bnet, get } = mockBnet();
     // The doll fetches equipment + character media + per-item icons; route by path.
