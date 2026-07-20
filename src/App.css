@@ -199,6 +199,34 @@ input {
   font-weight: 600;
 }
 
+/* Spec tab: the active talent loadout's import string + a copy button. */
+.loadout {
+  margin-top: 0.6rem;
+}
+.loadout-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+}
+.loadout-copy {
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+.loadout-code {
+  display: block;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
 form.card input {
   width: 100%;
   margin: 0.35rem 0;

@@ -7,17 +7,20 @@ import {
   characterMythicKeystoneQuery,
   characterPvpSummaryQuery,
   characterProfessionsQuery,
+  characterSpecializationsQuery,
   describeError,
   type CharacterSummary,
 } from "../lib/queries";
+import { activeBuild } from "../lib/specializations";
 import { SkeletonLines } from "./Skeleton";
 import { EmptyState } from "./EmptyState";
 import { PaperDoll } from "./PaperDoll";
 
-type DetailTab = "overview" | "gear" | "mplus" | "pvp" | "professions";
+type DetailTab = "overview" | "spec" | "gear" | "mplus" | "pvp" | "professions";
 
 const TABS: { key: DetailTab; label: string }[] = [
   { key: "overview", label: "Overview" },
+  { key: "spec", label: "Spec" },
   { key: "gear", label: "Gear" },
   { key: "mplus", label: "M+" },
   { key: "pvp", label: "PvP" },
@@ -69,6 +72,9 @@ export function CharacterDetail({
         ))}
       </nav>
       {tab === "overview" && <Overview summary={summary} />}
+      {tab === "spec" && (
+        <Specializations bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
+      )}
       {tab === "gear" && (
         <PaperDoll bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
       )}
@@ -114,6 +120,65 @@ function Overview({ summary }: { summary: CharacterSummary }) {
         </div>
       ) : null}
     </dl>
+  );
+}
+
+function Specializations({
+  bnet,
+  realmSlug,
+  characterName,
+}: {
+  bnet: BlizzardClient;
+  realmSlug: string;
+  characterName: string;
+}) {
+  const { data, isPending, isError, error, refetch } = useQuery(
+    characterSpecializationsQuery(bnet, realmSlug, characterName),
+  );
+
+  if (isError) return <EmptyState message={describeError(error)} onRetry={() => void refetch()} />;
+  if (isPending || !data) return <SkeletonLines lines={4} />;
+
+  const build = activeBuild(data);
+  if (!build) return <EmptyState message="No specialization data." />;
+
+  const code = build.loadoutCode;
+  return (
+    <>
+      <dl className="stats">
+        <div>
+          <dt>Specialization</dt>
+          <dd>{build.specName ?? "—"}</dd>
+        </div>
+        {build.heroTreeName ? (
+          <div>
+            <dt>Hero talents</dt>
+            <dd>{build.heroTreeName}</dd>
+          </div>
+        ) : null}
+        <div>
+          <dt>Talents</dt>
+          <dd>
+            {build.classTalentCount} class · {build.heroTalentCount} hero
+          </dd>
+        </div>
+      </dl>
+      {code ? (
+        <div className="loadout">
+          <div className="loadout-head">
+            <span className="muted">Talent import string</span>
+            <button
+              type="button"
+              className="loadout-copy"
+              onClick={() => void navigator.clipboard?.writeText(code)}
+            >
+              Copy
+            </button>
+          </div>
+          <code className="loadout-code">{code}</code>
+        </div>
+      ) : null}
+    </>
   );
 }
 
