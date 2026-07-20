@@ -597,6 +597,40 @@ button.doll-slot:focus-visible {
   color: var(--muted);
 }
 
+/* Warband gear board controls: class/role filters + sort buttons above the matrix. */
+.warband-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin: 0.25rem 0 0.6rem;
+  font-size: 0.85rem;
+}
+.warband-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.warband-filter select {
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+}
+.warband-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.warband-sort-btn {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+.warband-sort-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
 /* Warband gear board: a characters × slots item-level matrix. Compact numeric cells, class-colored
    row headers, and a subtle tint on cells well below the character's own average. */
 .warband-board {

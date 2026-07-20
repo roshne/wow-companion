@@ -1,11 +1,26 @@
+import { useMemo, useState } from "react";
 import type { Region } from "../vendor/battlenet-wow-client";
 import type { WarbandCharacter } from "../lib/warband";
 import { useWarbandGear, weakestSlots, type WarbandRow } from "../lib/useWarbandGear";
+import {
+  sortWarbandRows,
+  filterWarbandRows,
+  type WarbandSort,
+  type WarbandSortKey,
+} from "../lib/warbandSort";
 import { BOARD_SLOTS } from "../lib/slots";
 import { ILVL_OUTLIER_THRESHOLD } from "../lib/gearCheck";
 import { CLASS_COLORS } from "../lib/wow";
 import { describeError } from "../lib/queries";
 import { EmptyState } from "./EmptyState";
+
+/** The sortable dimensions and their default direction (strongest / most-flagged first for numbers). */
+const SORT_OPTIONS: { key: WarbandSortKey; label: string; defaultDir: 1 | -1 }[] = [
+  { key: "name", label: "Name", defaultDir: 1 },
+  { key: "itemLevel", label: "Item level", defaultDir: -1 },
+  { key: "issues", label: "Issues", defaultDir: -1 },
+  { key: "class", label: "Class", defaultDir: 1 },
+];
 
 /**
  * The warband gear board: a characters × slots item-level matrix. Each row is a warband character and
@@ -23,32 +38,114 @@ export function WarbandGearBoard({
   region: Region;
 }) {
   const { rows, error, refetch } = useWarbandGear(characters, region);
+  const [sort, setSort] = useState<WarbandSort>({ key: "itemLevel", dir: -1 });
+  const [classKey, setClassKey] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
+
+  // Filter options come from the roster (class/role are known even before a row's gear resolves).
+  const classOptions = useMemo(() => {
+    const byKey = new Map<string, string>();
+    for (const r of rows) {
+      const key = r.character.classKey;
+      if (key && !byKey.has(key)) byKey.set(key, r.character.className ?? key);
+    }
+    return [...byKey.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [rows]);
+  const roleOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of rows) if (r.character.role) set.add(r.character.role);
+    return [...set].sort();
+  }, [rows]);
+
+  const shown = useMemo(
+    () => sortWarbandRows(filterWarbandRows(rows, { classKey, role }), sort),
+    [rows, classKey, role, sort],
+  );
+
+  const toggleSort = (key: WarbandSortKey) =>
+    setSort((s) =>
+      s.key === key
+        ? { key, dir: s.dir === 1 ? -1 : 1 }
+        : { key, dir: SORT_OPTIONS.find((o) => o.key === key)?.defaultDir ?? 1 },
+    );
 
   if (error) return <EmptyState message={describeError(error)} onRetry={() => void refetch()} />;
 
   return (
-    <div style={{ overflowX: "auto" }}>
-      <table className="grid warband-board" aria-label="Warband gear by slot">
-        <thead>
-          <tr>
-            <th>Character</th>
-            <th className="warband-board-slot" title="Largest equipped set (tier-set proxy)">
-              Set
-            </th>
-            {BOARD_SLOTS.map((s) => (
-              <th key={s.type} className="warband-board-slot">
-                {s.label}
-              </th>
+    <>
+      <div className="warband-controls">
+        <label className="warband-filter">
+          <span className="muted">Class</span>
+          <select
+            value={classKey ?? ""}
+            onChange={(e) => setClassKey(e.target.value || null)}
+            aria-label="Filter by class"
+          >
+            <option value="">All classes</option>
+            {classOptions.map(([key, label]) => (
+              <option key={key} value={key}>
+                {label}
+              </option>
             ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <WarbandBoardRow key={`${row.character.realm}/${row.character.name}`} row={row} />
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </select>
+        </label>
+        <label className="warband-filter">
+          <span className="muted">Role</span>
+          <select
+            value={role ?? ""}
+            onChange={(e) => setRole(e.target.value || null)}
+            aria-label="Filter by role"
+          >
+            <option value="">All roles</option>
+            {roleOptions.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="warband-sort" role="group" aria-label="Sort">
+          <span className="muted">Sort</span>
+          {SORT_OPTIONS.map(({ key, label }) => {
+            const active = sort.key === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                className={`ghost warband-sort-btn${active ? " active" : ""}`}
+                aria-pressed={active}
+                onClick={() => toggleSort(key)}
+              >
+                {label}
+                {active ? (sort.dir === 1 ? " ▲" : " ▼") : ""}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <div style={{ overflowX: "auto" }}>
+        <table className="grid warband-board" aria-label="Warband gear by slot">
+          <thead>
+            <tr>
+              <th>Character</th>
+              <th className="warband-board-slot" title="Largest equipped set (tier-set proxy)">
+                Set
+              </th>
+              {BOARD_SLOTS.map((s) => (
+                <th key={s.type} className="warband-board-slot">
+                  {s.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {shown.map((row) => (
+              <WarbandBoardRow key={`${row.character.realm}/${row.character.name}`} row={row} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
