@@ -227,6 +227,25 @@ input {
   overflow-wrap: anywhere;
 }
 
+/* Achievements tab: a name filter over a virtualized list of earned achievements. */
+.ach-filter {
+  width: 100%;
+  margin: 0.5rem 0;
+}
+.ach-list {
+  height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.ach-row {
+  display: flex;
+  align-items: center;
+  padding: 0 0.6rem;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+
 form.card input {
   width: 100%;
   margin: 0.35rem 0;
