@@ -5,10 +5,10 @@ vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
 
 import { invoke } from "@tauri-apps/api/core";
 import { BotOps } from "./BotOps";
-import type { OpsConfig } from "../lib/botops";
+import type { OpsTargetInfo } from "../lib/botops";
 
 const mockInvoke = vi.mocked(invoke);
-const cfg: OpsConfig = { ssh: "me@box", remoteDir: "~/bot" };
+const one: OpsTargetInfo[] = [{ name: "debug", ssh: "me@box" }];
 
 function mockBackend(
   env: Record<string, string> = { WOW_REALM: "eitrigg", ANNOUNCE_CHANNEL_ID: "111" },
@@ -42,15 +42,36 @@ describe("BotOps", () => {
     mockBackend();
   });
 
-  it("loads status and populates the env fields", async () => {
-    render(<BotOps cfg={cfg} />);
+  it("loads status and populates the env fields for the selected target", async () => {
+    render(<BotOps targets={one} />);
     expect(await screen.findByText("Up 3 days")).toBeInTheDocument();
+    expect(mockInvoke).toHaveBeenCalledWith("bot_status", { target: 0 });
     const realm = screen.getByLabelText("Realm slug") as HTMLInputElement;
     expect(realm.value).toBe("eitrigg");
   });
 
-  it("enables Apply only after an edit and sends just the changed key", async () => {
-    render(<BotOps cfg={cfg} />);
+  it("hides the target selector with a single bot", async () => {
+    render(<BotOps targets={one} />);
+    await screen.findByText("Up 3 days");
+    expect(screen.queryByLabelText("Bot")).not.toBeInTheDocument();
+  });
+
+  it("switches target and reloads against the new bot", async () => {
+    render(
+      <BotOps
+        targets={[
+          { name: "debug", ssh: "a@h" },
+          { name: "prod", ssh: "b@h" },
+        ]}
+      />,
+    );
+    await screen.findByText("Up 3 days");
+    fireEvent.change(screen.getByLabelText("Bot"), { target: { value: "1" } });
+    await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith("bot_status", { target: 1 }));
+  });
+
+  it("enables Apply only after an edit and sends just the changed key for the target", async () => {
+    render(<BotOps targets={one} />);
     const realm = (await screen.findByLabelText("Realm slug")) as HTMLInputElement;
     const apply = screen.getByRole("button", { name: "Apply & recreate" });
     expect(apply).toBeDisabled();
@@ -63,30 +84,33 @@ describe("BotOps", () => {
 
     await waitFor(() =>
       expect(mockInvoke).toHaveBeenCalledWith("bot_env_set", {
+        target: 0,
         changes: [{ key: "WOW_REALM", value: "shuhalo" }],
       }),
     );
     expect(await screen.findByText(/bot recreated/)).toBeInTheDocument();
   });
 
-  it("restarts after confirmation", async () => {
-    render(<BotOps cfg={cfg} />);
+  it("restarts the selected target after confirmation", async () => {
+    render(<BotOps targets={one} />);
     await screen.findByText("Up 3 days");
 
     fireEvent.click(screen.getByRole("button", { name: "Restart" }));
     fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
 
-    await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith("bot_restart"));
+    await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith("bot_restart", { target: 0 }));
     expect(await screen.findByText("Bot restarted.")).toBeInTheDocument();
   });
 
   it("fetches logs on demand", async () => {
-    render(<BotOps cfg={cfg} />);
+    render(<BotOps targets={one} />);
     await screen.findByText("Up 3 days");
 
     fireEvent.click(screen.getByRole("button", { name: "Fetch" }));
 
-    await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith("bot_logs", { lines: 200 }));
+    await waitFor(() =>
+      expect(mockInvoke).toHaveBeenCalledWith("bot_logs", { target: 0, lines: 200 }),
+    );
     expect(await screen.findByText("a log line")).toBeInTheDocument();
   });
 });

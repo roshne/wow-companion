@@ -963,6 +963,17 @@ button.doll-slot:focus-visible {
   gap: 0.6rem;
   margin: 0.25rem 0 0.75rem;
 }
+.bot-target {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.bot-target select {
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+}
 .bot-dot {
   width: 9px;
   height: 9px;
