@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { screen, fireEvent, waitFor } from "@testing-library/react";
+import { screen, fireEvent, waitFor, within } from "@testing-library/react";
 
 // App reaches Rust via Tauri `invoke` and makes data calls through the HTTP plugin's `fetch`; both
 // are mocked so the component renders without a Tauri backend.
@@ -80,18 +80,39 @@ describe("App", () => {
     expect(await screen.findByText("v0.0.0-test")).toBeInTheDocument();
   });
 
-  it("restores the persisted region on load", async () => {
+  it("opens the settings dialog from the header", async () => {
+    renderWithClient(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: "Settings" }));
+
+    const dialog = await screen.findByRole("dialog", { name: "Settings" });
+    expect(within(dialog).getByLabelText(/Region/)).toBeInTheDocument();
+    expect(within(dialog).getByLabelText(/Theme/)).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Disconnect" })).toBeInTheDocument();
+  });
+
+  it("disconnects from the settings dialog", async () => {
+    renderWithClient(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: "Settings" }));
+    fireEvent.click(screen.getByRole("button", { name: "Disconnect" }));
+
+    await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith("clear_credentials"));
+    await screen.findByText(/Connect your Battle.net client/);
+  });
+
+  it("restores the persisted region on load (shown in settings)", async () => {
     localStorage.setItem("wow-companion:region", "eu");
     renderWithClient(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: "Settings" }));
 
-    const select = (await screen.findByLabelText(/Region/)) as HTMLSelectElement;
+    const select = screen.getByLabelText(/Region/) as HTMLSelectElement;
     expect(select.value).toBe("eu");
   });
 
-  it("persists a region change", async () => {
+  it("persists a region change from settings", async () => {
     renderWithClient(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: "Settings" }));
 
-    const select = (await screen.findByLabelText(/Region/)) as HTMLSelectElement;
+    const select = screen.getByLabelText(/Region/) as HTMLSelectElement;
     fireEvent.change(select, { target: { value: "kr" } });
     await waitFor(() => expect(localStorage.getItem("wow-companion:region")).toBe("kr"));
   });
@@ -147,16 +168,16 @@ describe("App", () => {
     });
     renderWithClient(<App />);
 
-    // Starts on the default region (US).
-    const select = (await screen.findByLabelText(/Region/)) as HTMLSelectElement;
-    expect(select.value).toBe("us");
-
     fireEvent.click(await screen.findByRole("button", { name: "Warband" }));
     fireEvent.click(await screen.findByRole("button", { name: "Testchar" }));
 
-    // Detection flipped the selector to EU, and the alt is seeded into the Character lookup.
-    await waitFor(() => expect(select.value).toBe("eu"));
+    // The alt is seeded into the Character lookup...
     await screen.findByRole("heading", { name: "Character Lookup" });
     await waitFor(() => expect(screen.getByPlaceholderText(/Realm/)).toHaveValue("Euonly"));
+
+    // ...and detection flipped the region to EU — confirm via the settings dialog.
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    const select = screen.getByLabelText(/Region/) as HTMLSelectElement;
+    await waitFor(() => expect(select.value).toBe("eu"));
   });
 });
