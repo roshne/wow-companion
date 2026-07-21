@@ -10,6 +10,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use serde::Deserialize;
 use tauri::State;
 
+mod botops;
 mod warband;
 
 const KEYRING_SERVICE: &str = "wow-companion";
@@ -161,7 +162,13 @@ pub fn run() {
             has_credentials,
             clear_credentials,
             get_access_token,
-            warband::get_warband
+            warband::get_warband,
+            botops::ops_config,
+            botops::bot_status,
+            botops::bot_logs,
+            botops::bot_restart,
+            botops::bot_env_get,
+            botops::bot_env_set
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

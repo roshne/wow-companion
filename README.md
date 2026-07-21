@@ -52,9 +52,13 @@ React webview  ──invoke("get_access_token")──►  Rust (Tauri)
   plus a **gear board**: a characters × slots item-level matrix that streams in row by row,
   sorts/filters by item level / issues / class / role, and shows a warband-wide **"needs attention"**
   gear-fix roll-up.
+- **Bot Ops** _(operator-only, hidden by default)_ — manage the self-hosted
+  [`warbandeer-discord`](https://github.com/nazumods/wow/tree/main/apps/warbandeer-discord) bot on the
+  box over SSH: status, log tail, restart, and edits to its **non-secret** settings. Appears only when
+  an `ops.json` is present (see below).
 
-Every tab except Warband is typed by the vendored Web API client (Warband is local addon data), and
-the region (US/EU/KR/TW) is switchable in the header.
+Every data tab except Warband and Bot Ops is typed by the vendored Web API client (Warband is local
+addon data; Bot Ops drives the bot over SSH), and the region (US/EU/KR/TW) is switchable in the header.
 
 ### Warband tab — local addon data
 
@@ -64,6 +68,29 @@ rewrites each login. The Rust backend locates the newest such file across instal
 parses it in a sandboxed embedded Lua VM (`mlua`). It needs the
 [Warbandeer](https://github.com/nazumods/wow) addon installed and logged into at least once; no
 Battle.net credentials are involved.
+
+### Bot Ops tab — operator-only
+
+A hidden, operator-only tab for managing the self-hosted `warbandeer-discord` bot on the box — check
+its status, tail its logs, restart it, and edit its **non-secret** settings (announce channels,
+watched realm/repos, etc.). It's **hidden unless you opt in** with an `ops.json`, so normal use never
+shows it.
+
+It drives the bot through a versioned helper on the box (`bot-ops.sh`, shipped in the
+[`nazumods/wow`](https://github.com/nazumods/wow/tree/main/apps/warbandeer-discord/ops) repo) invoked
+over SSH: the Rust side only shells `ssh` with fixed subcommands, so **bot secrets never cross the
+wire** and the editable-key whitelist is enforced on the box. Secrets (tokens) are never read or
+written from here.
+
+To enable it, create `%APPDATA%\com.roshne.wowcompanion\ops.json` (or point `WOW_COMPANION_OPS_CONFIG`
+at a file):
+
+```json
+{ "ssh": "you@your-box", "remoteDir": "~/path/to/apps/warbandeer-discord" }
+```
+
+Key-based SSH to the box must already work (the app reuses your key), and the box must have the helper
+at `<remoteDir>/ops/bot-ops.sh`.
 
 ## Run it
 
@@ -133,14 +160,16 @@ tag → the release workflow drafts a GitHub Release) and signing-key setup are 
 src/                     # React frontend
   App.tsx                # app shell: credentials gate, region picker, tab nav
   components/            # per-tab UIs — CharacterDetail (+ PaperDoll / ItemPopover),
-                         #   AuctionHouse, Warband (+ WarbandGearBoard), TokenPrice, RealmStatus, …
+                         #   AuctionHouse, Warband (+ WarbandGearBoard), TokenPrice, RealmStatus,
+                         #   BotOps (operator-only), …
   lib/                   # data + logic — queries (TanStack Query), gearCheck / gearFix,
-                         #   useWarbandGear, region resolution, persistence, hooks
+                         #   useWarbandGear, region resolution, persistence, hooks, botops (SSH ops)
   lib/bnet.ts            # builds the typed client (token from Rust, fetch via Tauri HTTP)
   vendor/battlenet-wow-client/   # vendored typed client (generated types + auth + factory)
 src-tauri/               # Rust backend
   src/lib.rs             # keychain + OAuth token commands
   src/warband.rs         # Warbandeer SavedVariables parser (sandboxed mlua VM)
+  src/botops.rs          # operator-only: manage the warbandeer-discord bot over SSH
   capabilities/          # HTTP scope for *.api.blizzard.com
 ```
 
