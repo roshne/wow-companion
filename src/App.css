@@ -849,9 +849,14 @@ button.doll-slot:focus-visible {
   font-weight: 600;
 }
 
-/* Warband "needs attention" roll-up: a headline gear-fix count above the board. */
+/* Warband "needs attention" roll-up: a headline gear-fix count above the board, boxed as a callout
+   banner so the warband-wide state reads at a glance. */
 .warband-attention {
-  margin: 0.25rem 0 0;
+  margin: 0.25rem 0 0.7rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--row-hover);
   font-size: 0.9rem;
   font-weight: 600;
 }
@@ -875,9 +880,28 @@ button.doll-slot:focus-visible {
 .warband-board-slot {
   font-size: 0.78rem;
 }
+/* Pin the character-name column to the left so names stay readable while the ~16 slot columns scroll
+   horizontally. The header's first cell is the corner (sticky both ways); a right divider anchors the
+   pinned column, and row-hover is composited back on so the pinned cell tints with its row. */
 .warband-board-name {
   text-align: left;
   font-weight: 600;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--card);
+  border-right: 1px solid var(--border);
+}
+.warband-board thead th {
+  z-index: 2;
+}
+.warband-board thead th:first-child {
+  left: 0;
+  z-index: 3;
+  border-right: 1px solid var(--border);
+}
+.warband-board tbody tr:hover .warband-board-name {
+  background: linear-gradient(var(--row-hover), var(--row-hover)), var(--card);
 }
 .warband-board-cell-low {
   color: var(--down);
