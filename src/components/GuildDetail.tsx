@@ -128,8 +128,9 @@ function Roster({
     const active = sort.key === sortKey;
     return (
       <th
+        className="sortable"
         onClick={() => toggleSort(sortKey)}
-        style={{ cursor: "pointer", whiteSpace: "nowrap" }}
+        aria-sort={active ? (sort.dir === 1 ? "ascending" : "descending") : "none"}
         title="Sort"
       >
         {label}

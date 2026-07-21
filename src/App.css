@@ -297,6 +297,16 @@ select:focus {
 .grid tbody tr:hover {
   background: var(--row-hover);
 }
+/* A click-to-sort column header: a pointer cue plus an accent tint on hover so its sortability reads
+   (shared by the Warband and Guild roster tables). */
+.grid th.sortable {
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.12s ease;
+}
+.grid th.sortable:hover {
+  color: var(--accent);
+}
 /* A table-cell link: a (class-colored) name that reads as plain text but is a real, focusable button.
    Overrides the global button hover so it underlines instead of showing an accent-fill box. */
 .rowlink {
@@ -945,6 +955,12 @@ button.doll-slot:focus-visible {
 .ah-row {
   font-size: 0.9rem;
   border-bottom: 1px solid var(--border);
+  transition: background 0.12s ease;
+}
+/* The list is virtualized <div> rows (not a <table>), so it misses the .grid row-hover — add it here
+   so a long price list is as scannable as the data tables. */
+.ah-row:hover {
+  background: var(--row-hover);
 }
 .ah-row > span {
   text-align: right;
@@ -976,6 +992,7 @@ button.doll-slot:focus-visible {
 }
 .ah-sort:hover {
   border: none;
+  background: transparent;
   color: var(--accent);
 }
 
