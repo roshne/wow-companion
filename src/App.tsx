@@ -13,11 +13,10 @@ import { CharacterLookup } from "./components/CharacterLookup";
 import { GuildLookup } from "./components/GuildLookup";
 import { AuctionHouse } from "./components/AuctionHouse";
 import { Warband } from "./components/Warband";
-import { ThemeToggle } from "./components/ThemeToggle";
+import { Settings } from "./components/Settings";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import "./App.css";
 
-const REGIONS: Region[] = ["us", "eu", "kr", "tw"];
 type Tab = "token" | "realms" | "character" | "guild" | "auctions" | "warband";
 
 function App() {
@@ -27,6 +26,7 @@ function App() {
   const [region, setRegion] = useState<Region>(loadRegion);
   const [tab, setTab] = useState<Tab>("token");
   const [status, setStatus] = useState("");
+  const [settingsOpen, setSettingsOpen] = useState(false);
   // A character to open on the Character tab (set when a Warband roster row is clicked); cleared
   // once CharacterLookup has consumed it, so it's a one-shot open.
   const [selectedCharacter, setSelectedCharacter] = useState<{
@@ -138,21 +138,22 @@ function App() {
       <header className="appbar">
         <h1>WoW Companion</h1>
         <div className="spacer" />
-        <label className="muted">
-          Region{" "}
-          <select value={region} onChange={(e) => setRegion(e.currentTarget.value as Region)}>
-            {REGIONS.map((r) => (
-              <option key={r} value={r}>
-                {r.toUpperCase()}
-              </option>
-            ))}
-          </select>
-        </label>
-        <ThemeToggle />
-        <button className="ghost" onClick={clearCreds}>
-          Disconnect
+        <button className="ghost" onClick={() => setSettingsOpen(true)} aria-haspopup="dialog">
+          <span aria-hidden="true">⚙</span> Settings
         </button>
       </header>
+
+      {settingsOpen && (
+        <Settings
+          region={region}
+          onRegionChange={setRegion}
+          onDisconnect={() => {
+            setSettingsOpen(false);
+            void clearCreds();
+          }}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
 
       <nav className="tabs">
         <button className={tab === "token" ? "active" : ""} onClick={() => setTab("token")}>

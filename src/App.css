@@ -89,6 +89,55 @@ h1 {
   font-variant-numeric: tabular-nums;
   opacity: 0.75;
 }
+
+/* Modal: a centered card over a dimming backdrop (the Settings dialog). */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 3rem 1rem;
+  background: rgba(0, 0, 0, 0.45);
+}
+.modal-card {
+  width: 100%;
+  max-width: 460px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.15rem;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+.settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+.settings-close {
+  font-size: 1.15rem;
+  line-height: 1;
+  padding: 0.05rem 0.5rem;
+}
+.settings-section {
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--border);
+}
+.settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.25rem;
+}
+.settings-section input {
+  width: 100%;
+  margin: 0.35rem 0;
+}
+.settings-disconnect {
+  margin-top: 0.5rem;
+}
 .big {
   font-size: 2rem;
   font-weight: 700;
