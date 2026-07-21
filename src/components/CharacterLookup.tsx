@@ -219,56 +219,61 @@ export function CharacterLookup({
       {sub && <p className="muted">{sub}</p>}
       {char && (
         <div className="charcard">
-          {imageSrc ? (
-            <img
-              className={imageSrc === media.render ? "char-render" : "avatar"}
-              src={imageSrc}
-              alt=""
-              onError={() => setFailedSrcs((prev) => new Set(prev).add(imageSrc))}
-            />
-          ) : (
-            <div
-              className="avatar avatar-placeholder"
-              aria-hidden="true"
-              style={{ color: classColor(char.character_class?.id) }}
-            >
-              {char.name?.[0]?.toUpperCase() ?? "?"}
-            </div>
-          )}
-          <div>
-            <h3 style={{ margin: "0 0 .25rem" }}>
-              {char.name}
-              {char.realm?.name ? <span className="muted"> — {loc(char.realm.name)}</span> : null}
-            </h3>
-            <button
-              type="button"
-              className="ghost"
-              style={{ marginBottom: ".25rem" }}
-              onClick={() =>
-                currentFavorite && setFavorites(toggleFavoriteCharacter(currentFavorite))
-              }
-            >
-              {currentIsFavorited ? "★ Favorited" : "☆ Favorite"}
-            </button>
-            <p style={{ margin: ".1rem 0" }}>
-              Level {char.level} {loc(char.race?.name)}{" "}
-              <span style={{ color: classColor(char.character_class?.id), fontWeight: 600 }}>
-                {loc(char.character_class?.name)}
-              </span>
-              {char.active_spec?.name ? ` · ${loc(char.active_spec.name)}` : ""}
-            </p>
-            {char.guild?.name ? (
-              <p className="muted" style={{ margin: ".1rem 0" }}>
-                &lt;{loc(char.guild.name)}&gt;
+          <div className="charcard-head">
+            {imageSrc ? (
+              <img
+                className={imageSrc === media.render ? "char-render" : "avatar"}
+                src={imageSrc}
+                alt=""
+                onError={() => setFailedSrcs((prev) => new Set(prev).add(imageSrc))}
+              />
+            ) : (
+              <div
+                className="avatar avatar-placeholder"
+                aria-hidden="true"
+                style={{ color: classColor(char.character_class?.id) }}
+              >
+                {char.name?.[0]?.toUpperCase() ?? "?"}
+              </div>
+            )}
+            <div className="charcard-id">
+              <div className="charcard-name">
+                <h3 style={{ margin: 0 }}>
+                  {char.name}
+                  {char.realm?.name ? (
+                    <span className="muted"> — {loc(char.realm.name)}</span>
+                  ) : null}
+                </h3>
+                <button
+                  type="button"
+                  className="ghost fav-toggle"
+                  onClick={() =>
+                    currentFavorite && setFavorites(toggleFavoriteCharacter(currentFavorite))
+                  }
+                >
+                  {currentIsFavorited ? "★ Favorited" : "☆ Favorite"}
+                </button>
+              </div>
+              <p style={{ margin: ".1rem 0" }}>
+                Level {char.level} {loc(char.race?.name)}{" "}
+                <span style={{ color: classColor(char.character_class?.id), fontWeight: 600 }}>
+                  {loc(char.character_class?.name)}
+                </span>
+                {char.active_spec?.name ? ` · ${loc(char.active_spec.name)}` : ""}
               </p>
-            ) : null}
-            <CharacterDetail
-              bnet={bnet}
-              realmSlug={realmSlug}
-              characterName={characterName}
-              summary={char}
-            />
+              {char.guild?.name ? (
+                <p className="muted" style={{ margin: ".1rem 0" }}>
+                  &lt;{loc(char.guild.name)}&gt;
+                </p>
+              ) : null}
+            </div>
           </div>
+          <CharacterDetail
+            bnet={bnet}
+            realmSlug={realmSlug}
+            characterName={characterName}
+            summary={char}
+          />
         </div>
       )}
     </section>

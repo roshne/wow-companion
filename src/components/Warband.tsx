@@ -155,19 +155,10 @@ export function Warband({
                       {c.realm ? (
                         <button
                           type="button"
+                          className="rowlink"
                           onClick={() => onOpenCharacter({ realm: c.realm, characterName: c.name })}
                           title={`Open ${c.name}`}
-                          style={{
-                            color,
-                            background: "none",
-                            border: "none",
-                            padding: 0,
-                            cursor: "pointer",
-                            fontFamily: "inherit",
-                            fontSize: "inherit",
-                            fontWeight: 600,
-                            textAlign: "left",
-                          }}
+                          style={{ color }}
                         >
                           {c.name}
                         </button>

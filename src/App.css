@@ -1,5 +1,5 @@
 :root {
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+  font-family: Inter, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 15px;
   line-height: 1.5;
   color: #1a1a1a;
@@ -10,6 +10,12 @@
   --accent: #396cd8;
   --up: #1a7f37;
   --down: #c1121f;
+  /* Derived surfaces used app-wide: a translucent accent wash for hover/active affordances, a neutral
+     row-hover, a focus ring, and card depth. Redefined per theme below so contrast holds in both. */
+  --accent-soft: rgba(57, 108, 216, 0.1);
+  --row-hover: rgba(0, 0, 0, 0.035);
+  --ring: rgba(57, 108, 216, 0.35);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.05);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -21,7 +27,7 @@ body {
 }
 
 .container {
-  max-width: 860px;
+  max-width: 960px;
   margin: 0 auto;
   padding: 1.5rem 1.25rem 3rem;
   text-align: left;
@@ -31,6 +37,14 @@ h1 {
   font-size: 1.5rem;
   margin: 0;
   text-align: left;
+  letter-spacing: -0.01em;
+}
+h2 {
+  font-size: 1.2rem;
+  letter-spacing: -0.01em;
+}
+h3 {
+  font-size: 1.02rem;
 }
 
 .appbar {
@@ -45,30 +59,48 @@ h1 {
 
 .tabs {
   display: flex;
-  gap: 0.25rem;
+  flex-wrap: wrap;
+  gap: 0.1rem 0.15rem;
   border-bottom: 1px solid var(--border);
   margin-bottom: 1rem;
 }
 .tabs button {
   background: transparent;
   border: none;
+  /* A transparent underline on every tab reserves the active tab's 2px, so activating one never nudges
+     the row; the negative margin drops that underline onto the container's own border. */
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
   box-shadow: none;
-  padding: 0.5rem 0.9rem;
+  padding: 0.5rem 0.85rem;
   border-radius: 6px 6px 0 0;
   color: var(--muted);
   font-weight: 600;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+.tabs button:hover {
+  color: inherit;
+  background: var(--accent-soft);
+  border-color: transparent;
 }
 .tabs button.active {
   color: var(--accent);
-  border-bottom: 2px solid var(--accent);
+  border-bottom-color: var(--accent);
+}
+.tabs button.active:hover {
+  border-bottom-color: var(--accent);
 }
 
 .card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 1rem 1.15rem;
+  padding: 1.05rem 1.2rem;
   margin: 0 0 1rem;
+  box-shadow: var(--shadow-sm);
 }
 
 .row {
@@ -100,6 +132,7 @@ h1 {
   justify-content: center;
   padding: 3rem 1rem;
   background: rgba(0, 0, 0, 0.45);
+  animation: backdrop-in 0.16s ease;
 }
 .modal-card {
   width: 100%;
@@ -109,6 +142,24 @@ h1 {
   border-radius: 12px;
   padding: 1rem 1.15rem;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  animation: modal-in 0.18s ease;
+}
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .modal-backdrop,
+  .modal-card {
+    animation: none;
+  }
 }
 .settings-head {
   display: flex;
@@ -142,6 +193,8 @@ h1 {
   font-size: 2rem;
   font-weight: 700;
   margin: 0.4rem 0 0.1rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 
 input,
@@ -157,19 +210,67 @@ select {
 button {
   cursor: pointer;
   font-weight: 600;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 button:hover {
   border-color: var(--accent);
+  background: var(--accent-soft);
+}
+button.ghost:hover {
+  background: var(--accent-soft);
 }
 button:disabled {
   opacity: 0.5;
   cursor: default;
 }
+button:disabled:hover {
+  border-color: var(--border);
+  background: var(--card);
+}
 button.ghost {
   background: transparent;
 }
+button.ghost:disabled:hover {
+  background: transparent;
+}
+/* Submit buttons are the primary action of their form (Look up / Save / Connect): a subtle accent
+   tint lifts them above the neutral Refresh/secondary buttons without a bespoke variant. */
+button[type="submit"]:not(.ghost) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 input {
   min-width: 180px;
+}
+select {
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+input {
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+/* Keyboard focus: a clear accent ring on every interactive control (mouse clicks keep the quiet
+   default via :focus-visible). */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+input:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--ring);
 }
 
 .grid {
@@ -190,6 +291,29 @@ input {
   top: 0;
   background: var(--card);
 }
+.grid tbody tr {
+  transition: background 0.12s ease;
+}
+.grid tbody tr:hover {
+  background: var(--row-hover);
+}
+/* A table-cell link: a (class-colored) name that reads as plain text but is a real, focusable button.
+   Overrides the global button hover so it underlines instead of showing an accent-fill box. */
+.rowlink {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+.rowlink:hover {
+  border-color: transparent;
+  background: none;
+  text-decoration: underline;
+}
 .grid td.up {
   color: var(--up);
   font-weight: 600;
@@ -199,11 +323,44 @@ input {
   font-weight: 600;
 }
 
+/* Character card: an identity header (avatar + name / spec / guild) above the full-width detail sheet.
+   Keeping the sub-tabs and their panels out of the avatar's column stops the 10-tab row from spilling
+   past the card and gives wide panels (tables, the paper doll) the whole width. */
 .charcard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 0.5rem;
+}
+.charcard-head {
   display: flex;
   gap: 1rem;
   align-items: flex-start;
-  margin-top: 0.5rem;
+}
+.charcard-id {
+  flex: 1;
+  min-width: 0;
+}
+.charcard-name {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex-wrap: wrap;
+  margin: 0 0 0.15rem;
+}
+/* Favorite star: a quiet icon toggle beside the name, not a boxed button. */
+.fav-toggle {
+  padding: 0.05rem 0.35rem;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  line-height: 1.1;
+}
+.fav-toggle:hover {
+  color: var(--accent);
+  border-color: transparent;
+  background: var(--accent-soft);
 }
 .avatar {
   width: 84px;
@@ -246,6 +403,7 @@ input {
 .stats dd {
   margin: 0;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Spec tab: the active talent loadout's import string + a copy button. */
@@ -316,12 +474,18 @@ form.card input {
 /* "Fix these" panel: the prioritized gear-fix checklist below the summary — most-impactful first, a
    severity dot per row. Hidden entirely for a clean character (the summary's "All good" covers that). */
 .fix-these {
-  margin: 0.4rem 0 0;
+  margin: 0.5rem 0 0;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--row-hover);
 }
 .fix-these-title {
-  margin: 0 0 0.35rem;
-  font-size: 0.85rem;
-  font-weight: 600;
+  margin: 0 0 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--muted);
 }
 .fix-these-list {
@@ -356,11 +520,14 @@ form.card input {
    list fallback for very narrow viewports + accessibility is a follow-up). */
 .paper-doll {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 0.75rem;
+  /* Three content-sized columns (left slots · render · right slots) centered as a group, so the slot
+     columns hug the render at any width. A stretchy 1fr center column flung them to the card edges. */
+  grid-template-columns: auto auto auto;
+  justify-content: center;
+  gap: 0.5rem 2.25rem;
   align-items: start;
   justify-items: center;
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
 }
 .doll-col {
   display: flex;
@@ -371,6 +538,8 @@ form.card input {
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* Center the render between the (taller) slot columns rather than pinning it to the top. */
+  align-self: center;
 }
 .doll-weapons {
   grid-column: 1 / -1;
@@ -941,6 +1110,10 @@ button.doll-slot:focus-visible {
   --accent: #4b8bff;
   --up: #3fb950;
   --down: #ff6b6b;
+  --accent-soft: rgba(75, 139, 255, 0.16);
+  --row-hover: rgba(255, 255, 255, 0.05);
+  --ring: rgba(75, 139, 255, 0.4);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.28);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -952,6 +1125,10 @@ button.doll-slot:focus-visible {
     --accent: #4b8bff;
     --up: #3fb950;
     --down: #ff6b6b;
+    --accent-soft: rgba(75, 139, 255, 0.16);
+    --row-hover: rgba(255, 255, 255, 0.05);
+    --ring: rgba(75, 139, 255, 0.4);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.28);
   }
 }
 
