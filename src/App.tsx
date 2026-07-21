@@ -6,6 +6,7 @@ import { onUnauthorized } from "./lib/auth";
 import { useTokenHistory } from "./lib/useTokenHistory";
 import { fetchRegionRealmIndexes, resolveCharacterRegion } from "./lib/region";
 import { loadRegion, saveRegion } from "./lib/persist";
+import { opsConfig, type OpsConfig } from "./lib/botops";
 import type { Region } from "./vendor/battlenet-wow-client";
 import { TokenPrice } from "./components/TokenPrice";
 import { RealmStatus } from "./components/RealmStatus";
@@ -14,10 +15,11 @@ import { GuildLookup } from "./components/GuildLookup";
 import { AuctionHouse } from "./components/AuctionHouse";
 import { Warband } from "./components/Warband";
 import { Settings } from "./components/Settings";
+import { BotOps } from "./components/BotOps";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import "./App.css";
 
-type Tab = "token" | "realms" | "character" | "guild" | "auctions" | "warband";
+type Tab = "token" | "realms" | "character" | "guild" | "auctions" | "warband" | "botops";
 
 function App() {
   const [hasCreds, setHasCreds] = useState<boolean | null>(null);
@@ -27,6 +29,7 @@ function App() {
   const [tab, setTab] = useState<Tab>("token");
   const [status, setStatus] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [ops, setOps] = useState<OpsConfig | null>(null);
   // A character to open on the Character tab (set when a Warband roster row is clicked); cleared
   // once CharacterLookup has consumed it, so it's a one-shot open.
   const [selectedCharacter, setSelectedCharacter] = useState<{
@@ -63,6 +66,14 @@ function App() {
     invoke<boolean>("has_credentials")
       .then(setHasCreds)
       .catch(() => setHasCreds(false));
+  }, []);
+
+  // Operator-only Bot Ops tab: shown only when ops mode is configured (an ops.json is present).
+  // A broken or absent config resolves to null, keeping the tab hidden in normal use.
+  useEffect(() => {
+    opsConfig()
+      .then(setOps)
+      .catch(() => setOps(null));
   }, []);
 
   // A 401 from any data call means the stored secret is invalid/expired: clear it and route back to
@@ -174,6 +185,11 @@ function App() {
         <button className={tab === "warband" ? "active" : ""} onClick={() => setTab("warband")}>
           Warband
         </button>
+        {ops && (
+          <button className={tab === "botops" ? "active" : ""} onClick={() => setTab("botops")}>
+            Bot Ops
+          </button>
+        )}
       </nav>
 
       <ErrorBoundary resetKeys={[tab, region]}>
@@ -189,6 +205,7 @@ function App() {
         {tab === "guild" && <GuildLookup bnet={bnet} />}
         {tab === "auctions" && <AuctionHouse bnet={bnet} />}
         {tab === "warband" && <Warband onOpenCharacter={openCharacter} region={region} />}
+        {tab === "botops" && ops && <BotOps cfg={ops} />}
       </ErrorBoundary>
 
       <footer className="appfooter muted">{__BUILD_ID__}</footer>

@@ -954,3 +954,148 @@ button.doll-slot:focus-visible {
     --down: #ff6b6b;
   }
 }
+
+/* Bot Ops tab: operator panel for the warbandeer-discord bot (drives ops/bot-ops.sh over SSH). */
+.bot-statusbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0.25rem 0 0.75rem;
+}
+.bot-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex: none;
+}
+.bot-dot.on {
+  background: var(--up);
+}
+.bot-dot.off {
+  background: var(--down);
+}
+.bot-realm {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--up);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.05rem 0.4rem;
+}
+.bot-realm.down {
+  color: var(--down);
+}
+.bot-host {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.bot-spacer {
+  margin-left: auto;
+}
+.bot-banner {
+  margin: 0.4rem 0;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+.bot-banner.err {
+  color: var(--down);
+  border: 1px solid var(--down);
+}
+.bot-banner.ok {
+  color: var(--up);
+  border: 1px solid var(--border);
+}
+.bot-confirm {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.4rem 0;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+.bot-h {
+  margin: 1rem 0 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+.bot-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem 1.25rem;
+  margin-top: 0.4rem;
+}
+.bot-field {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 0.5rem;
+  padding-left: 0.5rem;
+  border-left: 2px solid transparent;
+}
+.bot-field.dirty {
+  border-left-color: var(--accent);
+}
+.bot-fl {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.bot-field input {
+  width: 100%;
+  min-width: 0;
+  margin: 0.1rem 0;
+}
+.bot-fh {
+  grid-column: 2;
+  margin-top: 0.05rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.bot-applybar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+.bot-cnt {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.bot-primary {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.bot-logs-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0 0.4rem;
+}
+.bot-lines {
+  width: 5.5rem;
+  min-width: 0;
+}
+.bot-logs {
+  max-height: 340px;
+  overflow: auto;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--muted);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
