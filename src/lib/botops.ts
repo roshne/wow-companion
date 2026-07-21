@@ -5,9 +5,10 @@
 import { invoke } from "@tauri-apps/api/core";
 
 // Shapes returned by the Rust commands (serde camelCase).
-export interface OpsConfig {
-  ssh: string; // SSH destination, e.g. "roshne@192.168.7.48"
-  remoteDir: string; // remote bot dir holding .env + ops/bot-ops.sh
+// One managed bot, as surfaced to the target switch (compose internals stay in Rust).
+export interface OpsTargetInfo {
+  name: string; // switch label, e.g. "debug" / "prod"
+  ssh: string; // SSH destination, for display
 }
 
 export interface BotStatus {
@@ -70,30 +71,33 @@ export const OPS_FIELDS: OpsField[] = [
   { key: "AUTO_UPDATE", label: "Auto-update", hint: "true or false" },
 ];
 
-export function opsConfig(): Promise<OpsConfig | null> {
-  return invoke<OpsConfig | null>("ops_config");
+// `opsConfig` returns the list of targets (or null when ops mode is off); every other command
+// takes the selected target's index, so the panel can switch bots without re-reading config.
+
+export function opsConfig(): Promise<OpsTargetInfo[] | null> {
+  return invoke<OpsTargetInfo[] | null>("ops_config");
 }
 
-export function botStatus(): Promise<BotStatus> {
-  return invoke<BotStatus>("bot_status");
+export function botStatus(target: number): Promise<BotStatus> {
+  return invoke<BotStatus>("bot_status", { target });
 }
 
 /** Tail the container log (default 200, capped at 5000 by the backend). */
-export function botLogs(lines: number): Promise<string> {
-  return invoke<string>("bot_logs", { lines });
+export function botLogs(target: number, lines: number): Promise<string> {
+  return invoke<string>("bot_logs", { target, lines });
 }
 
 /** Restart the bot process in place (no env reload). Returns the compose output. */
-export function botRestart(): Promise<string> {
-  return invoke<string>("bot_restart");
+export function botRestart(target: number): Promise<string> {
+  return invoke<string>("bot_restart", { target });
 }
 
 /** Current values of the non-secret, editable env keys. */
-export function botEnvGet(): Promise<Record<string, string>> {
-  return invoke<Record<string, string>>("bot_env_get");
+export function botEnvGet(target: number): Promise<Record<string, string>> {
+  return invoke<Record<string, string>>("bot_env_get", { target });
 }
 
 /** Apply env changes and (if anything really changed) recreate the container to load them. */
-export function botEnvSet(changes: EnvChange[]): Promise<EnvSetResult> {
-  return invoke<EnvSetResult>("bot_env_set", { changes });
+export function botEnvSet(target: number, changes: EnvChange[]): Promise<EnvSetResult> {
+  return invoke<EnvSetResult>("bot_env_set", { target, changes });
 }

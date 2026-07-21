@@ -71,10 +71,11 @@ Battle.net credentials are involved.
 
 ### Bot Ops tab — operator-only
 
-A hidden, operator-only tab for managing the self-hosted `warbandeer-discord` bot on the box — check
-its status, tail its logs, restart it, and edit its **non-secret** settings (announce channels,
-watched realm/repos, etc.). It's **hidden unless you opt in** with an `ops.json`, so normal use never
-shows it.
+A hidden, operator-only tab for managing the self-hosted `warbandeer-discord` bot(s) — check status,
+tail logs, restart, and edit **non-secret** settings (announce channels, watched realm/repos, etc.),
+with a **debug/prod switch** when you configure more than one bot. It's **hidden unless you opt in**
+with an `ops.json`, and — unlike the data tabs — it's **reachable without connecting Battle.net
+credentials** (it has nothing to do with the API).
 
 It drives the bot through a versioned helper on the box (`bot-ops.sh`, shipped in the
 [`nazumods/wow`](https://github.com/nazumods/wow/tree/main/apps/warbandeer-discord/ops) repo) invoked
@@ -83,14 +84,35 @@ wire** and the editable-key whitelist is enforced on the box. Secrets (tokens) a
 written from here.
 
 To enable it, create `%APPDATA%\com.roshne.wowcompanion\ops.json` (or point `WOW_COMPANION_OPS_CONFIG`
-at a file):
+at a file) listing the bot(s) to manage:
 
 ```json
-{ "ssh": "you@your-box", "remoteDir": "~/path/to/apps/warbandeer-discord" }
+{
+  "targets": [
+    {
+      "name": "debug",
+      "ssh": "roshne@192.168.7.48",
+      "remoteDir": "~/repos/wow-debug/apps/warbandeer-discord",
+      "project": "warbandeer-discord-debug",
+      "container": "warbandeer-discord"
+    },
+    {
+      "name": "prod",
+      "ssh": "nazu@prod-host",
+      "remoteDir": "~/path/to/apps/warbandeer-discord",
+      "project": "warbandeer-discord",
+      "container": "warbandeer-discord"
+    }
+  ]
+}
 ```
 
-Key-based SSH to the box must already work (the app reuses your key), and the box must have the helper
-at `<remoteDir>/ops/bot-ops.sh`.
+`project`/`container` are optional (default to debug's). The old single-bot shape
+(`{ "ssh": "...", "remoteDir": "..." }`) still works as one `debug` target. Key-based SSH to each
+host must work (the app reuses your key), and that host must have the helper at
+`<remoteDir>/ops/bot-ops.sh`. The `prod` entry above is a placeholder — see the helper's
+[README](https://github.com/nazumods/wow/tree/main/apps/warbandeer-discord/ops) for the full format
+and prod setup breadcrumbs.
 
 ## Run it
 

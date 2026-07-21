@@ -6,7 +6,7 @@ import { onUnauthorized } from "./lib/auth";
 import { useTokenHistory } from "./lib/useTokenHistory";
 import { fetchRegionRealmIndexes, resolveCharacterRegion } from "./lib/region";
 import { loadRegion, saveRegion } from "./lib/persist";
-import { opsConfig, type OpsConfig } from "./lib/botops";
+import { opsConfig, type OpsTargetInfo } from "./lib/botops";
 import type { Region } from "./vendor/battlenet-wow-client";
 import { TokenPrice } from "./components/TokenPrice";
 import { RealmStatus } from "./components/RealmStatus";
@@ -29,7 +29,7 @@ function App() {
   const [tab, setTab] = useState<Tab>("token");
   const [status, setStatus] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [ops, setOps] = useState<OpsConfig | null>(null);
+  const [ops, setOps] = useState<OpsTargetInfo[] | null>(null);
   // A character to open on the Character tab (set when a Warband roster row is clicked); cleared
   // once CharacterLookup has consumed it, so it's a one-shot open.
   const [selectedCharacter, setSelectedCharacter] = useState<{
@@ -117,29 +117,47 @@ function App() {
   }
 
   if (!hasCreds) {
+    // Bot Ops is independent of Battle.net creds — when ops mode is on, let the operator reach it
+    // without connecting. Otherwise the connect form is the whole view, as before.
     return (
       <main className="container">
-        <h1>WoW Companion</h1>
-        <form className="card" onSubmit={saveCreds} style={{ maxWidth: 460, marginTop: "1rem" }}>
-          <h2 style={{ marginTop: 0 }}>Connect your Battle.net client</h2>
-          <p className="muted">
-            Create one at <code>develop.battle.net/access/clients</code>. The secret is stored in
-            your OS keychain — never in the app.
-          </p>
-          <input
-            placeholder="Client ID"
-            value={clientId}
-            onChange={(e) => setClientId(e.currentTarget.value)}
-          />
-          <input
-            type="password"
-            placeholder="Client Secret"
-            value={clientSecret}
-            onChange={(e) => setClientSecret(e.currentTarget.value)}
-          />
-          <button type="submit">Save to keychain</button>
-          {status && <p className="muted">{status}</p>}
-        </form>
+        <header className="appbar">
+          <h1>WoW Companion</h1>
+        </header>
+        {ops && ops.length > 0 && (
+          <nav className="tabs">
+            <button className={tab === "botops" ? "" : "active"} onClick={() => setTab("token")}>
+              Connect
+            </button>
+            <button className={tab === "botops" ? "active" : ""} onClick={() => setTab("botops")}>
+              Bot Ops
+            </button>
+          </nav>
+        )}
+        {ops && ops.length > 0 && tab === "botops" ? (
+          <BotOps targets={ops} />
+        ) : (
+          <form className="card" onSubmit={saveCreds} style={{ maxWidth: 460, marginTop: "1rem" }}>
+            <h2 style={{ marginTop: 0 }}>Connect your Battle.net client</h2>
+            <p className="muted">
+              Create one at <code>develop.battle.net/access/clients</code>. The secret is stored in
+              your OS keychain — never in the app.
+            </p>
+            <input
+              placeholder="Client ID"
+              value={clientId}
+              onChange={(e) => setClientId(e.currentTarget.value)}
+            />
+            <input
+              type="password"
+              placeholder="Client Secret"
+              value={clientSecret}
+              onChange={(e) => setClientSecret(e.currentTarget.value)}
+            />
+            <button type="submit">Save to keychain</button>
+            {status && <p className="muted">{status}</p>}
+          </form>
+        )}
       </main>
     );
   }
@@ -185,7 +203,7 @@ function App() {
         <button className={tab === "warband" ? "active" : ""} onClick={() => setTab("warband")}>
           Warband
         </button>
-        {ops && (
+        {ops && ops.length > 0 && (
           <button className={tab === "botops" ? "active" : ""} onClick={() => setTab("botops")}>
             Bot Ops
           </button>
@@ -205,7 +223,7 @@ function App() {
         {tab === "guild" && <GuildLookup bnet={bnet} />}
         {tab === "auctions" && <AuctionHouse bnet={bnet} />}
         {tab === "warband" && <Warband onOpenCharacter={openCharacter} region={region} />}
-        {tab === "botops" && ops && <BotOps cfg={ops} />}
+        {tab === "botops" && ops && ops.length > 0 && <BotOps targets={ops} />}
       </ErrorBoundary>
 
       <footer className="appfooter muted">{__BUILD_ID__}</footer>

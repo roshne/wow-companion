@@ -7,13 +7,15 @@ import {
   botStatus,
   OPS_FIELDS,
   type BotStatus,
-  type OpsConfig,
+  type OpsTargetInfo,
 } from "../lib/botops";
 
-// Operator-only panel: manages the warbandeer-discord bot on the box via the Rust `botops`
-// commands (which shell out to ops/bot-ops.sh over SSH). App renders it only when ops mode is
-// configured, passing the resolved cfg. Edits non-secret env only; secrets stay on the box.
-export function BotOps({ cfg }: { cfg: OpsConfig }) {
+// Operator-only panel: manages a warbandeer-discord bot on the box via the Rust `botops` commands
+// (which shell out to ops/bot-ops.sh over SSH). App renders it only when ops mode is configured,
+// passing the list of targets (debug/prod); a selector switches between them. Edits non-secret env
+// only; secrets stay on the box.
+export function BotOps({ targets }: { targets: OpsTargetInfo[] }) {
+  const [selected, setSelected] = useState(0);
   const [status, setStatus] = useState<BotStatus | null>(null);
   const [env, setEnv] = useState<Record<string, string>>({});
   const [draft, setDraft] = useState<Record<string, string>>({});
@@ -27,18 +29,28 @@ export function BotOps({ cfg }: { cfg: OpsConfig }) {
   const loadState = useCallback(async () => {
     setError(null);
     try {
-      const [st, ev] = await Promise.all([botStatus(), botEnvGet()]);
+      const [st, ev] = await Promise.all([botStatus(selected), botEnvGet(selected)]);
       setStatus(st);
       setEnv(ev);
       setDraft({ ...ev });
     } catch (e) {
       setError(String(e));
     }
-  }, []);
+  }, [selected]);
 
+  // Runs on mount and whenever the selected target changes (loadState depends on `selected`).
   useEffect(() => {
     void loadState();
   }, [loadState]);
+
+  function switchTarget(i: number) {
+    setSelected(i);
+    setLogs("");
+    setNotice(null);
+    setError(null);
+    setConfirming(null);
+    // env/status reload via the loadState effect above.
+  }
 
   const changed = OPS_FIELDS.filter((f) => (draft[f.key] ?? "") !== (env[f.key] ?? ""));
 
@@ -46,7 +58,7 @@ export function BotOps({ cfg }: { cfg: OpsConfig }) {
     setBusy(true);
     setError(null);
     try {
-      setLogs(await botLogs(logLines));
+      setLogs(await botLogs(selected, logLines));
     } catch (e) {
       setError(String(e));
     } finally {
@@ -60,7 +72,7 @@ export function BotOps({ cfg }: { cfg: OpsConfig }) {
     setError(null);
     setNotice(null);
     try {
-      await botRestart();
+      await botRestart(selected);
       setNotice("Bot restarted.");
       await loadState();
     } catch (e) {
@@ -76,7 +88,10 @@ export function BotOps({ cfg }: { cfg: OpsConfig }) {
     setError(null);
     setNotice(null);
     try {
-      const res = await botEnvSet(changed.map((f) => ({ key: f.key, value: draft[f.key] ?? "" })));
+      const res = await botEnvSet(
+        selected,
+        changed.map((f) => ({ key: f.key, value: draft[f.key] ?? "" })),
+      );
       setNotice(
         res.recreated
           ? `Applied ${res.changed.join(", ")} — bot recreated.${res.backup ? ` Backup: ${res.backup}` : ""}`
@@ -93,6 +108,22 @@ export function BotOps({ cfg }: { cfg: OpsConfig }) {
   return (
     <section>
       <div className="bot-statusbar">
+        {targets.length > 1 && (
+          <label className="bot-target">
+            Bot{" "}
+            <select
+              aria-label="Bot"
+              value={selected}
+              onChange={(e) => switchTarget(Number(e.currentTarget.value))}
+            >
+              {targets.map((t, i) => (
+                <option key={t.name} value={i}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <span
           className={`bot-dot${status?.running ? " on" : status && !status.running ? " off" : ""}`}
         />
@@ -102,7 +133,7 @@ export function BotOps({ cfg }: { cfg: OpsConfig }) {
             realm {status.realmStatus}
           </span>
         )}
-        <span className="bot-host">{cfg.ssh}</span>
+        <span className="bot-host">{targets[selected]?.ssh}</span>
         <span className="bot-spacer" />
         <button className="ghost" onClick={() => void loadState()} disabled={busy} title="Reload">
           ⟳
