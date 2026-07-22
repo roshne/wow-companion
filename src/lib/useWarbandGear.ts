@@ -1,5 +1,6 @@
+import { useMemo } from "react";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Region } from "../vendor/battlenet-wow-client";
+import type { BlizzardClient, Region } from "../vendor/battlenet-wow-client";
 import { makeClient } from "./bnet";
 import { characterEquipmentQuery, type CharacterEquipment } from "./queries";
 import { fetchRegionRealmIndexes, resolveCharacterRegion, type RegionRealmIndexes } from "./region";
@@ -146,6 +147,14 @@ function failedGear(
  * {@link deriveGear}. Each row surfaces independently: `gear` is `null` until that character's fetch
  * settles, then the derived gear (or a `failed` placeholder), so early rows render without waiting on
  * slow ones. Lazy (only when there's a roster).
+ *
+ * The targets and the query list are memoized, which matters more than it looks: React Query re-runs a
+ * query's `select` whenever the function's identity changes, so building the list inline re-derived
+ * *every* character's gear (a `gearCheck` + item-level + tier-set pass over their whole equipment doc)
+ * on *every* render — and with per-row streaming the board re-renders once per row that resolves, so
+ * filling an N-character warband cost O(N²) derivations. (Structural sharing hid this: the re-derived
+ * object is deep-equal, so React Query hands back the previous reference and nothing downstream
+ * re-renders. The work was simply thrown away.) Memoized, each row derives once per fetch.
  */
 export function useWarbandGear(characters: WarbandCharacter[], fallbackRegion: Region) {
   const queryClient = useQueryClient();
@@ -157,29 +166,52 @@ export function useWarbandGear(characters: WarbandCharacter[], fallbackRegion: R
     queryFn: () => fetchRegionRealmIndexes(queryClient),
     staleTime: 60 * 60_000,
   });
-  const targets = indexesQuery.data
-    ? resolveWarbandTargets(characters, indexesQuery.data, fallbackRegion)
-    : null;
+  const indexes = indexesQuery.data;
+  const targets = useMemo(
+    () => (indexes ? resolveWarbandTargets(characters, indexes, fallbackRegion) : null),
+    [characters, indexes, fallbackRegion],
+  );
+
+  // One client per region (four at most) rather than one per character per render.
+  const clients = useMemo(() => new Map<Region, BlizzardClient>(), []);
 
   // One query per character (only once targets are known); each shares the paper doll's per-character
   // equipment cache and derives its gear in `select`.
-  const results = useQueries({
-    queries: (targets ?? []).map((target) => ({
-      ...characterEquipmentQuery(
-        makeClient(target.region),
-        target.realmSlug,
-        target.character.name,
-      ),
+  const queries = useMemo(() => {
+    function clientFor(region: Region): BlizzardClient {
+      const existing = clients.get(region);
+      if (existing) return existing;
+      const client = makeClient(region);
+      clients.set(region, client);
+      return client;
+    }
+    return (targets ?? []).map((target) => ({
+      ...characterEquipmentQuery(clientFor(target.region), target.realmSlug, target.character.name),
       select: (equipment: CharacterEquipment) =>
         deriveGear(target.character, target.region, target.realmSlug, equipment),
-    })),
-  });
+    }));
+  }, [targets, clients]);
+
+  const results = useQueries({ queries });
+
+  // The failed-row placeholders, built once per target list. `select` already hands back a stable
+  // object for a resolved row and a pending row's gear is plain `null`, so without these the *failed*
+  // rows would be the one kind minting a fresh object each render — and so the one kind whose board
+  // row could never memoize.
+  const failedPlaceholders = useMemo(
+    () => (targets ?? []).map((target) => failedGear(target.character, target, fallbackRegion)),
+    [targets, fallbackRegion],
+  );
 
   const rows: WarbandRow[] = characters.map((character, i) => {
     const result = results[i];
     if (result?.isSuccess) return { character, gear: result.data };
+    // A result only exists once targets resolved, so the placeholder is always there alongside it.
     if (result?.isError)
-      return { character, gear: failedGear(character, targets?.[i], fallbackRegion) };
+      return {
+        character,
+        gear: failedPlaceholders[i] ?? failedGear(character, undefined, fallbackRegion),
+      };
     return { character, gear: null };
   });
 

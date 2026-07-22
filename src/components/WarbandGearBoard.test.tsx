@@ -3,16 +3,24 @@ import { render, screen, within, fireEvent } from "@testing-library/react";
 
 // Drive the board off a controlled useWarbandGear result — no fetching / QueryClient needed — while
 // keeping the real pure derivations (weakestSlots) the board also calls.
-vi.mock("../lib/useWarbandGear", async (importActual) => ({
-  ...(await importActual<typeof import("../lib/useWarbandGear")>()),
-  useWarbandGear: vi.fn(),
-}));
+// `weakestSlots` is spied rather than stubbed: it's per-row work the board does at render time, so
+// counting its calls is how the row memo is observed.
+vi.mock("../lib/useWarbandGear", async (importActual) => {
+  const actual = await importActual<typeof import("../lib/useWarbandGear")>();
+  return { ...actual, useWarbandGear: vi.fn(), weakestSlots: vi.fn(actual.weakestSlots) };
+});
 
 import { WarbandGearBoard } from "./WarbandGearBoard";
-import { useWarbandGear, type WarbandGear, type WarbandRow } from "../lib/useWarbandGear";
+import {
+  useWarbandGear,
+  weakestSlots,
+  type WarbandGear,
+  type WarbandRow,
+} from "../lib/useWarbandGear";
 import type { WarbandCharacter } from "../lib/warband";
 
 const mockUseWarbandGear = vi.mocked(useWarbandGear);
+const mockWeakestSlots = vi.mocked(weakestSlots);
 
 const character = (name: string, over: Partial<WarbandCharacter> = {}): WarbandCharacter =>
   ({
@@ -79,7 +87,27 @@ function mockResult(over: Partial<ReturnType<typeof useWarbandGear>>) {
 }
 
 describe("WarbandGearBoard", () => {
-  beforeEach(() => mockUseWarbandGear.mockReset());
+  beforeEach(() => {
+    mockUseWarbandGear.mockReset();
+    mockWeakestSlots.mockClear();
+  });
+
+  it("re-renders only the row that changed as rows stream in", () => {
+    // Each arriving row re-renders the board, so an unmemoized row meant every *other* character
+    // recomputed its average and weakest slots on every arrival — quadratic in roster size.
+    const settled = loadedRow("Settled", { HEAD: 480, LEGS: 440 });
+    mockResult({ rows: [settled, pendingRow("Arriving")] });
+    const { rerender } = render(<WarbandGearBoard characters={[]} region="us" />);
+    const afterFirstPaint = mockWeakestSlots.mock.calls.length;
+
+    // "Arriving" resolves; "Settled" hands down the very same character + gear objects.
+    mockResult({ rows: [settled, loadedRow("Arriving", { HEAD: 470 })] });
+    rerender(<WarbandGearBoard characters={[]} region="us" />);
+
+    // Exactly one more row computed — the one that changed.
+    expect(mockWeakestSlots.mock.calls.length).toBe(afterFirstPaint + 1);
+    expect(screen.getByText("470")).toBeInTheDocument();
+  });
 
   it("renders a labeled matrix with a per-slot item-level cell for each character", () => {
     mockResult({
