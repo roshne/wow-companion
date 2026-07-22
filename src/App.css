@@ -530,14 +530,15 @@ form.card input {
    list fallback for very narrow viewports + accessibility is a follow-up). */
 .paper-doll {
   display: grid;
-  /* Three content-sized columns (left slots · render · right slots) centered as a group, so the slot
-     columns hug the render at any width. A stretchy 1fr center column flung them to the card edges. */
-  grid-template-columns: auto auto auto;
-  justify-content: center;
-  gap: 0.5rem 2.25rem;
+  /* A character-sheet panel: slot columns flank a large centered render. The flexible center column
+     fills the space between the slots, but the whole panel is capped and centered (max-width) so it
+     doesn't stretch to the card edges the way a bare 1fr did — it stays a substantial, readable size. */
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.5rem 1rem;
   align-items: start;
   justify-items: center;
-  margin-top: 0.75rem;
+  margin: 0.85rem auto 0;
+  max-width: 700px;
 }
 .doll-col {
   display: flex;
@@ -558,18 +559,19 @@ form.card input {
   gap: 0.4rem;
   margin-top: 0.35rem;
 }
-/* The centered render: taller than the small character-card render. */
+/* The centered render: the panel's dominant element, so it reads as a character sheet rather than a
+   tiny figure between the slots. */
 .doll-render {
-  width: 150px;
+  width: 320px;
   height: auto;
-  max-height: 300px;
+  max-height: 500px;
   object-fit: contain;
   object-position: top center;
 }
 /* When only the square avatar is available (no full-body render), size it as a portrait. */
 .doll-render.avatar-fallback {
-  width: 96px;
-  height: 96px;
+  width: 168px;
+  height: 168px;
   border: 1px solid var(--border);
   border-radius: 8px;
   object-fit: cover;
@@ -578,9 +580,9 @@ form.card input {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 150px;
-  height: 220px;
-  font-size: 3rem;
+  width: 240px;
+  height: 340px;
+  font-size: 4.5rem;
   font-weight: 700;
   color: var(--muted);
   background: var(--border);
