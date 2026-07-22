@@ -113,13 +113,14 @@ h3 {
   font-size: 0.9rem;
 }
 
-/* Build-time version stamp, tucked at the bottom-right of the main view. */
+/* Build-time version stamp, tucked at the bottom-right of the main view. `--muted` alone already reads
+   as secondary; an extra `opacity` on top of it dropped this 0.72rem line to 2.95:1 (light) / 4.03:1
+   (dark) against the page — under the 4.5:1 AA floor for text this size. */
 .appfooter {
   margin-top: 2rem;
   text-align: right;
   font-size: 0.72rem;
   font-variant-numeric: tabular-nums;
-  opacity: 0.75;
 }
 
 /* Modal: a centered card over a dimming backdrop (the Settings dialog). */

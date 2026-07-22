@@ -153,7 +153,7 @@ describe("GuildDetail — lazy sub-tabs", () => {
     await screen.findByText("Maximum");
     expect(get).not.toHaveBeenCalledWith(ACHIEVEMENTS_PATH, expect.anything());
 
-    fireEvent.click(screen.getByRole("button", { name: "Achievements" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Achievements" }));
     await waitFor(() => expect(get).toHaveBeenCalledWith(ACHIEVEMENTS_PATH, expect.anything()));
     expect(await screen.findByText("3,000")).toBeInTheDocument();
   });
@@ -179,7 +179,7 @@ describe("GuildDetail — lazy sub-tabs", () => {
     await screen.findByText("Maximum");
     expect(get).not.toHaveBeenCalledWith(ACTIVITY_PATH, expect.anything());
 
-    fireEvent.click(screen.getByRole("button", { name: "Activity" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Activity" }));
     await waitFor(() => expect(get).toHaveBeenCalledWith(ACTIVITY_PATH, expect.anything()));
     const list = await screen.findByRole("list");
     expect(within(list).getByText(/Cutting Edge/)).toBeInTheDocument();

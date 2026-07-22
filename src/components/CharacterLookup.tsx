@@ -152,6 +152,7 @@ export function CharacterLookup({
         style={{ flexWrap: "wrap", justifyContent: "flex-start" }}
       >
         <input
+          aria-label="Realm"
           placeholder="Realm (e.g. Tichondrius)"
           list="realm-options"
           value={realm}
@@ -163,6 +164,7 @@ export function CharacterLookup({
           ))}
         </datalist>
         <input
+          aria-label="Character name"
           placeholder="Character name"
           value={name}
           onChange={(e) => setName(e.currentTarget.value)}

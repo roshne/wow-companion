@@ -38,6 +38,16 @@ function fillAndSubmit(realm: string, name: string) {
 describe("CharacterLookup", () => {
   beforeEach(() => localStorage.clear());
 
+  it("names both lookup fields, so they stay identifiable once typed into", () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: { realms: [] }, response: mockResponse(200) });
+    renderWithClient(<CharacterLookup bnet={bnet} />);
+
+    // A placeholder is gone the moment the field has a value, so it can't be the only label.
+    expect(screen.getByLabelText("Realm")).toBeInTheDocument();
+    expect(screen.getByLabelText("Character name")).toBeInTheDocument();
+  });
+
   it("validates empty input without looking up a character", () => {
     const { bnet, get } = mockBnet();
     get.mockResolvedValue({ data: { realms: [] }, response: mockResponse(200) });
@@ -262,8 +272,8 @@ describe("CharacterLookup", () => {
 
     fillAndSubmit("Tichondrius", "Asmon");
     await screen.findByRole("heading", { name: /Asmon/ });
-    expect(screen.getByRole("button", { name: "Overview" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Gear" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Overview" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Gear" })).toBeInTheDocument();
     expect(screen.getByText("Horde")).toBeInTheDocument();
   });
 

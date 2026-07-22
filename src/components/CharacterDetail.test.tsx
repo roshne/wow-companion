@@ -78,7 +78,7 @@ describe("CharacterDetail", () => {
     );
 
     expect(get).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Spec" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Spec" }));
 
     await waitFor(() => expect(screen.getByText("Holy")).toBeInTheDocument());
     expect(screen.getByText("Herald of the Sun")).toBeInTheDocument();
@@ -93,7 +93,7 @@ describe("CharacterDetail", () => {
       <CharacterDetail bnet={bnet} realmSlug="r" characterName="n" summary={summary} />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Spec" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Spec" }));
     await waitFor(() => expect(screen.getByText("Failed (HTTP 500).")).toBeInTheDocument());
   });
 
@@ -104,7 +104,7 @@ describe("CharacterDetail", () => {
       <CharacterDetail bnet={bnet} realmSlug="r" characterName="n" summary={summary} />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Spec" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Spec" }));
     await waitFor(() => expect(screen.getByText("No specialization data.")).toBeInTheDocument());
   });
 
@@ -139,7 +139,7 @@ describe("CharacterDetail", () => {
     );
 
     expect(get).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Gear" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Gear" }));
 
     // The head item lands in its slot (item name via the slot's aria-label) with a visible ilvl badge.
     await waitFor(() =>
@@ -155,7 +155,7 @@ describe("CharacterDetail", () => {
       <CharacterDetail bnet={bnet} realmSlug="r" characterName="n" summary={summary} />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Gear" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Gear" }));
     await waitFor(() => expect(screen.getByText("Failed (HTTP 500).")).toBeInTheDocument());
   });
 
@@ -178,7 +178,7 @@ describe("CharacterDetail", () => {
     );
 
     expect(get).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "M+" }));
+    fireEvent.click(screen.getByRole("tab", { name: "M+" }));
 
     await waitFor(() => expect(screen.getByText("2,457")).toBeInTheDocument());
     expect(screen.getByText("#987")).toBeInTheDocument();
@@ -191,7 +191,7 @@ describe("CharacterDetail", () => {
       <CharacterDetail bnet={bnet} realmSlug="r" characterName="n" summary={summary} />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "M+" }));
+    fireEvent.click(screen.getByRole("tab", { name: "M+" }));
     await waitFor(() => expect(screen.getByText("Failed (HTTP 500).")).toBeInTheDocument());
   });
 
@@ -220,7 +220,7 @@ describe("CharacterDetail", () => {
     );
 
     expect(get).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "PvP" }));
+    fireEvent.click(screen.getByRole("tab", { name: "PvP" }));
 
     await waitFor(() => expect(screen.getByText("Warsong Gulch")).toBeInTheDocument());
     expect(screen.getByText("500")).toBeInTheDocument();
@@ -234,7 +234,7 @@ describe("CharacterDetail", () => {
       <CharacterDetail bnet={bnet} realmSlug="r" characterName="n" summary={summary} />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "PvP" }));
+    fireEvent.click(screen.getByRole("tab", { name: "PvP" }));
     await waitFor(() => expect(screen.getByText("Failed (HTTP 503).")).toBeInTheDocument());
   });
 
@@ -268,7 +268,7 @@ describe("CharacterDetail", () => {
     );
 
     expect(get).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Professions" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Professions" }));
 
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Blacksmithing" })).toBeInTheDocument(),
@@ -284,7 +284,7 @@ describe("CharacterDetail", () => {
       <CharacterDetail bnet={bnet} realmSlug="r" characterName="n" summary={summary} />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Professions" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Professions" }));
     await waitFor(() => expect(screen.getByText("Failed (HTTP 500).")).toBeInTheDocument());
   });
 
@@ -311,7 +311,7 @@ describe("CharacterDetail", () => {
     );
 
     expect(get).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Reputations" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Reputations" }));
 
     await waitFor(() => expect(screen.getByText("Valdrakken Accord")).toBeInTheDocument());
     expect(screen.getByText("Exalted")).toBeInTheDocument();
@@ -325,7 +325,7 @@ describe("CharacterDetail", () => {
       <CharacterDetail bnet={bnet} realmSlug="r" characterName="n" summary={summary} />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Reputations" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Reputations" }));
     await waitFor(() => expect(screen.getByText("Failed (HTTP 500).")).toBeInTheDocument());
   });
 
@@ -336,7 +336,7 @@ describe("CharacterDetail", () => {
       <CharacterDetail bnet={bnet} realmSlug="r" characterName="n" summary={summary} />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Reputations" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Reputations" }));
     await waitFor(() => expect(screen.getByText("No reputations.")).toBeInTheDocument());
   });
 
@@ -361,7 +361,7 @@ describe("CharacterDetail", () => {
     );
 
     expect(get).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Collections" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Collections" }));
 
     await waitFor(() => {
       expect(screen.getByText("3")).toBeInTheDocument();
@@ -385,7 +385,7 @@ describe("CharacterDetail", () => {
       <CharacterDetail bnet={bnet} realmSlug="r" characterName="n" summary={summary} />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Collections" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Collections" }));
 
     await waitFor(() => {
       expect(screen.getByText("2")).toBeInTheDocument(); // mounts
@@ -427,7 +427,7 @@ describe("CharacterDetail", () => {
     );
 
     expect(get).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Raids" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Raids" }));
 
     await waitFor(() => expect(screen.getByText("Nerub-ar Palace")).toBeInTheDocument());
     expect(screen.getByText("Heroic")).toBeInTheDocument();
@@ -441,7 +441,7 @@ describe("CharacterDetail", () => {
       <CharacterDetail bnet={bnet} realmSlug="r" characterName="n" summary={summary} />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Raids" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Raids" }));
     await waitFor(() => expect(screen.getByText("Failed (HTTP 500).")).toBeInTheDocument());
   });
 
@@ -452,7 +452,7 @@ describe("CharacterDetail", () => {
       <CharacterDetail bnet={bnet} realmSlug="r" characterName="n" summary={summary} />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Raids" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Raids" }));
     await waitFor(() => expect(screen.getByText("No raid progression.")).toBeInTheDocument());
   });
 
@@ -476,7 +476,7 @@ describe("CharacterDetail", () => {
     );
 
     expect(get).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Achievements" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Achievements" }));
 
     await waitFor(() => expect(screen.getByText("987")).toBeInTheDocument());
     expect(screen.getByText("15,000")).toBeInTheDocument();

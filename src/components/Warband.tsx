@@ -119,11 +119,26 @@ export function Warband({
       )}
 
       {!error && data && data.characters.length > 0 && (
-        <div className="row" style={{ gap: "0.25rem", marginBottom: "0.5rem" }}>
-          <button className={view === "roster" ? "" : "ghost"} onClick={() => setView("roster")}>
+        // A pair of toggles rather than a tablist (they read as buttons, not a tab strip), so the
+        // active one announces itself through `aria-pressed`.
+        <div
+          className="row"
+          style={{ gap: "0.25rem", marginBottom: "0.5rem" }}
+          role="group"
+          aria-label="Warband view"
+        >
+          <button
+            className={view === "roster" ? "" : "ghost"}
+            aria-pressed={view === "roster"}
+            onClick={() => setView("roster")}
+          >
             Roster
           </button>
-          <button className={view === "board" ? "" : "ghost"} onClick={() => setView("board")}>
+          <button
+            className={view === "board" ? "" : "ghost"}
+            aria-pressed={view === "board"}
+            onClick={() => setView("board")}
+          >
             Gear board
           </button>
         </div>

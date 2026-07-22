@@ -58,6 +58,34 @@ describe("Achievements", () => {
     expect(screen.getByText("Loremaster of Legion")).toBeInTheDocument();
   });
 
+  it("keeps the filter input responsive: the field leads, the list follows", async () => {
+    // The list re-filters from a deferred copy of the query so a keystroke never blocks on scanning
+    // thousands of rows — but the input itself must stay fully controlled and immediate.
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: achievementsDoc, response: mockResponse(200) });
+    renderWithClient(<Achievements bnet={bnet} realmSlug="r" characterName="n" />);
+
+    await waitFor(() => expect(screen.getByText("Glory of the Raider")).toBeInTheDocument());
+    const input = screen.getByLabelText("Filter achievements");
+
+    fireEvent.change(input, { target: { value: "glory" } });
+    expect(input).toHaveValue("glory");
+    await waitFor(() => expect(screen.queryByText("The Loremaster")).not.toBeInTheDocument());
+    expect(screen.getByText("Glory of the Raider")).toBeInTheDocument();
+  });
+
+  it("exposes the virtualized list as a focusable, named scroll region", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: achievementsDoc, response: mockResponse(200) });
+    renderWithClient(<Achievements bnet={bnet} realmSlug="r" characterName="n" />);
+
+    await waitFor(() => expect(screen.getByText("The Loremaster")).toBeInTheDocument());
+
+    // No row is focusable, so without a tab stop of its own the list can't be scrolled by keyboard.
+    const list = screen.getByRole("group", { name: "Earned achievements" });
+    expect(list).toHaveAttribute("tabindex", "0");
+  });
+
   it("shows a no-matches note when the filter excludes everything", async () => {
     const { bnet, get } = mockBnet();
     get.mockResolvedValue({ data: achievementsDoc, response: mockResponse(200) });

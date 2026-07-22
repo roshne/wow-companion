@@ -129,13 +129,61 @@ describe("AuctionHouse", () => {
     await waitFor(() => expect(renderedItems(container)).toEqual(["Copper Ore", "Linen Cloth"]));
   });
 
+  it("keeps focus on a sort header after activating it", async () => {
+    // The header buttons were declared inside the component, making them a fresh component *type*
+    // every render — so React remounted them on the very click that activated one, dropping focus to
+    // <body> and stranding a keyboard user mid-table.
+    const { bnet, get } = mockBnet("us");
+    route(get);
+    renderWithClient(<AuctionHouse bnet={bnet} />);
+    await screen.findByText("Copper Ore");
+
+    const priceSort = screen.getByRole("button", { name: /Min unit price/ });
+    priceSort.focus();
+    fireEvent.click(priceSort);
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /Min unit price/ })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      ),
+    );
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: /Min unit price/ }));
+  });
+
+  it("exposes the virtualized list as a focusable, named scroll region", async () => {
+    const { bnet, get } = mockBnet("us");
+    route(get);
+    renderWithClient(<AuctionHouse bnet={bnet} />);
+    await screen.findByText("Copper Ore");
+
+    // Nothing inside a virtualized list is focusable, so the scroller needs its own tab stop for the
+    // rows to be reachable by keyboard at all.
+    const list = screen.getByRole("group", { name: "Auction results" });
+    expect(list).toHaveAttribute("tabindex", "0");
+  });
+
+  it("presents the two auction sources as a tablist over one panel", async () => {
+    const { bnet, get } = mockBnet("us");
+    route(get);
+    renderWithClient(<AuctionHouse bnet={bnet} />);
+    await screen.findByText("Copper Ore");
+
+    const commodities = screen.getByRole("tab", { name: "Region commodities" });
+    expect(commodities).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tabpanel", { name: "Region commodities" })).toHaveAttribute(
+      "id",
+      commodities.getAttribute("aria-controls"),
+    );
+  });
+
   it("requires a realm selection in realm mode, then loads that realm's auctions", async () => {
     const { bnet, get } = mockBnet("us");
     route(get);
     renderWithClient(<AuctionHouse bnet={bnet} />);
     await screen.findByText("Copper Ore"); // commodities loaded first
 
-    fireEvent.click(screen.getByRole("button", { name: "Realm auctions" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Realm auctions" }));
     expect(screen.getByText("Choose a realm to view its auctions.")).toBeInTheDocument();
 
     // The picker populates from the connected-realm search.

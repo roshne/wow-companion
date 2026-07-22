@@ -54,23 +54,50 @@ describe("App", () => {
     renderWithClient(<App />);
 
     // Connected: the main tabbed view renders.
-    await screen.findByRole("button", { name: "WoW Token" });
+    await screen.findByRole("tab", { name: "WoW Token" });
 
     notifyUnauthorized();
 
     await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith("clear_credentials"));
     await screen.findByText(/Connect your Battle.net client/);
-    expect(screen.getByText(/please reconnect/)).toBeInTheDocument();
+    // A live region, so the reconnect notice is announced and not just painted.
+    expect(await screen.findByRole("status")).toHaveTextContent(/please reconnect/);
+  });
+
+  it("wires the nav to the view as a tablist over one panel", async () => {
+    renderWithClient(<App />);
+
+    const token = await screen.findByRole("tab", { name: "WoW Token" });
+    expect(token).toHaveAttribute("aria-selected", "true");
+
+    const panel = screen.getByRole("tabpanel", { name: "WoW Token" });
+    expect(panel).toHaveAttribute("id", token.getAttribute("aria-controls"));
+    // The panel is the <main> landmark; the app bar and the nav sit outside it.
+    expect(panel.tagName).toBe("MAIN");
+    expect(panel.querySelector("header, [role='tablist']")).toBeNull();
+  });
+
+  it("names the connect form's credential fields", async () => {
+    mockInvoke.mockImplementation((cmd: string) => {
+      if (cmd === "has_credentials") return Promise.resolve(false);
+      return Promise.resolve(undefined);
+    });
+    renderWithClient(<App />);
+
+    await screen.findByText(/Connect your Battle.net client/);
+    // A placeholder is gone the moment the field has a value, so it can't be the only label.
+    expect(screen.getByLabelText("Client ID")).toBeInTheDocument();
+    expect(screen.getByLabelText("Client Secret")).toBeInTheDocument();
   });
 
   it("renders the Guild tab in the nav once connected", async () => {
     renderWithClient(<App />);
-    expect(await screen.findByRole("button", { name: "Guild" })).toBeInTheDocument();
+    expect(await screen.findByRole("tab", { name: "Guild" })).toBeInTheDocument();
   });
 
   it("switches to the Auctions tab and renders the browser", async () => {
     renderWithClient(<App />);
-    fireEvent.click(await screen.findByRole("button", { name: "Auctions" }));
+    fireEvent.click(await screen.findByRole("tab", { name: "Auctions" }));
     expect(await screen.findByRole("heading", { name: "Auction House" })).toBeInTheDocument();
   });
 
@@ -130,7 +157,7 @@ describe("App", () => {
     });
     renderWithClient(<App />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Warband" }));
+    fireEvent.click(await screen.findByRole("tab", { name: "Warband" }));
     fireEvent.click(await screen.findByRole("button", { name: "Testchar" }));
 
     // Switched to the Character tab, with the roster entry seeded into the lookup form.
@@ -168,7 +195,7 @@ describe("App", () => {
     });
     renderWithClient(<App />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Warband" }));
+    fireEvent.click(await screen.findByRole("tab", { name: "Warband" }));
     fireEvent.click(await screen.findByRole("button", { name: "Testchar" }));
 
     // The alt is seeded into the Character lookup...

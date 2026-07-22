@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useDeferredValue, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { BlizzardClient } from "../vendor/battlenet-wow-client";
@@ -31,10 +31,15 @@ export function Achievements({
   const [query, setQuery] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // The input stays fully controlled by `query` (so typing never lags), while the list re-filters from
+  // the deferred copy — React can keep the old list on screen for a frame instead of blocking the
+  // keystroke on a scan of several thousand achievements.
+  const deferredQuery = useDeferredValue(query);
+
   const summary = useMemo(() => (data ? summarizeAchievements(data) : null), [data]);
   const filtered = useMemo(
-    () => (summary ? filterAchievements(summary.earned, query) : []),
-    [summary, query],
+    () => (summary ? filterAchievements(summary.earned, deferredQuery) : []),
+    [summary, deferredQuery],
   );
 
   const virtualizer = useVirtualizer({
@@ -71,7 +76,15 @@ export function Achievements({
       {filtered.length === 0 ? (
         <p className="muted">No matches.</p>
       ) : (
-        <div className="ach-list" ref={scrollRef}>
+        // Focusable + named: a virtualized scroller has no child to Tab to, so without its own tab
+        // stop a keyboard user can't scroll the list at all.
+        <div
+          className="ach-list"
+          ref={scrollRef}
+          tabIndex={0}
+          role="group"
+          aria-label="Earned achievements"
+        >
           <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
             {virtualizer.getVirtualItems().map((v) => {
               const a = filtered[v.index];
