@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import type { BlizzardClient } from "../vendor/battlenet-wow-client";
 import { loc } from "../lib/types";
@@ -24,6 +24,7 @@ import { SkeletonLines } from "./Skeleton";
 import { EmptyState } from "./EmptyState";
 import { PaperDoll } from "./PaperDoll";
 import { Achievements } from "./Achievements";
+import { Tabs, tabId, panelId, type TabSpec } from "./Tabs";
 
 type DetailTab =
   | "overview"
@@ -37,7 +38,7 @@ type DetailTab =
   | "raids"
   | "achievements";
 
-const TABS: { key: DetailTab; label: string }[] = [
+const TABS: TabSpec<DetailTab>[] = [
   { key: "overview", label: "Overview" },
   { key: "spec", label: "Spec" },
   { key: "gear", label: "Gear" },
@@ -80,44 +81,46 @@ export function CharacterDetail({
   summary: CharacterSummary;
 }) {
   const [tab, setTab] = useState<DetailTab>("overview");
+  const base = useId();
 
   return (
     <div>
-      <nav className="tabs" style={{ marginTop: ".5rem" }}>
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            className={tab === t.key ? "active" : ""}
-            onClick={() => setTab(t.key)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </nav>
-      {tab === "overview" && <Overview summary={summary} />}
-      {tab === "spec" && (
-        <Specializations bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
-      )}
-      {tab === "gear" && (
-        <PaperDoll bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
-      )}
-      {tab === "mplus" && (
-        <MythicPlus bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
-      )}
-      {tab === "pvp" && <Pvp bnet={bnet} realmSlug={realmSlug} characterName={characterName} />}
-      {tab === "professions" && (
-        <Professions bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
-      )}
-      {tab === "reputations" && (
-        <Reputations bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
-      )}
-      {tab === "collections" && (
-        <Collections bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
-      )}
-      {tab === "raids" && <Raids bnet={bnet} realmSlug={realmSlug} characterName={characterName} />}
-      {tab === "achievements" && (
-        <Achievements bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
-      )}
+      <Tabs
+        base={base}
+        label="Character detail"
+        tabs={TABS}
+        active={tab}
+        onSelect={setTab}
+        style={{ marginTop: ".5rem" }}
+      />
+      <div id={panelId(base)} role="tabpanel" aria-labelledby={tabId(base, tab)}>
+        {tab === "overview" && <Overview summary={summary} />}
+        {tab === "spec" && (
+          <Specializations bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
+        )}
+        {tab === "gear" && (
+          <PaperDoll bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
+        )}
+        {tab === "mplus" && (
+          <MythicPlus bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
+        )}
+        {tab === "pvp" && <Pvp bnet={bnet} realmSlug={realmSlug} characterName={characterName} />}
+        {tab === "professions" && (
+          <Professions bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
+        )}
+        {tab === "reputations" && (
+          <Reputations bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
+        )}
+        {tab === "collections" && (
+          <Collections bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
+        )}
+        {tab === "raids" && (
+          <Raids bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
+        )}
+        {tab === "achievements" && (
+          <Achievements bnet={bnet} realmSlug={realmSlug} characterName={characterName} />
+        )}
+      </div>
     </div>
   );
 }

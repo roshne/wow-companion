@@ -70,6 +70,7 @@ export function GuildLookup({ bnet }: { bnet: BlizzardClient }) {
         style={{ flexWrap: "wrap", justifyContent: "flex-start" }}
       >
         <input
+          aria-label="Realm"
           placeholder="Realm (e.g. Tichondrius)"
           list="guild-realm-options"
           value={realm}
@@ -81,6 +82,7 @@ export function GuildLookup({ bnet }: { bnet: BlizzardClient }) {
           ))}
         </datalist>
         <input
+          aria-label="Guild name"
           placeholder="Guild name"
           value={name}
           onChange={(e) => setName(e.currentTarget.value)}

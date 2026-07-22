@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import type { Region } from "../vendor/battlenet-wow-client";
 import type { WarbandCharacter } from "../lib/warband";
-import { useWarbandGear, weakestSlots, type WarbandRow } from "../lib/useWarbandGear";
+import { useWarbandGear, weakestSlots, type WarbandGear } from "../lib/useWarbandGear";
 import {
   sortWarbandRows,
   filterWarbandRows,
@@ -142,7 +142,11 @@ export function WarbandGearBoard({
           </thead>
           <tbody>
             {shown.map((row) => (
-              <WarbandBoardRow key={`${row.character.realm}/${row.character.name}`} row={row} />
+              <WarbandBoardRow
+                key={`${row.character.realm}/${row.character.name}`}
+                character={row.character}
+                gear={row.gear}
+              />
             ))}
           </tbody>
         </table>
@@ -155,9 +159,18 @@ export function WarbandGearBoard({
  * One character's row: the class-colored name (always available from the roster), then a per-slot
  * item-level cell — or a "Loading…" notice while its fetch is in flight, or a "Couldn't load gear"
  * notice if it failed.
+ *
+ * Memoized, and taking `character`/`gear` as separate props rather than the composite `WarbandRow`
+ * (which is rebuilt each render): rows stream in one at a time, so without this every resolving row
+ * re-rendered the whole matrix — each remaining row recomputing its average and weakest slots.
  */
-function WarbandBoardRow({ row }: { row: WarbandRow }) {
-  const { character, gear } = row;
+const WarbandBoardRow = memo(function WarbandBoardRow({
+  character,
+  gear,
+}: {
+  character: WarbandCharacter;
+  gear: WarbandGear | null;
+}) {
   const color = (character.classKey && CLASS_COLORS[character.classKey]) || undefined;
   const name = (
     <th scope="row" className="warband-board-name" style={{ color }} title={character.realm}>
@@ -219,7 +232,7 @@ function WarbandBoardRow({ row }: { row: WarbandRow }) {
       })}
     </tr>
   );
-}
+});
 
 /** The character's average equipped item level, or null when they have no rated gear. */
 function boardAverage(itemLevels: Record<string, number>): number | null {

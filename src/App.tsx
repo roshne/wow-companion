@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useId, useMemo, useState, type FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { makeClient } from "./lib/bnet";
@@ -17,9 +17,25 @@ import { Warband } from "./components/Warband";
 import { Settings } from "./components/Settings";
 import { BotOps } from "./components/BotOps";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { Tabs, tabId, panelId, type TabSpec } from "./components/Tabs";
 import "./App.css";
 
 type Tab = "token" | "realms" | "character" | "guild" | "auctions" | "warband" | "botops";
+
+/** The always-present views, in nav order; Bot Ops is appended only when ops mode is configured. */
+const MAIN_TABS: TabSpec<Tab>[] = [
+  { key: "token", label: "WoW Token" },
+  { key: "realms", label: "Realm Status" },
+  { key: "character", label: "Character" },
+  { key: "guild", label: "Guild" },
+  { key: "auctions", label: "Auctions" },
+  { key: "warband", label: "Warband" },
+];
+
+const BOT_OPS_TAB: TabSpec<Tab> = { key: "botops", label: "Bot Ops" };
+
+/** The credentials gate's two views, shown only when ops mode lets an operator skip connecting. */
+const GATE_TABS: TabSpec<Tab>[] = [{ key: "token", label: "Connect" }, BOT_OPS_TAB];
 
 function App() {
   const [hasCreds, setHasCreds] = useState<boolean | null>(null);
@@ -38,6 +54,8 @@ function App() {
   } | null>(null);
 
   const queryClient = useQueryClient();
+  // Namespace for the tablist/panel ids wiring the nav to the view below it (see `Tabs`).
+  const tabsBase = useId();
 
   // Open a character's detail sheet from elsewhere (e.g. the Warband roster). The Warbandeer export
   // carries no region, so detect which region actually lists the alt's realm (best-effort, falling
@@ -108,62 +126,83 @@ function App() {
     setHasCreds(false);
   }
 
+  // Ops mode, as a single narrowed value: a non-empty target list, or null. `opsConfig()` resolves to
+  // nothing at all when there's no ops.json, so this must stay a truthy test, not `!== null`.
+  const opsTargets = ops && ops.length > 0 ? ops : null;
+
   if (hasCreds === null) {
     return (
-      <main className="container">
-        <p className="muted">Loading…</p>
-      </main>
+      <div className="container">
+        <main>
+          <p className="muted" role="status">
+            Loading…
+          </p>
+        </main>
+      </div>
     );
   }
 
   if (!hasCreds) {
     // Bot Ops is independent of Battle.net creds — when ops mode is on, let the operator reach it
     // without connecting. Otherwise the connect form is the whole view, as before.
+    const gateTab: Tab = opsTargets && tab === "botops" ? "botops" : "token";
     return (
-      <main className="container">
+      <div className="container">
         <header className="appbar">
           <h1>WoW Companion</h1>
         </header>
-        {ops && ops.length > 0 && (
-          <nav className="tabs">
-            <button className={tab === "botops" ? "" : "active"} onClick={() => setTab("token")}>
-              Connect
-            </button>
-            <button className={tab === "botops" ? "active" : ""} onClick={() => setTab("botops")}>
-              Bot Ops
-            </button>
-          </nav>
+        {opsTargets && (
+          <Tabs base={tabsBase} label="Views" tabs={GATE_TABS} active={gateTab} onSelect={setTab} />
         )}
-        {ops && ops.length > 0 && tab === "botops" ? (
-          <BotOps targets={ops} />
-        ) : (
-          <form className="card" onSubmit={saveCreds} style={{ maxWidth: 460, marginTop: "1rem" }}>
-            <h2 style={{ marginTop: 0 }}>Connect your Battle.net client</h2>
-            <p className="muted">
-              Create one at <code>develop.battle.net/access/clients</code>. The secret is stored in
-              your OS keychain — never in the app.
-            </p>
-            <input
-              placeholder="Client ID"
-              value={clientId}
-              onChange={(e) => setClientId(e.currentTarget.value)}
-            />
-            <input
-              type="password"
-              placeholder="Client Secret"
-              value={clientSecret}
-              onChange={(e) => setClientSecret(e.currentTarget.value)}
-            />
-            <button type="submit">Save to keychain</button>
-            {status && <p className="muted">{status}</p>}
-          </form>
-        )}
-      </main>
+        <main
+          id={opsTargets ? panelId(tabsBase) : undefined}
+          role={opsTargets ? "tabpanel" : undefined}
+          aria-labelledby={opsTargets ? tabId(tabsBase, gateTab) : undefined}
+        >
+          {opsTargets && gateTab === "botops" ? (
+            <BotOps targets={opsTargets} />
+          ) : (
+            <form
+              className="card"
+              onSubmit={saveCreds}
+              style={{ maxWidth: 460, marginTop: "1rem" }}
+            >
+              <h2 style={{ marginTop: 0 }}>Connect your Battle.net client</h2>
+              <p className="muted">
+                Create one at <code>develop.battle.net/access/clients</code>. The secret is stored
+                in your OS keychain — never in the app.
+              </p>
+              <input
+                aria-label="Client ID"
+                placeholder="Client ID"
+                value={clientId}
+                onChange={(e) => setClientId(e.currentTarget.value)}
+              />
+              <input
+                type="password"
+                aria-label="Client Secret"
+                placeholder="Client Secret"
+                value={clientSecret}
+                onChange={(e) => setClientSecret(e.currentTarget.value)}
+              />
+              <button type="submit">Save to keychain</button>
+              {/* A live region, so a save result (or a rejected-credentials notice) is announced. */}
+              {status && (
+                <p className="muted" role="status">
+                  {status}
+                </p>
+              )}
+            </form>
+          )}
+        </main>
+      </div>
     );
   }
 
+  const mainTabs = opsTargets ? [...MAIN_TABS, BOT_OPS_TAB] : MAIN_TABS;
+
   return (
-    <main className="container">
+    <div className="container">
       <header className="appbar">
         <h1>WoW Companion</h1>
         <div className="spacer" />
@@ -184,50 +223,28 @@ function App() {
         />
       )}
 
-      <nav className="tabs">
-        <button className={tab === "token" ? "active" : ""} onClick={() => setTab("token")}>
-          WoW Token
-        </button>
-        <button className={tab === "realms" ? "active" : ""} onClick={() => setTab("realms")}>
-          Realm Status
-        </button>
-        <button className={tab === "character" ? "active" : ""} onClick={() => setTab("character")}>
-          Character
-        </button>
-        <button className={tab === "guild" ? "active" : ""} onClick={() => setTab("guild")}>
-          Guild
-        </button>
-        <button className={tab === "auctions" ? "active" : ""} onClick={() => setTab("auctions")}>
-          Auctions
-        </button>
-        <button className={tab === "warband" ? "active" : ""} onClick={() => setTab("warband")}>
-          Warband
-        </button>
-        {ops && ops.length > 0 && (
-          <button className={tab === "botops" ? "active" : ""} onClick={() => setTab("botops")}>
-            Bot Ops
-          </button>
-        )}
-      </nav>
+      <Tabs base={tabsBase} label="Views" tabs={mainTabs} active={tab} onSelect={setTab} />
 
-      <ErrorBoundary resetKeys={[tab, region]}>
-        {tab === "token" && <TokenPrice token={token} />}
-        {tab === "realms" && <RealmStatus bnet={bnet} />}
-        {tab === "character" && (
-          <CharacterLookup
-            bnet={bnet}
-            initial={selectedCharacter}
-            onConsumed={() => setSelectedCharacter(null)}
-          />
-        )}
-        {tab === "guild" && <GuildLookup bnet={bnet} />}
-        {tab === "auctions" && <AuctionHouse bnet={bnet} />}
-        {tab === "warband" && <Warband onOpenCharacter={openCharacter} region={region} />}
-        {tab === "botops" && ops && ops.length > 0 && <BotOps targets={ops} />}
-      </ErrorBoundary>
+      <main id={panelId(tabsBase)} role="tabpanel" aria-labelledby={tabId(tabsBase, tab)}>
+        <ErrorBoundary resetKeys={[tab, region]}>
+          {tab === "token" && <TokenPrice token={token} />}
+          {tab === "realms" && <RealmStatus bnet={bnet} />}
+          {tab === "character" && (
+            <CharacterLookup
+              bnet={bnet}
+              initial={selectedCharacter}
+              onConsumed={() => setSelectedCharacter(null)}
+            />
+          )}
+          {tab === "guild" && <GuildLookup bnet={bnet} />}
+          {tab === "auctions" && <AuctionHouse bnet={bnet} />}
+          {tab === "warband" && <Warband onOpenCharacter={openCharacter} region={region} />}
+          {tab === "botops" && opsTargets && <BotOps targets={opsTargets} />}
+        </ErrorBoundary>
+      </main>
 
       <footer className="appfooter muted">{__BUILD_ID__}</footer>
-    </main>
+    </div>
   );
 }
 

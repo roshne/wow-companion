@@ -13,6 +13,10 @@ export default defineConfig({
         test: {
           name: "lib",
           environment: "node",
+          // Vitest replaces CSS imports with empty strings by default, including `?raw` ones. The
+          // theme-contrast guard (src/contrast.test.ts) reads the real App.css text, so let this
+          // project resolve stylesheets. No component here imports CSS for its styling.
+          css: true,
           include: ["src/**/*.test.ts"],
         },
       },

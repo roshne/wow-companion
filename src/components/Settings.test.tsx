@@ -37,6 +37,13 @@ describe("Settings", () => {
     expect(within(dialog).getByRole("button", { name: "Disconnect" })).toBeInTheDocument();
   });
 
+  it("names both credential fields, so they stay identifiable once typed into", () => {
+    renderSettings();
+    // A placeholder disappears the moment there's a value — it can't be the only label.
+    expect(screen.getByLabelText("Client ID")).toBeInTheDocument();
+    expect(screen.getByLabelText("Client Secret")).toBeInTheDocument();
+  });
+
   it("changes the region through onRegionChange", () => {
     const { onRegionChange } = renderSettings();
     fireEvent.change(screen.getByLabelText(/Region/), { target: { value: "eu" } });
@@ -57,13 +64,41 @@ describe("Settings", () => {
         clientSecret: "sec-456",
       }),
     );
-    expect(await screen.findByText("Saved.")).toBeInTheDocument();
+    // Announced, not merely shown — the result appears far from the button that caused it.
+    expect(await screen.findByRole("status")).toHaveTextContent("Saved.");
   });
 
   it("disconnects through onDisconnect", () => {
     const { onDisconnect } = renderSettings();
     fireEvent.click(screen.getByRole("button", { name: "Disconnect" }));
     expect(onDisconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it("traps Tab inside the dialog, wrapping at both ends", () => {
+    // `aria-modal="true"` promises the rest of the app is unreachable; without a trap, Tab walks
+    // straight out through the backdrop into the page behind it.
+    renderSettings();
+    const dialog = screen.getByRole("dialog", { name: "Settings" });
+    const focusable = [...dialog.querySelectorAll<HTMLElement>("button, input, select")];
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    last.focus();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(document.activeElement).toBe(first);
+
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(last);
+  });
+
+  it("pulls focus back in if it has escaped the dialog", () => {
+    renderSettings();
+    const dialog = screen.getByRole("dialog", { name: "Settings" });
+    document.body.focus();
+
+    fireEvent.keyDown(document, { key: "Tab" });
+
+    expect(dialog.contains(document.activeElement)).toBe(true);
   });
 
   it("closes on the close button, Escape, and a backdrop press", () => {

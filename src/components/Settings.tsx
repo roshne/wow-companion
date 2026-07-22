@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { Region } from "../vendor/battlenet-wow-client";
+import { useFocusTrap } from "../lib/useFocusTrap";
 import { ThemeToggle } from "./ThemeToggle";
 
 const REGIONS: Region[] = ["us", "eu", "kr", "tw"];
@@ -8,7 +9,8 @@ const REGIONS: Region[] = ["us", "eu", "kr", "tw"];
 /**
  * The settings dialog: region, theme, and Battle.net credential management in one place (previously
  * scattered across the header). A modal — a dimming backdrop + a centered card; focus moves into the
- * dialog on open and returns to the opener on close; Escape or a backdrop click dismisses it.
+ * dialog on open, is trapped there while it's open, and returns to the opener on close; Escape or a
+ * backdrop click dismisses it.
  * Credentials can be replaced in place (rotate the Client ID / Secret without dropping to the connect
  * gate) or cleared (Disconnect).
  */
@@ -28,6 +30,9 @@ export function Settings({
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
   const [status, setStatus] = useState("");
+
+  // `aria-modal="true"` below promises the rest of the app is unreachable; keep Tab inside the card.
+  useFocusTrap(ref);
 
   // Move focus into the dialog on open; restore it to the opener (the Settings button) on close.
   useEffect(() => {
@@ -114,18 +119,25 @@ export function Settings({
               the app.
             </p>
             <input
+              aria-label="Client ID"
               placeholder="Client ID"
               value={clientId}
               onChange={(e) => setClientId(e.currentTarget.value)}
             />
             <input
               type="password"
+              aria-label="Client Secret"
               placeholder="Client Secret"
               value={clientSecret}
               onChange={(e) => setClientSecret(e.currentTarget.value)}
             />
             <button type="submit">Save to keychain</button>
-            {status && <p className="muted">{status}</p>}
+            {/* A live region, so "Saved." / an error is announced rather than only shown. */}
+            {status && (
+              <p className="muted" role="status">
+                {status}
+              </p>
+            )}
           </form>
           <button type="button" className="ghost settings-disconnect" onClick={onDisconnect}>
             Disconnect

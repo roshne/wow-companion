@@ -37,7 +37,8 @@ describe("RealmStatus", () => {
     await waitFor(() => expect(screen.getByText("Tichondrius")).toBeInTheDocument());
     expect(screen.getByText("Area 52")).toBeInTheDocument();
 
-    fireEvent.change(screen.getByPlaceholderText("Filter…"), { target: { value: "tich" } });
+    // Named, not placeholder-only — the placeholder is gone once the field has a value.
+    fireEvent.change(screen.getByLabelText("Filter realms"), { target: { value: "tich" } });
     expect(screen.queryByText("Area 52")).toBeNull();
     expect(screen.getByText("Tichondrius")).toBeInTheDocument();
   });

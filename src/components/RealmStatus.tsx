@@ -78,6 +78,7 @@ export function RealmStatus({ bnet }: { bnet: BlizzardClient }) {
         <h2 style={{ margin: 0 }}>Realm Status</h2>
         <div className="row">
           <input
+            aria-label="Filter realms"
             placeholder="Filter…"
             value={filter}
             onChange={(e) => setFilter(e.currentTarget.value)}

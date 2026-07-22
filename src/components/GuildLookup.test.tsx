@@ -52,6 +52,16 @@ function fillAndSubmit(realm: string, name: string) {
 }
 
 describe("GuildLookup", () => {
+  it("names both lookup fields, so they stay identifiable once typed into", () => {
+    const { bnet, get } = mockBnet();
+    routeGuild(get);
+    renderWithClient(<GuildLookup bnet={bnet} />);
+
+    // A placeholder is gone the moment the field has a value, so it can't be the only label.
+    expect(screen.getByLabelText("Realm")).toBeInTheDocument();
+    expect(screen.getByLabelText("Guild name")).toBeInTheDocument();
+  });
+
   it("validates empty input without hitting the guild endpoint", () => {
     const { bnet, get } = mockBnet();
     routeGuild(get);
@@ -93,9 +103,9 @@ describe("GuildLookup", () => {
 
     fillAndSubmit("Illidan", "Complexity Limit");
     await screen.findByRole("heading", { name: /Complexity Limit/ });
-    expect(screen.getByRole("button", { name: "Roster" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Achievements" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Activity" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Roster" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Achievements" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Activity" })).toBeInTheDocument();
   });
 
   it("shows a not-found message on a 404", async () => {

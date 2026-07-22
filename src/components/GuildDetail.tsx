@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { BlizzardClient } from "../vendor/battlenet-wow-client";
 import { classColor, className, raceName } from "../lib/wow";
@@ -11,10 +11,11 @@ import {
 } from "../lib/queries";
 import { SkeletonTable, SkeletonLines } from "./Skeleton";
 import { EmptyState } from "./EmptyState";
+import { Tabs, tabId, panelId, type TabSpec } from "./Tabs";
 
 type GuildTab = "roster" | "achievements" | "activity";
 
-const TABS: { key: GuildTab; label: string }[] = [
+const TABS: TabSpec<GuildTab>[] = [
   { key: "roster", label: "Roster" },
   { key: "achievements", label: "Achievements" },
   { key: "activity", label: "Activity" },
@@ -71,25 +72,25 @@ export function GuildDetail({
   nameSlug: string;
 }) {
   const [tab, setTab] = useState<GuildTab>("roster");
+  const base = useId();
 
   return (
     <div>
-      <nav className="tabs" style={{ marginTop: ".5rem" }}>
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            className={tab === t.key ? "active" : ""}
-            onClick={() => setTab(t.key)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </nav>
-      {tab === "roster" && <Roster bnet={bnet} realmSlug={realmSlug} nameSlug={nameSlug} />}
-      {tab === "achievements" && (
-        <Achievements bnet={bnet} realmSlug={realmSlug} nameSlug={nameSlug} />
-      )}
-      {tab === "activity" && <Activity bnet={bnet} realmSlug={realmSlug} nameSlug={nameSlug} />}
+      <Tabs
+        base={base}
+        label="Guild detail"
+        tabs={TABS}
+        active={tab}
+        onSelect={setTab}
+        style={{ marginTop: ".5rem" }}
+      />
+      <div id={panelId(base)} role="tabpanel" aria-labelledby={tabId(base, tab)}>
+        {tab === "roster" && <Roster bnet={bnet} realmSlug={realmSlug} nameSlug={nameSlug} />}
+        {tab === "achievements" && (
+          <Achievements bnet={bnet} realmSlug={realmSlug} nameSlug={nameSlug} />
+        )}
+        {tab === "activity" && <Activity bnet={bnet} realmSlug={realmSlug} nameSlug={nameSlug} />}
+      </div>
     </div>
   );
 }

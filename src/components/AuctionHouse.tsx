@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { BlizzardClient } from "../vendor/battlenet-wow-client";
@@ -14,6 +14,7 @@ import { useItemNames } from "../lib/useItemNames";
 import type { AuctionMode, AggregatedRow } from "../lib/auctions";
 import { SkeletonTable } from "./Skeleton";
 import { EmptyState } from "./EmptyState";
+import { Tabs, tabId, panelId, type TabSpec } from "./Tabs";
 
 // A stable empty array so the sort memo doesn't re-run every render while a query is pending.
 const NO_ROWS: AggregatedRow[] = [];
@@ -21,10 +22,49 @@ const NO_ROWS: AggregatedRow[] = [];
 // Estimated row height (px) for the virtualizer; rows are fixed-height so no per-row measuring.
 const ROW_HEIGHT = 34;
 
+/** The two auction sources; each swaps the panel below, so they're a tablist rather than a toggle. */
+const MODE_TABS: TabSpec<AuctionMode>[] = [
+  { key: "commodities", label: "Region commodities" },
+  { key: "realm", label: "Realm auctions" },
+];
+
 type SortKey = "price" | "quantity" | "listings";
 interface Sort {
   key: SortKey;
   dir: 1 | -1;
+}
+
+/**
+ * A column header that applies (or reverses) the list's sort.
+ *
+ * Hoisted to module scope deliberately: declared inside `AuctionHouse` it was a *new component type*
+ * on every render, so React unmounted and remounted the whole header — on every scroll frame, and
+ * critically on the click that activated it, which dropped keyboard focus onto `<body>`.
+ */
+function SortButton({
+  label,
+  sortKey,
+  sort,
+  onToggle,
+}: {
+  label: string;
+  sortKey: SortKey;
+  sort: Sort;
+  onToggle: (key: SortKey) => void;
+}) {
+  const active = sort.key === sortKey;
+  return (
+    <button
+      type="button"
+      className="ghost ah-sort"
+      aria-pressed={active}
+      onClick={() => onToggle(sortKey)}
+      title="Sort"
+    >
+      {label}
+      {active ? (sort.dir === 1 ? " ▲" : " ▼") : ""}
+    </button>
+  );
 }
 
 /** Compare two aggregated rows on the active sort key; rows with no price always sort last. */
@@ -51,6 +91,7 @@ export function AuctionHouse({ bnet }: { bnet: BlizzardClient }) {
   const [mode, setMode] = useState<AuctionMode>("commodities");
   const [connectedRealmId, setConnectedRealmId] = useState<number | null>(null);
   const [sort, setSort] = useState<Sort>({ key: "quantity", dir: -1 });
+  const base = useId();
 
   // The connected-realm picker reuses the search-based list (id + localized realm names) — the same
   // data the Realm Status tab loads. Only needed in realm mode.
@@ -101,38 +142,19 @@ export function AuctionHouse({ bnet }: { bnet: BlizzardClient }) {
     setSort((s) => (s.key === key ? { key, dir: s.dir === 1 ? -1 : 1 } : { key, dir: -1 }));
   }
 
-  function SortButton({ label, sortKey }: { label: string; sortKey: SortKey }) {
-    const active = sort.key === sortKey;
-    return (
-      <button
-        type="button"
-        className="ghost ah-sort"
-        aria-pressed={active}
-        onClick={() => toggleSort(sortKey)}
-        title="Sort"
-      >
-        {label}
-        {active ? (sort.dir === 1 ? " ▲" : " ▼") : ""}
-      </button>
-    );
-  }
-
   return (
     <section className="card">
       <div className="row" style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
         <h2 style={{ margin: 0 }}>Auction House</h2>
         <div className="row" style={{ flexWrap: "wrap" }}>
-          <div className="tabs" style={{ border: "none", margin: 0 }}>
-            <button
-              className={mode === "commodities" ? "active" : ""}
-              onClick={() => setMode("commodities")}
-            >
-              Region commodities
-            </button>
-            <button className={mode === "realm" ? "active" : ""} onClick={() => setMode("realm")}>
-              Realm auctions
-            </button>
-          </div>
+          <Tabs
+            base={base}
+            label="Auction source"
+            tabs={MODE_TABS}
+            active={mode}
+            onSelect={setMode}
+            style={{ border: "none", margin: 0 }}
+          />
           {mode === "realm" && (
             <select
               aria-label="Realm"
@@ -157,55 +179,65 @@ export function AuctionHouse({ bnet }: { bnet: BlizzardClient }) {
           </button>
         </div>
       </div>
-      {awaitingRealm ? (
-        <p className="muted">Choose a realm to view its auctions.</p>
-      ) : active.isError ? (
-        <EmptyState message={describeError(active.error)} onRetry={() => void active.refetch()} />
-      ) : active.isFetching && rows.length === 0 ? (
-        <SkeletonTable rows={10} columns={4} />
-      ) : rows.length === 0 ? (
-        <EmptyState message="No auctions found." onRetry={() => void active.refetch()} />
-      ) : (
-        <>
-          <p className="muted">{`${rows.length.toLocaleString()} items · ${bnet.region.toUpperCase()}`}</p>
-          <div className="ah-head">
-            <span>Item</span>
-            <SortButton label="Listings" sortKey="listings" />
-            <SortButton label="Qty" sortKey="quantity" />
-            <SortButton label={priceLabel} sortKey="price" />
-          </div>
-          <div className="ah-list" ref={scrollRef}>
-            <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
-              {virtualRows.map((v) => {
-                const row = sortedRows[v.index];
-                const resolved = names[row.itemId];
-                const color = resolved?.quality ? QUALITY_COLORS[resolved.quality] : undefined;
-                return (
-                  <div
-                    key={row.itemId}
-                    className="ah-row"
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      height: ROW_HEIGHT,
-                      transform: `translateY(${v.start}px)`,
-                    }}
-                  >
-                    <span className="ah-item" style={{ color }}>
-                      {resolved?.name ?? <span className="muted">Item #{row.itemId}</span>}
-                    </span>
-                    <span>{row.listings.toLocaleString()}</span>
-                    <span>{row.totalQuantity.toLocaleString()}</span>
-                    <span>{row.minPrice === null ? "—" : formatGold(row.minPrice)}</span>
-                  </div>
-                );
-              })}
+      <div id={panelId(base)} role="tabpanel" aria-labelledby={tabId(base, mode)}>
+        {awaitingRealm ? (
+          <p className="muted">Choose a realm to view its auctions.</p>
+        ) : active.isError ? (
+          <EmptyState message={describeError(active.error)} onRetry={() => void active.refetch()} />
+        ) : active.isFetching && rows.length === 0 ? (
+          <SkeletonTable rows={10} columns={4} />
+        ) : rows.length === 0 ? (
+          <EmptyState message="No auctions found." onRetry={() => void active.refetch()} />
+        ) : (
+          <>
+            <p className="muted">{`${rows.length.toLocaleString()} items · ${bnet.region.toUpperCase()}`}</p>
+            <div className="ah-head">
+              <span>Item</span>
+              <SortButton label="Listings" sortKey="listings" sort={sort} onToggle={toggleSort} />
+              <SortButton label="Qty" sortKey="quantity" sort={sort} onToggle={toggleSort} />
+              <SortButton label={priceLabel} sortKey="price" sort={sort} onToggle={toggleSort} />
             </div>
-          </div>
-        </>
-      )}
+            {/* Focusable + named: a virtualized scroller is otherwise a keyboard dead end — there's no
+                child to Tab to, so arrow-key scrolling is unreachable without a tab stop of its own. */}
+            <div
+              className="ah-list"
+              ref={scrollRef}
+              tabIndex={0}
+              role="group"
+              aria-label="Auction results"
+            >
+              <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
+                {virtualRows.map((v) => {
+                  const row = sortedRows[v.index];
+                  const resolved = names[row.itemId];
+                  const color = resolved?.quality ? QUALITY_COLORS[resolved.quality] : undefined;
+                  return (
+                    <div
+                      key={row.itemId}
+                      className="ah-row"
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        height: ROW_HEIGHT,
+                        transform: `translateY(${v.start}px)`,
+                      }}
+                    >
+                      <span className="ah-item" style={{ color }}>
+                        {resolved?.name ?? <span className="muted">Item #{row.itemId}</span>}
+                      </span>
+                      <span>{row.listings.toLocaleString()}</span>
+                      <span>{row.totalQuantity.toLocaleString()}</span>
+                      <span>{row.minPrice === null ? "—" : formatGold(row.minPrice)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
     </section>
   );
 }
