@@ -21,8 +21,8 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -34,7 +34,7 @@ jobs:
       # tauri build runs the frontend build (tsc + vite) then a release
       # cargo build; --no-bundle skips the MSI/NSIS installers.
       - run: npm run build:exe
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wow-companion-windows
           path: src-tauri/target/release/wow-companion.exe
@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Tauri's webview (webkitgtk) and the keyring Secret Service backend (libdbus-1)
       # are system libraries the cargo build links against — install them first.
       - name: Install system dependencies
@@ -63,7 +63,7 @@ jobs:
             librsvg2-dev \
             libdbus-1-dev \
             pkg-config
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -75,7 +75,7 @@ jobs:
       # Same build:exe script as Windows; on Linux --no-bundle skips the deb/AppImage
       # bundles and leaves the raw ELF binary (no .exe extension).
       - run: npm run build:exe
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wow-companion-linux
           path: src-tauri/target/release/wow-companion
