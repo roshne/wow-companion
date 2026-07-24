@@ -552,6 +552,14 @@ form.card input {
   align-items: center;
   /* Center the render between the (taller) slot columns rather than pinning it to the top. */
   align-self: center;
+  /* Clips the overscaled render below — only the transparent canvas margin overflows, so the figure
+     grows without the panel's layout box growing with it. The explicit height is the clip: the img's
+     own box is square-ish, and the character sits low enough in `main-raw`'s canvas that scaling
+     about the centre pushed the feet past the bottom edge. Sized to clear the full figure, with the
+     render centred in it so the headroom splits evenly above and below. */
+  overflow: hidden;
+  justify-content: center;
+  min-height: 420px;
 }
 .doll-weapons {
   grid-column: 1 / -1;
@@ -568,6 +576,13 @@ form.card input {
   max-height: 500px;
   object-fit: contain;
   object-position: top center;
+  /* `main-raw` is a mostly-transparent canvas whose character occupies only the middle ~40%, so
+     growing `width` scales the empty margin along with the figure (#135 more than doubled the width
+     and it still read small). Scale the drawn pixels instead: layout stays 320px wide, the margin
+     overflows into `.doll-center`'s clip, and the character itself roughly doubles. This factor is
+     the knob to turn if the figure wants to be bigger still. */
+  transform: scale(1.9);
+  transform-origin: center center;
 }
 /* When only the square avatar is available (no full-body render), size it as a portrait. */
 .doll-render.avatar-fallback {
