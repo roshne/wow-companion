@@ -5,6 +5,7 @@ import { loc } from "../lib/types";
 import { resolveRealmSlug, toGuildNameSlug } from "../lib/slug";
 import { FACTION_COLORS } from "../lib/wow";
 import { BnetError, describeError, guildQuery, realmIndexQuery } from "../lib/queries";
+import { loadLastGuild, saveLastGuild } from "../lib/persist";
 import { GuildDetail } from "./GuildDetail";
 
 interface Submitted {
@@ -19,8 +20,16 @@ function titleCase(value: string): string {
 
 /** Look up a guild by realm + name: a summary card plus a sub-tabbed roster / achievements / activity. */
 export function GuildLookup({ bnet }: { bnet: BlizzardClient }) {
-  const [realm, setRealm] = useState("");
-  const [name, setName] = useState("");
+  // Seed the form from the last search made in this region, so returning to the tab doesn't mean
+  // retyping the realm and guild name. Read once on mount: a later region switch must not overwrite
+  // whatever the user is currently typing. Restoring only prefills — the lookup still needs a submit,
+  // so entering the tab never spends a request on a guild you didn't ask for.
+  const [restored] = useState(() => {
+    const last = loadLastGuild();
+    return last && last.region === bnet.region ? last : null;
+  });
+  const [realm, setRealm] = useState(restored?.realm ?? "");
+  const [name, setName] = useState(restored?.name ?? "");
   const [submitted, setSubmitted] = useState<Submitted | null>(null);
   const [formError, setFormError] = useState("");
 
@@ -45,6 +54,8 @@ export function GuildLookup({ bnet }: { bnet: BlizzardClient }) {
       return;
     }
     setFormError("");
+    // Remember what was typed, not the resolved slugs, so the next visit restores the same text.
+    saveLastGuild({ region: bnet.region, realm, name });
     setSubmitted({ realmSlug: realmSlugInput, nameSlug: nameSlugInput });
   }
 

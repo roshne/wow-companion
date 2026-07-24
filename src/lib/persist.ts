@@ -17,6 +17,7 @@ const RECENTS_KEY = "wow-companion:recent-characters";
 const FAVORITE_CHARACTERS_KEY = "wow-companion:favorite-characters";
 const FAVORITE_REALMS_KEY = "wow-companion:favorite-realms";
 const WARBAND_SEEDED_KEY = "wow-companion:warband-seeded-regions";
+const LAST_GUILD_KEY = "wow-companion:last-guild";
 const TOKEN_HISTORY_PREFIX = "wow-companion:token-history:";
 const ITEM_NAMES_KEY = "wow-companion:item-names";
 
@@ -275,6 +276,48 @@ export function markWarbandSeeded(region: Region): void {
     regions.push(region);
     writeRaw(WARBAND_SEEDED_KEY, JSON.stringify(regions));
   }
+}
+
+// --- Last guild search: the guild lookup has no MRU chips (unlike characters), so the one thing worth
+// keeping is the form itself — retyping realm + guild name every visit is the whole friction. --------
+
+/**
+ * The last guild searched, stored as typed rather than as slugs so the form restores exactly what the
+ * user entered (slugs would come back as "we-know" instead of "We Know"). Region-scoped: a realm name
+ * only means something against its own region's realm index.
+ */
+export interface LastGuild {
+  region: Region;
+  realm: string;
+  name: string;
+}
+
+function isLastGuild(value: unknown): value is LastGuild {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    isRegion(v.region) &&
+    typeof v.realm === "string" &&
+    v.realm.length > 0 &&
+    typeof v.name === "string" &&
+    v.name.length > 0
+  );
+}
+
+/** The persisted last guild search, or null when absent/invalid. */
+export function loadLastGuild(): LastGuild | null {
+  const raw = readRaw(LAST_GUILD_KEY);
+  if (!raw) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return isLastGuild(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveLastGuild(entry: LastGuild): void {
+  writeRaw(LAST_GUILD_KEY, JSON.stringify(entry));
 }
 
 // --- Token price history: self-accumulated per region (the API only returns the current price). -----
