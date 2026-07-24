@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { GuildLookup } from "./GuildLookup";
 import { renderWithClient } from "../test/utils";
@@ -52,6 +52,12 @@ function fillAndSubmit(realm: string, name: string) {
 }
 
 describe("GuildLookup", () => {
+  // The setup file's in-memory localStorage is a single store for the whole run, so a submit in one
+  // test would otherwise seed the next test's form with a restored search.
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   it("names both lookup fields, so they stay identifiable once typed into", () => {
     const { bnet, get } = mockBnet();
     routeGuild(get);
@@ -106,6 +112,81 @@ describe("GuildLookup", () => {
     expect(screen.getByRole("tab", { name: "Roster" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Achievements" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Activity" })).toBeInTheDocument();
+  });
+
+  it("restores the last search into the form on a later visit", async () => {
+    const first = mockBnet();
+    routeGuild(first.get);
+    const { unmount } = renderWithClient(<GuildLookup bnet={first.bnet} />);
+    fillAndSubmit("Illidan", "Complexity Limit");
+    await screen.findByRole("heading", { name: /Complexity Limit/ });
+    unmount();
+
+    // A fresh mount (re-entering the tab, or a restart) reads the persisted search back.
+    const second = mockBnet();
+    routeGuild(second.get);
+    renderWithClient(<GuildLookup bnet={second.bnet} />);
+
+    // Restored as typed, not as the resolved slugs ("illidan" / "complexity-limit").
+    expect(screen.getByLabelText("Realm")).toHaveValue("Illidan");
+    expect(screen.getByLabelText("Guild name")).toHaveValue("Complexity Limit");
+  });
+
+  it("only prefills on restore — entering the tab spends no request until submit", async () => {
+    const first = mockBnet();
+    routeGuild(first.get);
+    const { unmount } = renderWithClient(<GuildLookup bnet={first.bnet} />);
+    fillAndSubmit("Illidan", "Complexity Limit");
+    await screen.findByRole("heading", { name: /Complexity Limit/ });
+    unmount();
+
+    const second = mockBnet();
+    routeGuild(second.get);
+    renderWithClient(<GuildLookup bnet={second.bnet} />);
+
+    expect(second.get).not.toHaveBeenCalledWith(GUILD_PATH, expect.anything());
+    // ...and the restored text is a real search: submitting it needs no retyping.
+    fireEvent.click(screen.getByRole("button", { name: /look up/i }));
+    await screen.findByRole("heading", { name: /Complexity Limit/ });
+    expect(second.get).toHaveBeenCalledWith(
+      GUILD_PATH,
+      expect.objectContaining({
+        params: expect.objectContaining({
+          path: { realmSlug: "illidan", nameSlug: "complexity-limit" },
+        }),
+      }),
+    );
+  });
+
+  it("does not restore a search made in another region", async () => {
+    const us = mockBnet("us");
+    routeGuild(us.get);
+    const { unmount } = renderWithClient(<GuildLookup bnet={us.bnet} />);
+    fillAndSubmit("Illidan", "Complexity Limit");
+    await screen.findByRole("heading", { name: /Complexity Limit/ });
+    unmount();
+
+    // A realm name only resolves against its own region's index, so the EU form opens empty.
+    const eu = mockBnet("eu");
+    routeGuild(eu.get);
+    renderWithClient(<GuildLookup bnet={eu.bnet} />);
+
+    expect(screen.getByLabelText("Realm")).toHaveValue("");
+    expect(screen.getByLabelText("Guild name")).toHaveValue("");
+  });
+
+  it("does not persist a rejected empty search", () => {
+    const first = mockBnet();
+    routeGuild(first.get);
+    const { unmount } = renderWithClient(<GuildLookup bnet={first.bnet} />);
+    fireEvent.click(screen.getByRole("button", { name: /look up/i }));
+    expect(screen.getByText("Enter a realm and guild name.")).toBeInTheDocument();
+    unmount();
+
+    const second = mockBnet();
+    routeGuild(second.get);
+    renderWithClient(<GuildLookup bnet={second.bnet} />);
+    expect(screen.getByLabelText("Realm")).toHaveValue("");
   });
 
   it("shows a not-found message on a 404", async () => {
