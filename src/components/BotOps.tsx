@@ -5,6 +5,7 @@ import {
   botLogs,
   botRestart,
   botStatus,
+  changedFields,
   OPS_FIELDS,
   type BotStatus,
   type OpsTargetInfo,
@@ -52,7 +53,7 @@ export function BotOps({ targets }: { targets: OpsTargetInfo[] }) {
     // env/status reload via the loadState effect above.
   }
 
-  const changed = OPS_FIELDS.filter((f) => (draft[f.key] ?? "") !== (env[f.key] ?? ""));
+  const changed = changedFields(env, draft);
 
   async function fetchLogs() {
     setBusy(true);

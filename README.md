@@ -29,6 +29,8 @@ React webview  ──invoke("get_access_token")──►  Rust (Tauri)
   [`src-tauri/capabilities/default.json`](src-tauri/capabilities/default.json).
 - **Types**: [`src/vendor/battlenet-wow-client/`](src/vendor/battlenet-wow-client/) is a vendored copy
   of the foundation's typed client (see its `VENDORED.md` for how to refresh it).
+- **Bot Ops** is a vendored shared module, not this repo's code — see
+  [Bot Ops tab](#bot-ops-tab--operator-only) below.
 
 ## Features
 
@@ -82,6 +84,23 @@ It drives the bot through a versioned helper on the box (`bot-ops.sh`, shipped i
 over SSH: the Rust side only shells `ssh` with fixed subcommands, so **bot secrets never cross the
 wire** and the editable-key whitelist is enforced on the box. Secrets (tokens) are never read or
 written from here.
+
+**Everything under the panel is vendored, not written here.** `nazumods/wow`'s own desktop app ships
+the same tab, so the backend, the wire types and the editable-key whitelist live once in that repo's
+[`apps/bot-ops`](https://github.com/nazumods/wow/tree/main/apps/bot-ops) module and are vendored in:
+
+```bash
+npm run vendor:bot-ops
+```
+
+```bash
+npm run check:bot-ops
+```
+
+Only [`src/components/BotOps.tsx`](src/components/BotOps.tsx) — the React view — is this repo's, and
+the two vendored halves ([`src/vendor/bot-ops`](src/vendor/bot-ops/VENDORED.md) and
+[`src-tauri/vendor/bot-ops`](src-tauri/vendor/bot-ops/VENDORED.md)) must never be hand-edited: the
+next vendor run overwrites them. Fixes start upstream.
 
 To enable it, create `%APPDATA%\com.roshne.wowcompanion\ops.json` (or point `WOW_COMPANION_OPS_CONFIG`
 at a file) listing the bot(s) to manage:
@@ -185,13 +204,14 @@ src/                     # React frontend
                          #   AuctionHouse, Warband (+ WarbandGearBoard), TokenPrice, RealmStatus,
                          #   BotOps (operator-only), …
   lib/                   # data + logic — queries (TanStack Query), gearCheck / gearFix,
-                         #   useWarbandGear, region resolution, persistence, hooks, botops (SSH ops)
+                         #   useWarbandGear, region resolution, persistence, hooks, botops (re-export)
   lib/bnet.ts            # builds the typed client (token from Rust, fetch via Tauri HTTP)
   vendor/battlenet-wow-client/   # vendored typed client (generated types + auth + factory)
+  vendor/bot-ops/        # vendored shared module (frontend half) — nazumods/wow apps/bot-ops
 src-tauri/               # Rust backend
   src/lib.rs             # keychain + OAuth token commands
   src/warband.rs         # Warbandeer SavedVariables parser (sandboxed mlua VM)
-  src/botops.rs          # operator-only: manage the warbandeer-discord bot over SSH
+  vendor/bot-ops/        # vendored shared module (Rust half) — the SSH ops commands
   capabilities/          # HTTP scope for *.api.blizzard.com
 ```
 

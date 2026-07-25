@@ -20,7 +20,9 @@
     "check:versions": "node scripts/check-versions.mjs",
     "re-vendor": "node scripts/re-vendor.mjs",
     "vendor:static-data": "node scripts/fetch-static-data.mjs",
-    "check:static-data": "node scripts/fetch-static-data.mjs --check"
+    "check:static-data": "node scripts/fetch-static-data.mjs --check",
+    "vendor:bot-ops": "node scripts/vendor-bot-ops.mjs",
+    "check:bot-ops": "node scripts/vendor-bot-ops.mjs --check"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.2",

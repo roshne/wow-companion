@@ -6,6 +6,7 @@ node_modules
 
 # Vendored / generated
 src/vendor
+src-tauri/vendor
 src-tauri/gen
 src-tauri/target
 
