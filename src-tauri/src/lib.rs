@@ -10,7 +10,6 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use serde::Deserialize;
 use tauri::State;
 
-mod botops;
 mod warband;
 
 const KEYRING_SERVICE: &str = "wow-companion";
@@ -150,6 +149,10 @@ async fn get_access_token(state: State<'_, AppState>) -> Result<String, String> 
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Keeps the pre-extraction override working now that the Bot Ops backend is the vendored
+    // `bot-ops` crate; it also honours the crate's own `BOT_OPS_CONFIG`.
+    bot_ops::set_config_env_var("WOW_COMPANION_OPS_CONFIG");
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_http::init())
@@ -163,12 +166,12 @@ pub fn run() {
             clear_credentials,
             get_access_token,
             warband::get_warband,
-            botops::ops_config,
-            botops::bot_status,
-            botops::bot_logs,
-            botops::bot_restart,
-            botops::bot_env_get,
-            botops::bot_env_set
+            bot_ops::commands::ops_config,
+            bot_ops::commands::bot_status,
+            bot_ops::commands::bot_logs,
+            bot_ops::commands::bot_restart,
+            bot_ops::commands::bot_env_get,
+            bot_ops::commands::bot_env_set
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

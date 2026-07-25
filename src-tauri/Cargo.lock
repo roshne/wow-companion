@@ -316,6 +316,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bot-ops"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tauri",
+]
+
+[[package]]
 name = "brotli"
 version = "8.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5917,6 +5926,7 @@ checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
 name = "wow-companion"
 version = "0.5.0"
 dependencies = [
+ "bot-ops",
  "keyring",
  "mlua",
  "reqwest 0.12.28",

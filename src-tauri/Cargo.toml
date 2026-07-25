@@ -19,6 +19,9 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
+# Operator-only Bot Ops panel backend. Vendored from nazumods/wow (apps/bot-ops), which is the
+# only place it is maintained — see src-tauri/vendor/bot-ops/VENDORED.md. Do not edit in place.
+bot-ops = { path = "vendor/bot-ops" }
 tauri-plugin-opener = "2"
 # Data-API requests are made from Rust (via the HTTP plugin) so they bypass webview CORS.
 tauri-plugin-http = "2"
