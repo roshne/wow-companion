@@ -332,7 +332,12 @@ fn build_wealth(raw: RawWarband) -> WarbandWealth {
     WarbandWealth {
         bank_gold: raw.bank_gold.map(|n| n as i64),
         week: raw.week.map(week),
-        history: raw.history.unwrap_or_default().into_iter().map(week).collect(),
+        history: raw
+            .history
+            .unwrap_or_default()
+            .into_iter()
+            .map(week)
+            .collect(),
     }
 }
 
@@ -599,7 +604,9 @@ mod tests {
 
     #[test]
     fn keeps_fractional_numeric_the_old_i64_path_dropped() {
-        let chars = parse_from_lua(FIXTURE_FRACTIONAL).expect("parse").characters;
+        let chars = parse_from_lua(FIXTURE_FRACTIONAL)
+            .expect("parse")
+            .characters;
         assert_eq!(chars.len(), 1);
         // 445.5 deserializes as f64 and casts to 445 at the payload edge.
         assert_eq!(chars[0].item_level, Some(445));
@@ -616,7 +623,10 @@ mod tests {
     #[test]
     fn promotes_gold_out_of_the_currency_table() {
         let chars = parse_from_lua(FIXTURE).expect("parse").characters;
-        let k = chars.iter().find(|c| c.name == "Testchar").expect("Testchar");
+        let k = chars
+            .iter()
+            .find(|c| c.name == "Testchar")
+            .expect("Testchar");
         assert_eq!(k.gold, Some(12345678));
         // ...and `gold` is not left in the currency list, where it isn't a catalogued currency.
         assert!(k.currencies.iter().all(|c| c.key != "gold"));
@@ -625,7 +635,10 @@ mod tests {
     #[test]
     fn reads_both_currency_shapes() {
         let chars = parse_from_lua(FIXTURE).expect("parse").characters;
-        let k = chars.iter().find(|c| c.name == "Testchar").expect("Testchar");
+        let k = chars
+            .iter()
+            .find(|c| c.name == "Testchar")
+            .expect("Testchar");
 
         // Bare number: a quantity and nothing else.
         let bare = currency(k, "RestoredCofferKey");
@@ -653,9 +666,15 @@ mod tests {
         // The source is a Lua hash table with arbitrary iteration order, so without an explicit
         // sort the list would reshuffle between reads.
         let chars = parse_from_lua(FIXTURE).expect("parse").characters;
-        let k = chars.iter().find(|c| c.name == "Testchar").expect("Testchar");
+        let k = chars
+            .iter()
+            .find(|c| c.name == "Testchar")
+            .expect("Testchar");
         let keys: Vec<&str> = k.currencies.iter().map(|c| c.key.as_str()).collect();
-        assert_eq!(keys, ["HeroDawncrest", "RestoredCofferKey", "ShardOfDundun"]);
+        assert_eq!(
+            keys,
+            ["HeroDawncrest", "RestoredCofferKey", "ShardOfDundun"]
+        );
     }
 
     #[test]
