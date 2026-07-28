@@ -205,6 +205,7 @@ export const queryKeys = {
   realmAuctions: (region: Region, connectedRealmId: number) =>
     ["realm-auctions", region, connectedRealmId] as const,
   commodities: (region: Region) => ["commodities", region] as const,
+  keystoneDungeons: (region: Region) => ["keystone-dungeons", region] as const,
 };
 
 /** Fetch the current WoW Token price document. */
@@ -232,6 +233,31 @@ export async function fetchConnectedRealms(bnet: BlizzardClient): Promise<Connec
     if (page >= (body.pageCount ?? 1)) break;
   }
   return all;
+}
+
+/** One Mythic+ dungeon: its challenge-mode map id and name. */
+export interface KeystoneDungeon {
+  id: number;
+  name: string;
+}
+
+/**
+ * Fetch the Mythic+ dungeon index as id → name.
+ *
+ * These ids are **challenge-mode map ids** — the same id space the Warbandeer addon records as
+ * `keystoneMap` — which is what makes joining a held keystone to a dungeon name sound. (Instance
+ * *lockout* ids are a different space entirely; see `keystoneBoard.ts` for why they aren't joined.)
+ *
+ * Effectively static within a season, so it's cached aggressively.
+ */
+export async function fetchKeystoneDungeons(bnet: BlizzardClient): Promise<KeystoneDungeon[]> {
+  const { data, response } = await bnet.api.GET("/data/wow/mythic-keystone/dungeon/index", {
+    params: { query: { namespace: bnet.namespace("dynamic"), locale: "en_US" } },
+  });
+  const body = unwrap(data, response);
+  return (body.dungeons ?? [])
+    .flatMap((d) => (d.id != null && d.name ? [{ id: d.id, name: String(d.name) }] : []))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /**
@@ -645,6 +671,18 @@ export const connectedRealmsQuery = (bnet: BlizzardClient) =>
     queryKey: queryKeys.connectedRealms(bnet.region),
     queryFn: () => fetchConnectedRealms(bnet),
     staleTime: 5 * MINUTE,
+  });
+
+/**
+ * The Mythic+ dungeon catalogue. One fetch serves every row on the keystone board — the alternative,
+ * a per-character lookup, would spend a rate-limited request per row to resolve names from a list
+ * that changes at most once a season.
+ */
+export const keystoneDungeonsQuery = (bnet: BlizzardClient) =>
+  queryOptions({
+    queryKey: queryKeys.keystoneDungeons(bnet.region),
+    queryFn: () => fetchKeystoneDungeons(bnet),
+    staleTime: 60 * MINUTE,
   });
 
 export const realmIndexQuery = (bnet: BlizzardClient) =>
