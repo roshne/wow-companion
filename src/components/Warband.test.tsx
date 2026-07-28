@@ -34,6 +34,8 @@ function character(overrides: Partial<WarbandCharacter> = {}): WarbandCharacter 
     faction: null,
     gold: null,
     currencies: [],
+    weekly: null,
+    locks: [],
     ...overrides,
   };
 }
