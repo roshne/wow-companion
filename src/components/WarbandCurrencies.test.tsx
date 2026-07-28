@@ -107,6 +107,36 @@ describe("WarbandCurrencies", () => {
     expect(screen.getByText("Myth Dawncrest")).toBeInTheDocument();
   });
 
+  it("hides a cap the amount held has passed, since it reads as a display bug", () => {
+    renderBoard(
+      data([
+        character({
+          name: "Over",
+          currencies: [currency({ key: "HeroDawncrest", quantity: 120, max: 0 })],
+        }),
+      ]),
+    );
+    const row = screen.getByText("Over").closest("tr")!;
+    expect(within(row).getByText("120")).toBeInTheDocument();
+    // No "/ 100" beside it...
+    expect(within(row).queryByText(/\/\s*100/)).not.toBeInTheDocument();
+    // ...but the recorded figure is still reachable, with why it's hidden.
+    expect(within(row).getByTitle(/below the 120 held/)).toBeInTheDocument();
+  });
+
+  it("still shows a cap the amount has only reached", () => {
+    renderBoard(
+      data([
+        character({
+          name: "AtCap",
+          currencies: [currency({ key: "ShardOfDundun", quantity: 8, weeklyMax: 8, capped: true })],
+        }),
+      ]),
+    );
+    const row = screen.getByText("AtCap").closest("tr")!;
+    expect(within(row).getByText(/\/\s*8/)).toBeInTheDocument();
+  });
+
   it("marks a capped currency", () => {
     renderBoard(
       data([
