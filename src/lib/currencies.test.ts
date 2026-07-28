@@ -211,6 +211,33 @@ describe("buildCurrencyBoard", () => {
     expect(board.rows[0].cells.FieldAccolade.capKind).toBeNull();
   });
 
+  it("flags a cap the amount held has already passed", () => {
+    // Live case: crest caps rise through a season while the vendored bundle's maxQty is a snapshot,
+    // so a character holding 120 against a recorded cap of 100 is stale data, not a miscount.
+    const board = buildCurrencyBoard(
+      data([
+        character({
+          currencies: [currency({ key: "HeroDawncrest", quantity: 120, max: 0 })],
+        }),
+      ]),
+    );
+    const cell = board.rows[0].cells.HeroDawncrest;
+    expect(cell.cap).toBe(100);
+    // The figure is kept so the reason stays inspectable; the consumer decides not to show it.
+    expect(cell.capExceeded).toBe(true);
+  });
+
+  it("does not flag a cap the amount held has merely reached", () => {
+    const board = buildCurrencyBoard(
+      data([
+        character({
+          currencies: [currency({ key: "ShardOfDundun", quantity: 8, weeklyMax: 8, capped: true })],
+        }),
+      ]),
+    );
+    expect(board.rows[0].cells.ShardOfDundun.capExceeded).toBe(false);
+  });
+
   it("leaves an uncapped currency without a cap", () => {
     const board = buildCurrencyBoard(
       data([character({ currencies: [currency({ key: "FieldAccolade", quantity: 4 })] })]),

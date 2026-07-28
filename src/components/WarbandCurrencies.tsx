@@ -42,26 +42,35 @@ function Header({ currency, region }: { currency: ResolvedCurrency; region: Regi
   );
 }
 
-/** One amount, with cap progress where a cap applies. */
+/**
+ * One amount, with cap progress where a *trustworthy* cap applies.
+ *
+ * A cap below the amount held is suppressed rather than rendered: it's stale rather than wrong-wrong
+ * (season caps rise past the vendored snapshot), but "120 / 100" reads as a display bug. The reason
+ * moves into the tooltip so the recorded figure is still reachable.
+ */
 function Amount({ cell }: { cell: CurrencyCell | undefined }) {
   if (!cell) return <span className="muted">—</span>;
-  const capped = cell.capped;
+  const showCap = cell.cap != null && !cell.capExceeded;
+  const capLabel = cell.capKind === "weekly" ? "Weekly earn cap" : "Hold cap";
   return (
     <span
-      className={capped ? "currency-capped" : undefined}
+      className={cell.capped ? "currency-capped" : undefined}
       title={
         cell.cap == null
           ? undefined
-          : `${cell.capKind === "weekly" ? "Weekly earn cap" : "Hold cap"}: ${cell.cap}${
-              cell.earned != null ? ` · earned this week: ${cell.earned}` : ""
-            }${capped ? " · capped" : ""}`
+          : cell.capExceeded
+            ? `${capLabel} recorded as ${cell.cap}, below the ${cell.quantity} held — the cap has risen past the vendored value, so it isn't shown.`
+            : `${capLabel}: ${cell.cap}${
+                cell.earned != null ? ` · earned this week: ${cell.earned}` : ""
+              }${cell.capped ? " · capped" : ""}`
       }
     >
       {cell.quantity.toLocaleString()}
-      {cell.cap != null ? (
+      {showCap ? (
         <span className="muted">
           {" / "}
-          {cell.cap.toLocaleString()}
+          {cell.cap!.toLocaleString()}
         </span>
       ) : null}
     </span>

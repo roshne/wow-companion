@@ -102,6 +102,15 @@ export interface CurrencyCell {
    */
   cap: number | null;
   capKind: "weekly" | "hold" | null;
+  /**
+   * The amount held exceeds the cap, so the cap can't be right and isn't worth showing.
+   *
+   * Real case: crest caps rise as a season progresses, but the vendored bundle's `maxQty` is a fixed
+   * snapshot, so once the in-game cap moves past it the bundle under-reports. Rendering "120 / 100"
+   * is accurate about both numbers and still reads as a bug, so the consumer hides the cap — while
+   * `cap` itself is kept here, so *why* it was hidden stays inspectable.
+   */
+  capExceeded: boolean;
   capped: boolean;
 }
 
@@ -141,6 +150,7 @@ function cellOf(c: WarbandCurrency, resolved: ResolvedCurrency): CurrencyCell {
     earned: c.earned,
     cap,
     capKind: cap == null ? null : weekly != null ? "weekly" : "hold",
+    capExceeded: cap != null && c.quantity > cap,
     capped: c.capped ?? false,
   };
 }
