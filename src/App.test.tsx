@@ -101,10 +101,10 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { name: "Auction House" })).toBeInTheDocument();
   });
 
-  it("shows the build-time version stamp in the footer", async () => {
+  it("shows the build ID — version and source commit — in the footer", async () => {
     renderWithClient(<App />);
     // vitest injects a fixed __BUILD_ID__ (see vitest.config.ts).
-    expect(await screen.findByText("v0.0.0-test")).toBeInTheDocument();
+    expect(await screen.findByText("v0.0.0 (0000000)")).toBeInTheDocument();
   });
 
   it("opens the settings dialog from the header", async () => {

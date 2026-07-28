@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# TypeScript incremental-build state — the composite tsconfig.node project emits this even under
+# --noEmit, so typechecking that project locally leaves one behind.
+*.tsbuildinfo
+
 # Local env / secret files — never commit these
 .env
 .env.*

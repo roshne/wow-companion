@@ -1,41 +1,31 @@
 import { describe, it, expect } from "vitest";
-import { buildId, buildStamp, isPrerelease } from "./buildId";
-
-// A fixed local-time instant: 2026-07-22 09:05:03.
-const AT = new Date(2026, 6, 22, 9, 5, 3);
-
-describe("buildStamp", () => {
-  it("formats the local build time as YYYYMMDD-HH:MM:SS, zero-padded", () => {
-    expect(buildStamp(AT)).toBe("20260722-09:05:03");
-  });
-});
-
-describe("isPrerelease", () => {
-  it("treats every 0.x and every semver prerelease as pre-stable", () => {
-    expect(isPrerelease("0.1.0")).toBe(true);
-    expect(isPrerelease("0.5.0")).toBe(true);
-    expect(isPrerelease("1.0.0-rc.1")).toBe(true);
-    expect(isPrerelease("2.3.4-beta")).toBe(true);
-  });
-
-  it("treats a plain 1.0.0-and-up as stable", () => {
-    expect(isPrerelease("1.0.0")).toBe(false);
-    expect(isPrerelease("10.2.1")).toBe(false);
-  });
-});
+import { buildId } from "./buildId";
 
 describe("buildId", () => {
-  it("stamps a pre-1.0 build with its build time, so two 0.5.0 builds are distinguishable", () => {
-    expect(buildId("0.5.0", AT)).toBe("v0.5.0-20260722-09:05:03");
+  it("names the version and the commit it was built from", () => {
+    expect(buildId("1.0.0", { sha: "9502198", dirty: false })).toBe("v1.0.0 (9502198)");
   });
 
-  it("stamps a prerelease too", () => {
-    expect(buildId("1.0.0-rc.1", AT)).toBe("v1.0.0-rc.1-20260722-09:05:03");
+  it("distinguishes two builds of the same version, which is the whole point", () => {
+    // After 1.0 most changes ship without moving the version, so the version alone can't identify a
+    // build. The sha moves with every commit.
+    const a = buildId("1.0.0", { sha: "9502198", dirty: false });
+    const b = buildId("1.0.0", { sha: "b4597ae", dirty: false });
+    expect(a).not.toBe(b);
   });
 
-  it("drops the stamp at a stable release — the footer reads just the version", () => {
-    // The contract the 1.0 bump relies on: bumping the version is the whole change, with no separate
-    // edit needed to retire the timestamp.
-    expect(buildId("1.0.0", AT)).toBe("v1.0.0");
+  it("marks a dirty tree, so a dev build doesn't claim code it isn't running", () => {
+    expect(buildId("1.0.0", { sha: "9502198", dirty: true })).toBe("v1.0.0 (9502198-dirty)");
+  });
+
+  it("falls back to a bare version when there's no commit to name", () => {
+    // Building from a source tarball rather than a checkout — supported, so it renders cleanly.
+    expect(buildId("1.0.0", { sha: null, dirty: false })).toBe("v1.0.0");
+    expect(buildId("1.0.0", { sha: null, dirty: true })).toBe("v1.0.0");
+  });
+
+  it("applies the same format pre-1.0 and to prereleases", () => {
+    expect(buildId("0.5.0", { sha: "9502198", dirty: false })).toBe("v0.5.0 (9502198)");
+    expect(buildId("1.0.0-rc.1", { sha: "9502198", dirty: false })).toBe("v1.0.0-rc.1 (9502198)");
   });
 });

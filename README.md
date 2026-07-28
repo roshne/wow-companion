@@ -221,5 +221,6 @@ src-tauri/               # Rust backend
 is green, and every tab is live. Response bodies for the endpoints the app uses are now typed by the
 vendored client — captured upstream and re-vendored through the `battlenet-api-research` pipeline — so
 data flows through the typed client end-to-end. Exercising the live data views needs your Battle.net
-credentials (see above). The footer shows the running version; pre-1.0 and prerelease builds carry a
-build timestamp alongside it, stable ones don't.
+credentials (see above). The footer reads `v1.0.0 (9502198)` — the version plus the commit it was
+built from, so two builds of the same version are still tellable apart (`-dirty` marks a build made
+with uncommitted changes).

@@ -1,19 +1,20 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { buildId } from "./src/lib/buildId";
+import { gitRef } from "./scripts/git-ref.mjs";
 
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
 
-// Build-time version stamp, e.g. "v0.5.0-20260716-14:25:22" (the timestamp self-drops at a stable
-// release — see `src/lib/buildId.ts`). The version comes from package.json — npm exposes it as
-// `npm_package_version` for every `npm run` script, which is how Tauri invokes both dev and build (see
-// tauri.conf.json). The timestamp resolves once, when Vite loads this config (build time), and is baked
-// into the bundle via `define` below, so the running app reports when it was built. Uses local
-// build-machine time.
+// Build-time build ID, e.g. "v1.0.0 (9502198)" — see `src/lib/buildId.ts` for the format and
+// `scripts/git-ref.mjs` for how the commit is read. The version comes from package.json — npm exposes
+// it as `npm_package_version` for every `npm run` script, which is how Tauri invokes both dev and build
+// (see tauri.conf.json). Both halves resolve once, when Vite loads this config (build time), and are
+// baked into the bundle via `define` below, so the running app reports the exact source it was built
+// from rather than just its version.
 // @ts-expect-error process is a nodejs global
 const version = process.env.npm_package_version || "0.0.0";
-const stamp = buildId(version, new Date());
+const stamp = buildId(version, gitRef());
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
