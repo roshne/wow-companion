@@ -6,6 +6,7 @@ import { CLASS_COLORS } from "../lib/wow";
 import { WarbandGearBoard } from "./WarbandGearBoard";
 import { WarbandVaultBoard } from "./WarbandVaultBoard";
 import { WarbandKeystoneBoard } from "./WarbandKeystoneBoard";
+import { WarbandCurrencies } from "./WarbandCurrencies";
 
 const ROLE_LABEL: Record<string, string> = {
   TANK: "Tank",
@@ -50,7 +51,7 @@ export function Warband({
   // Roster (the default), the warband-wide gear board, or the Great Vault board. The gear board only
   // mounts — and only then fetches every alt's equipment — when selected, so that fetch stays lazy.
   // The vault board needs no fetch at all: it reads the same local export the roster already has.
-  const [view, setView] = useState<"roster" | "board" | "vault" | "keys">("roster");
+  const [view, setView] = useState<"roster" | "board" | "vault" | "keys" | "currencies">("roster");
 
   async function load() {
     setBusy(true);
@@ -158,6 +159,13 @@ export function Warband({
           >
             Keys &amp; locks
           </button>
+          <button
+            className={view === "currencies" ? "" : "ghost"}
+            aria-pressed={view === "currencies"}
+            onClick={() => setView("currencies")}
+          >
+            Currencies
+          </button>
         </div>
       )}
 
@@ -171,6 +179,10 @@ export function Warband({
 
       {!error && view === "keys" && data && data.characters.length > 0 && (
         <WarbandKeystoneBoard data={data} region={region} />
+      )}
+
+      {!error && view === "currencies" && data && data.characters.length > 0 && (
+        <WarbandCurrencies data={data} region={region} />
       )}
 
       {!error && view === "roster" && rows.length > 0 && (
