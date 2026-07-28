@@ -1368,3 +1368,23 @@ button.doll-slot:focus-visible {
   font-weight: 600;
   white-space: nowrap;
 }
+
+/* Currencies board: a characters × currencies matrix. Icons are decorative (the name carries the
+   meaning), so a failed icon load hides the image and leaves the label intact. */
+.currency-board {
+  font-variant-numeric: tabular-nums;
+}
+.currency-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+.currency-icon {
+  border-radius: 3px;
+  vertical-align: middle;
+}
+.currency-capped {
+  color: var(--up);
+  font-weight: 600;
+}
