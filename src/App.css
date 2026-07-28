@@ -1388,3 +1388,19 @@ button.doll-slot:focus-visible {
   color: var(--up);
   font-weight: 600;
 }
+
+/* Warband wealth summary: one line above every Warband view. Gains and losses use the same up/down
+   tokens as the rest of the app, which the theme-contrast guard already covers. */
+.warband-wealth {
+  margin: 0.25rem 0 0.6rem;
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+}
+.wealth-up {
+  color: var(--up);
+  font-weight: 600;
+}
+.wealth-down {
+  color: var(--down);
+  font-weight: 600;
+}

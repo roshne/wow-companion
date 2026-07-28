@@ -7,6 +7,12 @@ vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
 vi.mock("./WarbandGearBoard", () => ({
   WarbandGearBoard: () => <div data-testid="gear-board">board</div>,
 }));
+// Same reason, but this one is always mounted rather than behind a toggle: it reads the token price
+// through useQuery, which needs a QueryClientProvider these roster tests deliberately don't set up.
+// Its own behaviour is covered by WarbandWealth.test.tsx.
+vi.mock("./WarbandWealth", () => ({
+  WarbandWealth: () => <div data-testid="wealth">wealth</div>,
+}));
 
 import { Warband } from "./Warband";
 import { invoke } from "@tauri-apps/api/core";

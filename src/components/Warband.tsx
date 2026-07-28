@@ -7,6 +7,7 @@ import { WarbandGearBoard } from "./WarbandGearBoard";
 import { WarbandVaultBoard } from "./WarbandVaultBoard";
 import { WarbandKeystoneBoard } from "./WarbandKeystoneBoard";
 import { WarbandCurrencies } from "./WarbandCurrencies";
+import { WarbandWealth } from "./WarbandWealth";
 
 const ROLE_LABEL: Record<string, string> = {
   TANK: "Tank",
@@ -120,6 +121,12 @@ export function Warband({
 
       {!error && data && data.characters.length === 0 && (
         <p className="muted">No characters recorded yet.</p>
+      )}
+
+      {/* Warband-wide context rather than another view, so it sits above the toggles and stays
+          visible whichever board is selected. Renders nothing when no wealth was recorded. */}
+      {!error && data && data.characters.length > 0 && (
+        <WarbandWealth data={data} region={region} />
       )}
 
       {!error && data && data.characters.length > 0 && (
