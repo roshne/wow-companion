@@ -1,32 +1,27 @@
 /**
- * The build stamp shown in the app footer.
+ * The build ID shown in the app footer: `v1.0.0 (9502198)`.
  *
- * Lives here rather than inline in `vite.config.ts` so the "the timestamp self-drops at a stable
- * release" rule is a tested contract instead of something only a release build would reveal. The
- * config imports these and bakes the result in via `define` (see `__BUILD_ID__`).
+ * Lives here rather than inline in `vite.config.ts` so the format is a tested contract instead of
+ * something only a release build would reveal. The config reads the commit (see `scripts/git-ref.mjs`),
+ * composes the string here, and bakes the result in via `define` (see `__BUILD_ID__`).
+ *
+ * The commit, not a timestamp: a version alone can't distinguish two builds, and after 1.0 most
+ * changes ship without moving it. A sha moves with the code regardless of the version number, and
+ * names the exact source rather than merely when a machine happened to compile it.
  */
 
-/** A build timestamp as `YYYYMMDD-HH:MM:SS`, in the build machine's local time. */
-export function buildStamp(now: Date): string {
-  const p = (n: number) => String(n).padStart(2, "0");
-  const date = `${now.getFullYear()}${p(now.getMonth() + 1)}${p(now.getDate())}`;
-  const time = `${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`;
-  return `${date}-${time}`;
+/** A build's source commit. `sha` is null when the build didn't come from a git checkout. */
+export interface BuildRef {
+  sha: string | null;
+  dirty: boolean;
 }
 
 /**
- * True for a version that isn't a stable release: any `0.x` (pre-1.0) or any semver prerelease
- * (`1.0.0-rc.1`). These are the versions where knowing *which* build you're running matters.
+ * The footer's build ID: `v<version> (<sha>)`, with `-dirty` appended when the tree had uncommitted
+ * changes — without it a dev build would claim a commit whose code it isn't running. Falls back to a
+ * bare `v<version>` when there's no sha to show (a build from a source tarball rather than a checkout).
  */
-export function isPrerelease(version: string): boolean {
-  return /^0\.|-/.test(version);
-}
-
-/**
- * The footer's version string: `v<version>` for a stable release, `v<version>-<stamp>` while pre-1.0
- * or prerelease. The timestamp is an alpha/beta aid for telling two same-version builds apart, so it
- * drops itself the moment the version goes stable — no separate change needed at the 1.0 bump.
- */
-export function buildId(version: string, now: Date): string {
-  return isPrerelease(version) ? `v${version}-${buildStamp(now)}` : `v${version}`;
+export function buildId(version: string, ref: BuildRef): string {
+  if (!ref.sha) return `v${version}`;
+  return `v${version} (${ref.sha}${ref.dirty ? "-dirty" : ""})`;
 }

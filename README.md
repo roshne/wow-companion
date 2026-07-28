@@ -217,8 +217,10 @@ src-tauri/               # Rust backend
 
 ## Status
 
-**Beta (0.5.0).** Compiles end-to-end (`cargo check` + `tsc` + `vite build` all pass), the test suite
+**Stable (1.0.0).** Compiles end-to-end (`cargo check` + `tsc` + `vite build` all pass), the test suite
 is green, and every tab is live. Response bodies for the endpoints the app uses are now typed by the
 vendored client — captured upstream and re-vendored through the `battlenet-api-research` pipeline — so
 data flows through the typed client end-to-end. Exercising the live data views needs your Battle.net
-credentials (see above). Heading to **1.0** after a couple of clean installs.
+credentials (see above). The footer reads `v1.0.0 (9502198)` — the version plus the commit it was
+built from, so two builds of the same version are still tellable apart (`-dirty` marks a build made
+with uncommitted changes).

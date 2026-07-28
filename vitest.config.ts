@@ -30,10 +30,11 @@ export default defineConfig({
       {
         plugins: [react()],
         // Mirror vite.config.ts's build-time constant with a fixed value so components that read it
-        // render under test (the real stamp is injected only by the Tauri/Vite build). Must live on
-        // the project — a root-level `define` isn't inherited by `test.projects`.
+        // render under test (the real build ID is injected only by the Tauri/Vite build). Shaped like
+        // a real one — `v<version> (<sha>)` — so the fixture can't drift from the format. Must live on
+        // the project: a root-level `define` isn't inherited by `test.projects`.
         define: {
-          __BUILD_ID__: JSON.stringify("v0.0.0-test"),
+          __BUILD_ID__: JSON.stringify("v0.0.0 (0000000)"),
         },
         test: {
           name: "components",
