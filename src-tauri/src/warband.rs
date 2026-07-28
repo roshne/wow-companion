@@ -5,10 +5,64 @@
 // The file is loaded in an embedded Lua VM with an empty environment, so the
 // chunk can only assign the data table (it has no access to any Lua stdlib).
 
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 use mlua::{Lua, LuaSerdeExt, Table, Value};
 use serde::{Deserialize, Serialize};
+
+/// One currency held by a character, from `characters[name].currency`.
+///
+/// Keyed by the addon's own field name (`HeroDawncrest`, `CofferKeyShard`, …) because the saved
+/// data carries **no currency ids** — the ids live only in the addon's Lua field definitions, so
+/// mapping a key to the vendored static-data bundle (which *is* id-keyed) belongs to the consumer,
+/// not here. `gold` is not in this list: it's promoted to `WarbandCharacter::gold`.
+///
+/// The addon stores two shapes — a bare quantity, or a table with weekly-cap detail — so everything
+/// past `quantity` is optional and absent for the bare form.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WarbandCurrency {
+    pub key: String,
+    pub quantity: i64,
+    /// Earned this week (or this season, for the currencies capped season-wide).
+    pub earned: Option<i64>,
+    pub max: Option<i64>,
+    pub weekly_max: Option<i64>,
+    pub capped: Option<bool>,
+}
+
+/// One week of warband wealth, from `warband.week` (the open week) or `warband.history` (closed).
+///
+/// One struct for both because they differ only in which fields are present: an open week carries
+/// `baseline`, a closed one carries `ending` and `made`.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WarbandWeek {
+    /// Server-time of the weekly reset this week began at.
+    pub start: Option<i64>,
+    /// Total warband wealth (copper) when the week opened.
+    pub baseline: Option<i64>,
+    /// Total warband wealth (copper) when the week closed.
+    pub ending: Option<i64>,
+    /// `ending - baseline`; may be negative.
+    pub made: Option<i64>,
+}
+
+/// Account-wide wealth, from `WarbandeerCharDB.warband`. The warband bank is shared across the
+/// account, so the addon stores it once at the DB top level rather than per character.
+///
+/// Deliberately raw: the addon's own total ("bank gold plus every character's last-known gold") is
+/// left to the consumer to derive, so this type reports only what's on disk. All amounts are copper.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WarbandWealth {
+    pub bank_gold: Option<i64>,
+    /// The currently-open week.
+    pub week: Option<WarbandWeek>,
+    /// Closed weeks, oldest first.
+    pub history: Vec<WarbandWeek>,
+}
 
 /// One character extracted from `WarbandeerCharDB.characters[name]`. Most fields are
 /// optional — not every alt has every field populated.
@@ -31,15 +85,23 @@ pub struct WarbandCharacter {
     pub profession_secondary: Option<String>,
     pub guild: Option<String>,
     pub faction: Option<String>,
+    /// This character's own gold in copper (`currency.gold`), promoted out of the currency map
+    /// because it's money rather than a catalogued currency and has no static-data entry.
+    pub gold: Option<i64>,
+    /// Every other currency the addon recorded, sorted by key so the payload is stable across
+    /// reads (the underlying Lua table has no order).
+    pub currencies: Vec<WarbandCurrency>,
 }
 
-/// Result of a warband read: which account/file it came from, and the characters.
+/// Result of a warband read: which account/file it came from, the characters, and account-wide wealth.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WarbandData {
     pub account: String,
     pub source: String,
     pub characters: Vec<WarbandCharacter>,
+    /// `None` when the file predates the addon's account-wide wealth tracking (its schema v8).
+    pub wealth: Option<WarbandWealth>,
 }
 
 // --- Raw deserialize model -------------------------------------------------
@@ -69,6 +131,7 @@ struct RawCharacter {
     ilvl: Option<f64>,
     basic: Option<RawBasic>,
     equipment: Option<RawEquipment>,
+    currency: Option<HashMap<String, RawCurrency>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -101,6 +164,48 @@ struct RawEquipment {
     ilvl: Option<f64>,
 }
 
+/// A single `currency` cell. The addon writes either a bare quantity or a detail table, and a cell
+/// left over from an older addon version can be the *other* shape than the current code writes
+/// (`NebulousVoidcore` is the documented case), so both are accepted.
+///
+/// `Unknown` is the safety net and the reason this can't regress the existing read: variants are
+/// tried in order, and `IgnoredAny` accepts anything at all. Without it, one unexpected cell would
+/// fail the whole character's `from_value` and make a previously-visible character disappear.
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum RawCurrency {
+    Amount(f64),
+    Detail(RawCurrencyDetail),
+    Unknown(serde::de::IgnoredAny),
+}
+
+#[derive(Debug, Deserialize)]
+struct RawCurrencyDetail {
+    quantity: Option<f64>,
+    earned: Option<f64>,
+    max: Option<f64>,
+    #[serde(rename = "weeklyMax")]
+    weekly_max: Option<f64>,
+    capped: Option<bool>,
+}
+
+/// `WarbandeerCharDB.warband` — account-wide, so it sits beside `characters` rather than inside it.
+#[derive(Debug, Deserialize)]
+struct RawWarband {
+    #[serde(rename = "bankGold")]
+    bank_gold: Option<f64>,
+    week: Option<RawWeek>,
+    history: Option<Vec<RawWeek>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RawWeek {
+    start: Option<f64>,
+    baseline: Option<f64>,
+    ending: Option<f64>,
+    made: Option<f64>,
+}
+
 /// Fold a deserialized `RawCharacter` into the flat public payload, applying the
 /// fallbacks the file shape doesn't encode and casting numerics to `i64` here — at
 /// the payload edge — rather than at deserialize time.
@@ -117,7 +222,10 @@ fn build_character(name_key: String, raw: RawCharacter) -> WarbandCharacter {
         ilvl,
         basic,
         equipment,
+        currency,
     } = raw;
+
+    let (gold, currencies) = split_currency(currency);
 
     let (level, spec, professions) = match basic {
         Some(b) => (b.level, b.specialization, b.professions),
@@ -153,11 +261,94 @@ fn build_character(name_key: String, raw: RawCharacter) -> WarbandCharacter {
         profession_secondary,
         guild,
         faction: is_alliance.map(|a| if a { "Alliance" } else { "Horde" }.to_string()),
+        gold,
+        currencies,
     }
 }
 
-/// Parse a `Warbandeer_Characters.lua` body into a name-sorted character list.
-fn parse_from_lua(content: &str) -> Result<Vec<WarbandCharacter>, String> {
+/// Split a raw `currency` table into this character's gold and its other currencies.
+///
+/// `gold` is lifted out because it's money, not a catalogued currency — it has no static-data entry
+/// and every consumer wants it on its own. Cells that parsed as `Unknown` are dropped here rather
+/// than rendered as a zero, so an unreadable cell reads as "not captured" rather than "you have none".
+/// The result is sorted by key: the source is a Lua hash table, so iteration order is arbitrary and
+/// an unsorted payload would reshuffle between reads.
+fn split_currency(
+    currency: Option<HashMap<String, RawCurrency>>,
+) -> (Option<i64>, Vec<WarbandCurrency>) {
+    let Some(map) = currency else {
+        return (None, Vec::new());
+    };
+
+    let mut gold = None;
+    let mut out = Vec::new();
+    for (key, value) in map {
+        let detail = match value {
+            RawCurrency::Amount(n) => {
+                if key == "gold" {
+                    gold = Some(n as i64);
+                    continue;
+                }
+                WarbandCurrency {
+                    key,
+                    quantity: n as i64,
+                    earned: None,
+                    max: None,
+                    weekly_max: None,
+                    capped: None,
+                }
+            }
+            RawCurrency::Detail(d) => {
+                // `gold` is only ever a bare number, so a table under that key is unexpected; skip it
+                // rather than inventing a gold figure out of a `quantity` that may not mean gold.
+                if key == "gold" {
+                    continue;
+                }
+                WarbandCurrency {
+                    key,
+                    quantity: d.quantity.unwrap_or(0.0) as i64,
+                    earned: d.earned.map(|n| n as i64),
+                    max: d.max.map(|n| n as i64),
+                    weekly_max: d.weekly_max.map(|n| n as i64),
+                    capped: d.capped,
+                }
+            }
+            RawCurrency::Unknown(_) => continue,
+        };
+        out.push(detail);
+    }
+    out.sort_by(|a, b| a.key.cmp(&b.key));
+    (gold, out)
+}
+
+/// Fold the raw `warband` table into the public wealth payload.
+fn build_wealth(raw: RawWarband) -> WarbandWealth {
+    let week = |w: RawWeek| WarbandWeek {
+        start: w.start.map(|n| n as i64),
+        baseline: w.baseline.map(|n| n as i64),
+        ending: w.ending.map(|n| n as i64),
+        made: w.made.map(|n| n as i64),
+    };
+    WarbandWealth {
+        bank_gold: raw.bank_gold.map(|n| n as i64),
+        week: raw.week.map(week),
+        history: raw
+            .history
+            .unwrap_or_default()
+            .into_iter()
+            .map(week)
+            .collect(),
+    }
+}
+
+/// Everything read out of one SavedVariables file, before the account/source labels are attached.
+struct ParsedDb {
+    characters: Vec<WarbandCharacter>,
+    wealth: Option<WarbandWealth>,
+}
+
+/// Parse a `Warbandeer_Characters.lua` body into a name-sorted character list plus account-wide wealth.
+fn parse_from_lua(content: &str) -> Result<ParsedDb, String> {
     let lua = Lua::new();
     // Load the chunk into an *empty* environment: the file can assign its data table
     // but can't reach any Lua stdlib. The global is then read back from that env,
@@ -186,7 +377,20 @@ fn parse_from_lua(content: &str) -> Result<Vec<WarbandCharacter>, String> {
         }
     }
     out.sort_by_key(|c| c.name.to_lowercase());
-    Ok(out)
+
+    // Account-wide wealth is best-effort on purpose: it arrived in the addon's schema v8, so an
+    // older file simply has no `warband` key, and a shape we don't recognise must not cost us the
+    // characters we just read. Both cases collapse to `None`.
+    let wealth = db
+        .get::<Value>("warband")
+        .ok()
+        .and_then(|v| lua.from_value::<RawWarband>(v).ok())
+        .map(build_wealth);
+
+    Ok(ParsedDb {
+        characters: out,
+        wealth,
+    })
 }
 
 /// Candidate WoW install roots to probe (registry-free — covers the common cases).
@@ -255,11 +459,12 @@ pub fn get_warband() -> Result<WarbandData, String> {
     let (path, account) = find_sv_file()?;
     let content =
         std::fs::read_to_string(&path).map_err(|e| format!("reading {}: {e}", path.display()))?;
-    let characters = parse_from_lua(&content)?;
+    let parsed = parse_from_lua(&content)?;
     Ok(WarbandData {
         account,
         source: path.to_string_lossy().into_owned(),
-        characters,
+        characters: parsed.characters,
+        wealth: parsed.wealth,
     })
 }
 
@@ -290,6 +495,20 @@ mod tests {
                 },
               },
               ["equipment"] = { ["ilvl"] = 278 },
+              ["currency"] = {
+                ["gold"] = 12345678,
+                -- bare-number form
+                ["RestoredCofferKey"] = 3,
+                -- detail form, weekly-capped
+                ["HeroDawncrest"] = {
+                  ["quantity"] = 40, ["earned"] = 12, ["max"] = 100, ["capped"] = false,
+                },
+                -- detail form carrying both a hold cap and a weekly earn cap
+                ["ShardOfDundun"] = {
+                  ["quantity"] = 8, ["earned"] = 8, ["max"] = 8, ["weeklyMax"] = 8,
+                  ["capped"] = true,
+                },
+              },
             },
             ["Altchar"] = {
               ["realm"] = "Altrealm",
@@ -297,12 +516,20 @@ mod tests {
               ["basic"] = { ["level"] = 60 },
             },
           },
+          ["warband"] = {
+            ["bankGold"] = 987654321,
+            ["week"] = { ["start"] = 1770000000, ["baseline"] = 900000000 },
+            ["history"] = {
+              { ["start"] = 1768800000, ["ending"] = 880000000, ["made"] = -20000000 },
+              { ["start"] = 1769400000, ["ending"] = 900000000, ["made"] = 20000000 },
+            },
+          },
         }
     "#;
 
     #[test]
     fn parses_and_sorts_characters() {
-        let chars = parse_from_lua(FIXTURE).expect("parse");
+        let chars = parse_from_lua(FIXTURE).expect("parse").characters;
         assert_eq!(chars.len(), 2);
         // Sorted case-insensitively by name: Altchar before Testchar.
         assert_eq!(chars[0].name, "Altchar");
@@ -311,7 +538,7 @@ mod tests {
 
     #[test]
     fn extracts_nested_fields() {
-        let chars = parse_from_lua(FIXTURE).expect("parse");
+        let chars = parse_from_lua(FIXTURE).expect("parse").characters;
         let k = chars
             .iter()
             .find(|c| c.name == "Testchar")
@@ -330,7 +557,7 @@ mod tests {
 
     #[test]
     fn falls_back_to_key_name_and_top_level_ilvl() {
-        let chars = parse_from_lua(FIXTURE).expect("parse");
+        let chars = parse_from_lua(FIXTURE).expect("parse").characters;
         let b = chars
             .iter()
             .find(|c| c.realm == "Altrealm")
@@ -354,7 +581,7 @@ mod tests {
 
     #[test]
     fn skips_malformed_character_entry() {
-        let chars = parse_from_lua(FIXTURE_MALFORMED).expect("parse");
+        let chars = parse_from_lua(FIXTURE_MALFORMED).expect("parse").characters;
         // The broken entry is dropped, not fatal; the well-formed one survives.
         assert_eq!(chars.len(), 1);
         assert_eq!(chars[0].name, "Good");
@@ -377,11 +604,155 @@ mod tests {
 
     #[test]
     fn keeps_fractional_numeric_the_old_i64_path_dropped() {
-        let chars = parse_from_lua(FIXTURE_FRACTIONAL).expect("parse");
+        let chars = parse_from_lua(FIXTURE_FRACTIONAL)
+            .expect("parse")
+            .characters;
         assert_eq!(chars.len(), 1);
         // 445.5 deserializes as f64 and casts to 445 at the payload edge.
         assert_eq!(chars[0].item_level, Some(445));
         assert_eq!(chars[0].level, Some(70));
+    }
+
+    fn currency<'a>(c: &'a WarbandCharacter, key: &str) -> &'a WarbandCurrency {
+        c.currencies
+            .iter()
+            .find(|x| x.key == key)
+            .unwrap_or_else(|| panic!("currency {key} on {}", c.name))
+    }
+
+    #[test]
+    fn promotes_gold_out_of_the_currency_table() {
+        let chars = parse_from_lua(FIXTURE).expect("parse").characters;
+        let k = chars
+            .iter()
+            .find(|c| c.name == "Testchar")
+            .expect("Testchar");
+        assert_eq!(k.gold, Some(12345678));
+        // ...and `gold` is not left in the currency list, where it isn't a catalogued currency.
+        assert!(k.currencies.iter().all(|c| c.key != "gold"));
+    }
+
+    #[test]
+    fn reads_both_currency_shapes() {
+        let chars = parse_from_lua(FIXTURE).expect("parse").characters;
+        let k = chars
+            .iter()
+            .find(|c| c.name == "Testchar")
+            .expect("Testchar");
+
+        // Bare number: a quantity and nothing else.
+        let bare = currency(k, "RestoredCofferKey");
+        assert_eq!(bare.quantity, 3);
+        assert_eq!(bare.earned, None);
+        assert_eq!(bare.max, None);
+        assert_eq!(bare.capped, None);
+
+        // Detail table: the cap fields come through.
+        let hero = currency(k, "HeroDawncrest");
+        assert_eq!(hero.quantity, 40);
+        assert_eq!(hero.earned, Some(12));
+        assert_eq!(hero.max, Some(100));
+        assert_eq!(hero.capped, Some(false));
+
+        // Both cap kinds on one currency.
+        let shard = currency(k, "ShardOfDundun");
+        assert_eq!(shard.max, Some(8));
+        assert_eq!(shard.weekly_max, Some(8));
+        assert_eq!(shard.capped, Some(true));
+    }
+
+    #[test]
+    fn sorts_currencies_by_key_so_the_payload_is_stable() {
+        // The source is a Lua hash table with arbitrary iteration order, so without an explicit
+        // sort the list would reshuffle between reads.
+        let chars = parse_from_lua(FIXTURE).expect("parse").characters;
+        let k = chars
+            .iter()
+            .find(|c| c.name == "Testchar")
+            .expect("Testchar");
+        let keys: Vec<&str> = k.currencies.iter().map(|c| c.key.as_str()).collect();
+        assert_eq!(
+            keys,
+            ["HeroDawncrest", "RestoredCofferKey", "ShardOfDundun"]
+        );
+    }
+
+    #[test]
+    fn character_without_a_currency_table_reads_as_absent_not_zero() {
+        let chars = parse_from_lua(FIXTURE).expect("parse").characters;
+        let alt = chars.iter().find(|c| c.name == "Altchar").expect("Altchar");
+        assert_eq!(alt.gold, None);
+        assert!(alt.currencies.is_empty());
+    }
+
+    #[test]
+    fn reads_account_wide_wealth() {
+        let wealth = parse_from_lua(FIXTURE)
+            .expect("parse")
+            .wealth
+            .expect("warband wealth");
+        assert_eq!(wealth.bank_gold, Some(987654321));
+
+        let week = wealth.week.expect("open week");
+        assert_eq!(week.start, Some(1770000000));
+        assert_eq!(week.baseline, Some(900000000));
+        // An open week has no closing figures yet.
+        assert_eq!(week.ending, None);
+        assert_eq!(week.made, None);
+
+        // History is oldest-first, and a losing week keeps its negative.
+        assert_eq!(wealth.history.len(), 2);
+        assert_eq!(wealth.history[0].made, Some(-20000000));
+        assert_eq!(wealth.history[1].made, Some(20000000));
+    }
+
+    // A file from before the addon's schema v8, which introduced account-wide wealth tracking.
+    const FIXTURE_NO_WARBAND: &str = r#"
+        WarbandeerCharDB = {
+          ["characters"] = { ["Solo"] = { ["realm"] = "Testrealm" } },
+        }
+    "#;
+
+    #[test]
+    fn missing_warband_table_yields_no_wealth_rather_than_failing() {
+        let parsed = parse_from_lua(FIXTURE_NO_WARBAND).expect("parse");
+        assert!(parsed.wealth.is_none());
+        assert_eq!(parsed.characters.len(), 1);
+    }
+
+    // The regression this whole design guards against: an unreadable currency cell must not take
+    // the character down with it. Before the `Unknown` catch-all, one bad cell would fail the
+    // character's `from_value` and silently remove them from the warband.
+    const FIXTURE_ODD_CURRENCY: &str = r#"
+        WarbandeerCharDB = {
+          ["characters"] = {
+            ["Odd"] = {
+              ["realm"] = "Testrealm",
+              ["currency"] = {
+                ["gold"] = 500,
+                ["Weird"] = "not-a-currency",
+                ["HeroDawncrest"] = { ["quantity"] = 7 },
+              },
+            },
+          },
+          ["warband"] = "not-a-table",
+        }
+    "#;
+
+    #[test]
+    fn an_unreadable_currency_cell_is_skipped_not_fatal() {
+        let parsed = parse_from_lua(FIXTURE_ODD_CURRENCY).expect("parse");
+        // The character survives...
+        assert_eq!(parsed.characters.len(), 1);
+        let c = &parsed.characters[0];
+        // ...with the cells that *were* readable intact.
+        assert_eq!(c.gold, Some(500));
+        assert_eq!(currency(c, "HeroDawncrest").quantity, 7);
+        // The unreadable cell is dropped rather than reported as a zero balance, which would read
+        // as "you have none" instead of "this wasn't captured".
+        assert!(c.currencies.iter().all(|x| x.key != "Weird"));
+        // A malformed `warband` likewise costs only the wealth, not the read.
+        assert!(parsed.wealth.is_none());
     }
 
     /// Opt-in smoke test against a real install: reads the live SavedVariables via the
@@ -400,10 +771,18 @@ mod tests {
             data.source
         );
         assert!(!data.characters.is_empty());
+        eprintln!("LIVE wealth: {:?}", data.wealth);
         for c in data.characters.iter().take(3) {
             eprintln!(
-                "  {} - {} | lvl {:?} | ilvl {:?} | {:?} | {:?}",
-                c.name, c.realm, c.level, c.item_level, c.class_key, c.spec
+                "  {} - {} | lvl {:?} | ilvl {:?} | {:?} | {:?} | gold {:?} | {} currencies",
+                c.name,
+                c.realm,
+                c.level,
+                c.item_level,
+                c.class_key,
+                c.spec,
+                c.gold,
+                c.currencies.len()
             );
         }
     }

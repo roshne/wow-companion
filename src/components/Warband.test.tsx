@@ -32,12 +32,19 @@ function character(overrides: Partial<WarbandCharacter> = {}): WarbandCharacter 
     professionSecondary: null,
     guild: null,
     faction: null,
+    gold: null,
+    currencies: [],
     ...overrides,
   };
 }
 
 function warband(characters: WarbandCharacter[], account = "TESTACCOUNT"): WarbandData {
-  return { account, source: "C:/wow/SavedVariables/Warbandeer_Characters.lua", characters };
+  return {
+    account,
+    source: "C:/wow/SavedVariables/Warbandeer_Characters.lua",
+    characters,
+    wealth: null,
+  };
 }
 
 describe("Warband", () => {
