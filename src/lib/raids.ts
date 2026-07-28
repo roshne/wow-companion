@@ -29,16 +29,40 @@ export interface RaidProgress {
 }
 
 /**
- * Distill the most recent expansion's raid progress. Blizzard returns `expansions` oldest-first, so the
- * last entry is current; its instances become rows carrying each engaged difficulty's completed/total
- * boss counts (missing counts default to 0). Instances and modes without a name are dropped. Returns
- * `null` when there are no expansions — the caller renders an empty state.
+ * Pick the newest expansion, by id where the payload provides one.
+ *
+ * Blizzard documents `expansions` as oldest-first, and taking the last entry relied on that alone —
+ * a positional assumption whose failure mode is silent: a payload arriving in another order would
+ * show a *stale* tier that still looks entirely plausible. Ids are monotonic and don't depend on
+ * ordering, so they're preferred; position remains the fallback for a payload that omits them.
+ *
+ * A new raid inside the *current* expansion (a patch tier like 12.1's) needs nothing here — it
+ * arrives as another instance under the same expansion.
+ */
+function newestExpansion<T extends { expansion?: { id?: number } }>(expansions: T[]): T {
+  let best = expansions[expansions.length - 1];
+  let bestId = best?.expansion?.id;
+  for (const candidate of expansions) {
+    const id = candidate.expansion?.id;
+    if (typeof id !== "number") continue;
+    if (typeof bestId !== "number" || id > bestId) {
+      best = candidate;
+      bestId = id;
+    }
+  }
+  return best;
+}
+
+/**
+ * Distill the most recent expansion's raid progress: its instances become rows carrying each engaged
+ * difficulty's completed/total boss counts (missing counts default to 0). Instances and modes without
+ * a name are dropped. Returns `null` when there are no expansions — the caller renders an empty state.
  */
 export function latestRaidProgress(data: CharacterRaids): RaidProgress | null {
   const expansions = data.expansions ?? [];
   if (expansions.length === 0) return null;
 
-  const latest = expansions[expansions.length - 1];
+  const latest = newestExpansion(expansions);
   const instances: RaidInstance[] = [];
   for (const inst of latest.instances ?? []) {
     const name = inst.instance?.name;

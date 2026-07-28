@@ -184,6 +184,36 @@ describe("CharacterDetail", () => {
     expect(screen.getByText("#987")).toBeInTheDocument();
   });
 
+  it("says there is no Mythic+ activity between seasons rather than rendering a blank panel", async () => {
+    // The season-rollover case: a new season starts, the character has no runs in it yet, and
+    // Blizzard returns a document with neither a rating nor a current period.
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({ data: {}, response: mockResponse(200) });
+    renderWithClient(
+      <CharacterDetail bnet={bnet} realmSlug="r" characterName="n" summary={summary} />,
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "M+" }));
+    await waitFor(() => expect(screen.getByText("No Mythic+ activity.")).toBeInTheDocument());
+  });
+
+  it("still shows the period when a new season has begun but no rating exists yet", async () => {
+    // The first days of a season: the period rolls over before any run sets a rating.
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue({
+      data: { current_period: { period: { id: 1001 } } },
+      response: mockResponse(200),
+    });
+    renderWithClient(
+      <CharacterDetail bnet={bnet} realmSlug="r" characterName="n" summary={summary} />,
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "M+" }));
+    await waitFor(() => expect(screen.getByText("#1001")).toBeInTheDocument());
+    // The rating cell degrades to a dash rather than showing 0, which would read as a real score.
+    expect(screen.getByText("—")).toBeInTheDocument();
+  });
+
   it("shows an error when Mythic+ fails to load", async () => {
     const { bnet, get } = mockBnet();
     get.mockResolvedValue({ data: undefined, response: mockResponse(500) });

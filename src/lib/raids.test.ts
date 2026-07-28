@@ -4,6 +4,65 @@ import { latestRaidProgress } from "./raids";
 
 const doc = (v: unknown): CharacterRaids => v as CharacterRaids;
 
+describe("season rollover", () => {
+  it("picks the highest expansion id even when the payload isn't oldest-first", () => {
+    // Relying on array position fails silently: the wrong tier still renders as a plausible one.
+    const data = doc({
+      expansions: [
+        {
+          expansion: { name: "Midnight", id: 500 },
+          instances: [{ instance: { name: "Venomous Abyss" }, modes: [] }],
+        },
+        {
+          expansion: { name: "The War Within", id: 499 },
+          instances: [{ instance: { name: "Nerub-ar Palace" }, modes: [] }],
+        },
+      ],
+    });
+    expect(latestRaidProgress(data)?.expansionName).toBe("Midnight");
+  });
+
+  it("still falls back to the last entry when no expansion carries an id", () => {
+    const data = doc({
+      expansions: [
+        { expansion: { name: "The War Within" }, instances: [] },
+        { expansion: { name: "Midnight" }, instances: [] },
+      ],
+    });
+    expect(latestRaidProgress(data)?.expansionName).toBe("Midnight");
+  });
+
+  it("shows a new patch tier without any change, since it joins the current expansion", () => {
+    // 12.1's raid is a Midnight instance, not a new expansion — the shape this already handles.
+    const data = doc({
+      expansions: [
+        {
+          expansion: { name: "Midnight", id: 500 },
+          instances: [
+            { instance: { name: "The Voidforge" }, modes: [] },
+            {
+              instance: { name: "Venomous Abyss" },
+              modes: [
+                {
+                  difficulty: { name: "Mythic" },
+                  progress: { completed_count: 2, total_count: 8 },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const progress = latestRaidProgress(data);
+    expect(progress?.instances.map((i) => i.name)).toEqual(["The Voidforge", "Venomous Abyss"]);
+    expect(progress?.instances[1].modes[0]).toEqual({
+      difficulty: "Mythic",
+      completed: 2,
+      total: 8,
+    });
+  });
+});
+
 describe("latestRaidProgress", () => {
   it("uses the last (most recent) expansion's instances with per-difficulty boss counts", () => {
     const data = doc({
