@@ -44,6 +44,63 @@ export interface WarbandWealth {
   history: WarbandWeek[];
 }
 
+/** One of the three slots on a Great Vault track. */
+export interface VaultSlot {
+  /** Activities needed to unlock this slot (raid 2/4/6, Mythic+ 1/4/8). */
+  threshold: number;
+  progress: number;
+  complete: boolean;
+  /** Reward item level — resolved for unlocked slots only, so a locked slot has none. */
+  ilvl: number | null;
+}
+
+/**
+ * The Great Vault's three tracks, each ordered by ascending threshold.
+ *
+ * A track with no progress is an empty array rather than absent, so all three render alike. The
+ * "not recorded at all" case is the absence of `WarbandWeekly.vault` itself.
+ */
+export interface VaultTracks {
+  raid: VaultSlot[];
+  dungeons: VaultSlot[];
+  world: VaultSlot[];
+}
+
+/**
+ * One instance lockout, flattened out of the addon's `locks[instanceId][difficultyId]` nesting into
+ * a record carrying both ids, sorted by instance then difficulty.
+ */
+export interface InstanceLock {
+  instanceId: number;
+  difficultyId: number;
+  name: string | null;
+  /** Bosses defeated this lockout. */
+  progress: number | null;
+  /** Total encounters in the instance. */
+  total: number | null;
+  /** Server-time epoch the lockout resets at. */
+  reset: number | null;
+  extended: boolean | null;
+  isRaid: boolean | null;
+}
+
+/**
+ * A character's weekly-reset state. Every field is independently optional: the Great Vault is
+ * max-level only, and a character may hold no keystone.
+ */
+export interface WarbandWeekly {
+  vault: VaultTracks | null;
+  /** A vault reward sitting uncollected — the actionable signal a vault board exists to surface. */
+  hasUnclaimedVault: boolean | null;
+  /** Level of the Mythic+ keystone the character is holding. */
+  keystoneLevel: number | null;
+  /** Challenge-map id of that keystone's dungeon; resolve the name via the API. */
+  keystoneMap: number | null;
+  /** Mythic+ runs completed this week, against the vault's top threshold. */
+  dungeonsDone: number | null;
+  dungeonsMax: number | null;
+}
+
 /** One character from the Warbandeer addon export (via the `get_warband` Rust command). */
 export interface WarbandCharacter {
   name: string;
@@ -64,6 +121,10 @@ export interface WarbandCharacter {
   gold: number | null;
   /** Every other recorded currency, sorted by key so the list is stable across reads. */
   currencies: WarbandCurrency[];
+  /** Weekly-reset state. Null when the addon recorded none — normal for a levelling character. */
+  weekly: WarbandWeekly | null;
+  /** Instance lockouts, sorted by instance then difficulty so the list is stable across reads. */
+  locks: InstanceLock[];
 }
 
 /** The full warband export: account label, source path, the character list, and account-wide wealth. */

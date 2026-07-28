@@ -64,6 +64,71 @@ pub struct WarbandWealth {
     pub history: Vec<WarbandWeek>,
 }
 
+/// One of the three slots on a Great Vault track.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VaultSlot {
+    /// Activities needed to unlock this slot (raid 2/4/6, Mythic+ 1/4/8).
+    pub threshold: i64,
+    pub progress: i64,
+    pub complete: bool,
+    /// Reward item level — the addon resolves it for unlocked slots only, so a locked slot has none.
+    pub ilvl: Option<i64>,
+}
+
+/// The Great Vault's three tracks, each an ordered list of slots (ascending threshold).
+///
+/// A track is empty rather than absent when the character has no progress on it, so callers can
+/// render three consistent rows without distinguishing "no progress" from "not recorded" — that
+/// distinction lives one level up, on whether `WarbandWeekly::vault` is present at all.
+#[derive(Debug, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct VaultTracks {
+    pub raid: Vec<VaultSlot>,
+    pub dungeons: Vec<VaultSlot>,
+    pub world: Vec<VaultSlot>,
+}
+
+/// One instance lockout, flattened out of the addon's `locks[instanceId][difficultyId]` nesting.
+///
+/// Flattened deliberately: the ids are the addon's map keys, and a nested map would reach the
+/// frontend as JSON object keys with no guaranteed order. A sorted list of records keeps the payload
+/// stable and lets a consumer group it however it likes.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InstanceLock {
+    pub instance_id: i64,
+    pub difficulty_id: i64,
+    pub name: Option<String>,
+    /// Bosses defeated this lockout.
+    pub progress: Option<i64>,
+    /// Total encounters in the instance.
+    pub total: Option<i64>,
+    /// Server-time epoch the lockout resets at.
+    pub reset: Option<i64>,
+    pub extended: Option<bool>,
+    pub is_raid: Option<bool>,
+}
+
+/// A character's weekly-reset state, from the addon's `weeklies` broker.
+///
+/// Every field is independently optional: the Great Vault is a max-level feature, a character can
+/// hold no keystone, and a levelling alt has none of it.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WarbandWeekly {
+    pub vault: Option<VaultTracks>,
+    /// A vault reward sitting uncollected — the actionable signal a vault board exists to surface.
+    pub has_unclaimed_vault: Option<bool>,
+    /// Level of the Mythic+ keystone the character is holding.
+    pub keystone_level: Option<i64>,
+    /// Challenge-map id of that keystone's dungeon; the name is resolved by the consumer.
+    pub keystone_map: Option<i64>,
+    /// Mythic+ runs completed this week, against the vault's top threshold.
+    pub dungeons_done: Option<i64>,
+    pub dungeons_max: Option<i64>,
+}
+
 /// One character extracted from `WarbandeerCharDB.characters[name]`. Most fields are
 /// optional — not every alt has every field populated.
 #[derive(Debug, Serialize)]
@@ -91,6 +156,11 @@ pub struct WarbandCharacter {
     /// Every other currency the addon recorded, sorted by key so the payload is stable across
     /// reads (the underlying Lua table has no order).
     pub currencies: Vec<WarbandCurrency>,
+    /// Weekly-reset state (Great Vault, keystone, M+ count). `None` when the addon recorded none —
+    /// which for a levelling character is the normal case, not an error.
+    pub weekly: Option<WarbandWeekly>,
+    /// Instance lockouts, sorted by instance then difficulty so the payload is stable across reads.
+    pub locks: Vec<InstanceLock>,
 }
 
 /// Result of a warband read: which account/file it came from, the characters, and account-wide wealth.
@@ -132,6 +202,7 @@ struct RawCharacter {
     basic: Option<RawBasic>,
     equipment: Option<RawEquipment>,
     currency: Option<HashMap<String, RawCurrency>>,
+    // `weeklies` and `instances` are deliberately absent here — see `sub_tree` in the parse loop.
 }
 
 #[derive(Debug, Deserialize)]
@@ -189,6 +260,87 @@ struct RawCurrencyDetail {
     capped: Option<bool>,
 }
 
+/// Deserialize `T`, or absorb any shape that doesn't fit instead of failing the enclosing struct.
+///
+/// The same guarantee `RawCurrency::Unknown` gives, generalised — used for leaf values inside a
+/// sub-tree, so one bad entry costs only itself.
+///
+/// **Only for string-keyed tables.** Being untagged, this buffers through `deserialize_any`, and
+/// mlua renders a Lua table whose keys are a contiguous run from 1 as a *sequence* — so a map with
+/// integer keys wrapped in this fails to deserialize as a map. That's why the `instances` tree is
+/// read via `sub_tree` rather than wrapped here.
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum Maybe<T> {
+    Parsed(T),
+    Unknown(serde::de::IgnoredAny),
+}
+
+impl<T> Maybe<T> {
+    fn parsed(self) -> Option<T> {
+        match self {
+            Maybe::Parsed(v) => Some(v),
+            Maybe::Unknown(_) => None,
+        }
+    }
+}
+
+/// `characters[name].weeklies` — the addon's weekly-reset broker.
+#[derive(Debug, Deserialize)]
+struct RawWeeklies {
+    #[serde(rename = "vaultSlots")]
+    vault_slots: Option<Maybe<RawVaultTracks>>,
+    #[serde(rename = "hasUnclaimedVault")]
+    has_unclaimed_vault: Option<bool>,
+    keystone: Option<f64>,
+    #[serde(rename = "keystoneMap")]
+    keystone_map: Option<f64>,
+    dungeons: Option<Maybe<RawDungeons>>,
+}
+
+/// Track names are capitalised in the addon's own output (`SummarizeVaultSlots` keys).
+#[derive(Debug, Deserialize)]
+struct RawVaultTracks {
+    #[serde(rename = "Raid")]
+    raid: Option<Vec<RawVaultSlot>>,
+    #[serde(rename = "Dungeons")]
+    dungeons: Option<Vec<RawVaultSlot>>,
+    #[serde(rename = "World")]
+    world: Option<Vec<RawVaultSlot>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RawVaultSlot {
+    threshold: Option<f64>,
+    progress: Option<f64>,
+    complete: Option<bool>,
+    ilvl: Option<f64>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RawDungeons {
+    done: Option<f64>,
+    max: Option<f64>,
+}
+
+/// `characters[name].instances` — the lockout broker.
+#[derive(Debug, Deserialize)]
+struct RawInstances {
+    /// Keyed `[instanceId][difficultyId]`. Both levels are integer Lua keys.
+    locks: Option<HashMap<i64, HashMap<i64, Maybe<RawLock>>>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RawLock {
+    name: Option<String>,
+    total: Option<f64>,
+    progress: Option<f64>,
+    reset: Option<f64>,
+    extended: Option<bool>,
+    #[serde(rename = "isRaid")]
+    is_raid: Option<bool>,
+}
+
 /// `WarbandeerCharDB.warband` — account-wide, so it sits beside `characters` rather than inside it.
 #[derive(Debug, Deserialize)]
 struct RawWarband {
@@ -209,7 +361,12 @@ struct RawWeek {
 /// Fold a deserialized `RawCharacter` into the flat public payload, applying the
 /// fallbacks the file shape doesn't encode and casting numerics to `i64` here — at
 /// the payload edge — rather than at deserialize time.
-fn build_character(name_key: String, raw: RawCharacter) -> WarbandCharacter {
+fn build_character(
+    name_key: String,
+    raw: RawCharacter,
+    weekly: Option<WarbandWeekly>,
+    locks: Vec<InstanceLock>,
+) -> WarbandCharacter {
     let RawCharacter {
         name,
         realm,
@@ -263,7 +420,84 @@ fn build_character(name_key: String, raw: RawCharacter) -> WarbandCharacter {
         faction: is_alliance.map(|a| if a { "Alliance" } else { "Horde" }.to_string()),
         gold,
         currencies,
+        weekly,
+        locks,
     }
+}
+
+/// Read one optional sub-table off a character entry, yielding `None` if it's missing or a shape we
+/// don't recognise. Isolating each sub-tree this way is what keeps a malformed section from costing
+/// the whole character, since `from_value` over a character entry is all-or-nothing.
+fn sub_tree<T: serde::de::DeserializeOwned>(lua: &Lua, entry: &Table, key: &str) -> Option<T> {
+    entry
+        .get::<Value>(key)
+        .ok()
+        .and_then(|v| lua.from_value::<T>(v).ok())
+}
+
+/// Fold the raw `weeklies` broker into the public weekly payload.
+fn build_weekly(raw: RawWeeklies) -> WarbandWeekly {
+    let slot = |s: RawVaultSlot| VaultSlot {
+        threshold: s.threshold.unwrap_or(0.0) as i64,
+        progress: s.progress.unwrap_or(0.0) as i64,
+        // The addon writes `complete`, but derive it when absent rather than defaulting to false —
+        // a slot reported as locked when it's actually earned is the one wrong answer that matters.
+        complete: s
+            .complete
+            .unwrap_or_else(|| s.progress.unwrap_or(0.0) >= s.threshold.unwrap_or(f64::INFINITY)),
+        ilvl: s.ilvl.map(|n| n as i64),
+    };
+    let track =
+        |t: Option<Vec<RawVaultSlot>>| t.unwrap_or_default().into_iter().map(slot).collect();
+
+    let vault = raw
+        .vault_slots
+        .and_then(Maybe::parsed)
+        .map(|t| VaultTracks {
+            raid: track(t.raid),
+            dungeons: track(t.dungeons),
+            world: track(t.world),
+        });
+    let dungeons = raw.dungeons.and_then(Maybe::parsed);
+
+    WarbandWeekly {
+        vault,
+        has_unclaimed_vault: raw.has_unclaimed_vault,
+        keystone_level: raw.keystone.map(|n| n as i64),
+        keystone_map: raw.keystone_map.map(|n| n as i64),
+        dungeons_done: dungeons.as_ref().and_then(|d| d.done).map(|n| n as i64),
+        dungeons_max: dungeons.as_ref().and_then(|d| d.max).map(|n| n as i64),
+    }
+}
+
+/// Flatten `instances.locks[instanceId][difficultyId]` into a sorted list.
+///
+/// Sorted by instance then difficulty because the source is a pair of Lua hash tables whose
+/// iteration order is arbitrary — without this the list would reshuffle between reads.
+fn build_locks(instances: Option<RawInstances>) -> Vec<InstanceLock> {
+    let Some(locks) = instances.and_then(|i| i.locks) else {
+        return Vec::new();
+    };
+
+    let mut out = Vec::new();
+    for (instance_id, by_difficulty) in locks {
+        for (difficulty_id, lock) in by_difficulty {
+            // An unreadable lock is skipped; the rest of the character's lockouts still come through.
+            let Some(lock) = lock.parsed() else { continue };
+            out.push(InstanceLock {
+                instance_id,
+                difficulty_id,
+                name: lock.name,
+                progress: lock.progress.map(|n| n as i64),
+                total: lock.total.map(|n| n as i64),
+                reset: lock.reset.map(|n| n as i64),
+                extended: lock.extended,
+                is_raid: lock.is_raid,
+            });
+        }
+    }
+    out.sort_by_key(|l| (l.instance_id, l.difficulty_id));
+    out
 }
 
 /// Split a raw `currency` table into this character's gold and its other currencies.
@@ -372,9 +606,21 @@ fn parse_from_lua(content: &str) -> Result<ParsedDb, String> {
     // and `from_value` failing on one malformed entry drops just that character
     // rather than failing the whole read.
     for (name_key, value) in characters.pairs::<String, Value>().flatten() {
-        if let Ok(raw) = lua.from_value::<RawCharacter>(value) {
-            out.push(build_character(name_key, raw));
-        }
+        let Ok(raw) = lua.from_value::<RawCharacter>(value.clone()) else {
+            continue;
+        };
+        // The `weeklies` and `instances` sub-trees are read separately rather than as fields of
+        // `RawCharacter`, for two reasons: a shape we don't recognise then costs only its own
+        // section instead of the whole character, and each deserializes directly (no untagged
+        // buffering), which is what lets `instances.locks` come through as an integer-keyed map.
+        let (weekly, locks) = match value.as_table() {
+            Some(t) => (
+                sub_tree::<RawWeeklies>(&lua, t, "weeklies").map(build_weekly),
+                build_locks(sub_tree::<RawInstances>(&lua, t, "instances")),
+            ),
+            None => (None, Vec::new()),
+        };
+        out.push(build_character(name_key, raw, weekly, locks));
     }
     out.sort_by_key(|c| c.name.to_lowercase());
 
@@ -507,6 +753,43 @@ mod tests {
                 ["ShardOfDundun"] = {
                   ["quantity"] = 8, ["earned"] = 8, ["max"] = 8, ["weeklyMax"] = 8,
                   ["capped"] = true,
+                },
+              },
+              ["weeklies"] = {
+                ["hasUnclaimedVault"] = true,
+                ["keystone"] = 12,
+                ["keystoneMap"] = 507,
+                ["dungeons"] = { ["done"] = 5, ["max"] = 8 },
+                ["vaultSlots"] = {
+                  ["Raid"] = {
+                    { ["threshold"] = 2, ["progress"] = 6, ["complete"] = true, ["ilvl"] = 723 },
+                    { ["threshold"] = 4, ["progress"] = 6, ["complete"] = true, ["ilvl"] = 726 },
+                    { ["threshold"] = 6, ["progress"] = 6, ["complete"] = true, ["ilvl"] = 730 },
+                  },
+                  ["Dungeons"] = {
+                    { ["threshold"] = 1, ["progress"] = 5, ["complete"] = true, ["ilvl"] = 720 },
+                    { ["threshold"] = 4, ["progress"] = 5, ["complete"] = true, ["ilvl"] = 723 },
+                    -- locked: no reward ilvl resolved
+                    { ["threshold"] = 8, ["progress"] = 5, ["complete"] = false },
+                  },
+                },
+              },
+              -- Integer-keyed both levels: [instanceID][difficultyID]
+              ["instances"] = {
+                ["locks"] = {
+                  [2810] = {
+                    [16] = {
+                      ["name"] = "Venomous Abyss", ["total"] = 8, ["progress"] = 3,
+                      ["reset"] = 1785769200, ["extended"] = false, ["isRaid"] = true,
+                    },
+                    [14] = {
+                      ["name"] = "Venomous Abyss", ["total"] = 8, ["progress"] = 8,
+                      ["reset"] = 1785769200, ["isRaid"] = true,
+                    },
+                  },
+                  [2649] = {
+                    [23] = { ["name"] = "Altar of Fangs", ["total"] = 4, ["progress"] = 4 },
+                  },
                 },
               },
             },
@@ -755,6 +1038,199 @@ mod tests {
         assert!(parsed.wealth.is_none());
     }
 
+    #[test]
+    fn reads_the_great_vault_tracks() {
+        let chars = parse_from_lua(FIXTURE).expect("parse").characters;
+        let k = chars
+            .iter()
+            .find(|c| c.name == "Testchar")
+            .expect("Testchar");
+        let weekly = k.weekly.as_ref().expect("weekly");
+        let vault = weekly.vault.as_ref().expect("vault");
+
+        assert_eq!(vault.raid.len(), 3);
+        assert_eq!(vault.raid[0].threshold, 2);
+        assert_eq!(vault.raid[0].progress, 6);
+        assert!(vault.raid[0].complete);
+        assert_eq!(vault.raid[2].ilvl, Some(730));
+
+        // A locked slot has no resolved reward item level — the addon only fills it once unlocked.
+        let locked = &vault.dungeons[2];
+        assert!(!locked.complete);
+        assert_eq!(locked.ilvl, None);
+
+        // A track with no progress comes back empty rather than absent, so all three render alike.
+        assert!(vault.world.is_empty());
+    }
+
+    #[test]
+    fn reads_the_keystone_and_weekly_counters() {
+        let chars = parse_from_lua(FIXTURE).expect("parse").characters;
+        let weekly = chars
+            .iter()
+            .find(|c| c.name == "Testchar")
+            .expect("Testchar")
+            .weekly
+            .as_ref()
+            .expect("weekly");
+        assert_eq!(weekly.has_unclaimed_vault, Some(true));
+        assert_eq!(weekly.keystone_level, Some(12));
+        assert_eq!(weekly.keystone_map, Some(507));
+        assert_eq!(weekly.dungeons_done, Some(5));
+        assert_eq!(weekly.dungeons_max, Some(8));
+    }
+
+    #[test]
+    fn flattens_integer_keyed_lockouts_and_sorts_them() {
+        // The addon nests locks under two levels of *integer* Lua keys; this asserts both survive
+        // the round trip as ids rather than being lost or reordered.
+        let chars = parse_from_lua(FIXTURE).expect("parse").characters;
+        let locks = &chars
+            .iter()
+            .find(|c| c.name == "Testchar")
+            .expect("Testchar")
+            .locks;
+
+        assert_eq!(locks.len(), 3);
+        // Sorted by instance then difficulty: 2649/23, then 2810/14, then 2810/16.
+        let ids: Vec<(i64, i64)> = locks
+            .iter()
+            .map(|l| (l.instance_id, l.difficulty_id))
+            .collect();
+        assert_eq!(ids, [(2649, 23), (2810, 14), (2810, 16)]);
+
+        let mythic = locks
+            .iter()
+            .find(|l| l.instance_id == 2810 && l.difficulty_id == 16)
+            .expect("mythic lock");
+        assert_eq!(mythic.name.as_deref(), Some("Venomous Abyss"));
+        assert_eq!(mythic.progress, Some(3));
+        assert_eq!(mythic.total, Some(8));
+        assert_eq!(mythic.reset, Some(1785769200));
+        assert_eq!(mythic.is_raid, Some(true));
+        // Absent optional flags stay absent rather than becoming false.
+        let normal = locks
+            .iter()
+            .find(|l| l.difficulty_id == 14)
+            .expect("normal lock");
+        assert_eq!(normal.extended, None);
+    }
+
+    #[test]
+    fn a_levelling_character_has_no_weekly_state() {
+        // The Great Vault is max-level only, so absent weekly data is the normal case for an alt.
+        let chars = parse_from_lua(FIXTURE).expect("parse").characters;
+        let alt = chars.iter().find(|c| c.name == "Altchar").expect("Altchar");
+        assert!(alt.weekly.is_none());
+        assert!(alt.locks.is_empty());
+    }
+
+    // `weeklies` and one lock entry are the wrong shape entirely.
+    const FIXTURE_ODD_WEEKLY: &str = r#"
+        WarbandeerCharDB = {
+          ["characters"] = {
+            ["Odd"] = {
+              ["realm"] = "Testrealm",
+              ["weeklies"] = "not-a-table",
+              ["instances"] = {
+                ["locks"] = {
+                  [1] = {
+                    [16] = "not-a-lock",
+                    [14] = { ["name"] = "Readable", ["progress"] = 1 },
+                  },
+                },
+              },
+            },
+          },
+        }
+    "#;
+
+    #[test]
+    fn a_malformed_weekly_or_lock_costs_only_itself() {
+        // The guarantee that makes this change safe to add: per-character deserialization drops the
+        // whole character on failure, so an unrecognised sub-table must be absorbed, not propagated.
+        let chars = parse_from_lua(FIXTURE_ODD_WEEKLY)
+            .expect("parse")
+            .characters;
+        assert_eq!(chars.len(), 1);
+        let c = &chars[0];
+        assert_eq!(c.name, "Odd");
+        // The bad `weeklies` costs the weekly section only.
+        assert!(c.weekly.is_none());
+        // The bad lock is skipped; its readable sibling survives.
+        assert_eq!(c.locks.len(), 1);
+        assert_eq!(c.locks[0].difficulty_id, 14);
+        assert_eq!(c.locks[0].name.as_deref(), Some("Readable"));
+    }
+
+    // Instance ids that form a contiguous run from 1 — the shape mlua renders as a *sequence*
+    // rather than a map under `deserialize_any`.
+    const FIXTURE_ARRAY_LIKE_LOCKS: &str = r#"
+        WarbandeerCharDB = {
+          ["characters"] = {
+            ["Seq"] = {
+              ["realm"] = "Testrealm",
+              ["instances"] = { ["locks"] = {
+                [1] = { [14] = { ["name"] = "One" } },
+                [2] = { [14] = { ["name"] = "Two" } },
+              } },
+            },
+          },
+        }
+    "#;
+
+    #[test]
+    fn reads_locks_whose_instance_ids_look_like_an_array() {
+        // Regression guard: routing this tree through an untagged wrapper made mlua expose it as a
+        // sequence, `HashMap<i64, _>` then failed, and every lockout vanished silently. Real
+        // instance ids are large enough never to trigger it, so only a test like this catches it.
+        let chars = parse_from_lua(FIXTURE_ARRAY_LIKE_LOCKS)
+            .expect("parse")
+            .characters;
+        let locks = &chars[0].locks;
+        assert_eq!(locks.len(), 2);
+        assert_eq!(locks[0].instance_id, 1);
+        assert_eq!(locks[1].instance_id, 2);
+        assert_eq!(locks[0].name.as_deref(), Some("One"));
+    }
+
+    // A vault slot with no explicit `complete` flag.
+    const FIXTURE_VAULT_NO_FLAG: &str = r#"
+        WarbandeerCharDB = {
+          ["characters"] = {
+            ["Derive"] = {
+              ["realm"] = "Testrealm",
+              ["weeklies"] = { ["vaultSlots"] = { ["Raid"] = {
+                { ["threshold"] = 2, ["progress"] = 4 },
+                { ["threshold"] = 6, ["progress"] = 4 },
+              } } },
+            },
+          },
+        }
+    "#;
+
+    #[test]
+    fn derives_slot_completion_when_the_flag_is_absent() {
+        // Defaulting a missing flag to false would report an earned slot as locked — the one wrong
+        // answer that actually costs the player something.
+        let chars = parse_from_lua(FIXTURE_VAULT_NO_FLAG)
+            .expect("parse")
+            .characters;
+        let raid = &chars[0]
+            .weekly
+            .as_ref()
+            .expect("weekly")
+            .vault
+            .as_ref()
+            .expect("vault")
+            .raid;
+        assert!(raid[0].complete, "4 progress meets the threshold of 2");
+        assert!(
+            !raid[1].complete,
+            "4 progress is short of the threshold of 6"
+        );
+    }
+
     /// Opt-in smoke test against a real install: reads the live SavedVariables via the
     /// full `get_warband` pipeline. Runs only when `WARBAND_TEST_LIVE` is set, so it
     /// never runs in CI (no WoW install there).
@@ -772,17 +1248,48 @@ mod tests {
         );
         assert!(!data.characters.is_empty());
         eprintln!("LIVE wealth: {:?}", data.wealth);
+        let with_vault = data
+            .characters
+            .iter()
+            .filter(|c| c.weekly.as_ref().is_some_and(|w| w.vault.is_some()))
+            .count();
+        let unclaimed = data
+            .characters
+            .iter()
+            .filter(|c| {
+                c.weekly
+                    .as_ref()
+                    .and_then(|w| w.has_unclaimed_vault)
+                    .unwrap_or(false)
+            })
+            .count();
+        let locked = data
+            .characters
+            .iter()
+            .filter(|c| !c.locks.is_empty())
+            .count();
+        let slots: usize = data
+            .characters
+            .iter()
+            .filter_map(|c| c.weekly.as_ref()?.vault.as_ref())
+            .map(|v| v.raid.len() + v.dungeons.len() + v.world.len())
+            .sum();
+        eprintln!(
+            "LIVE weekly: {with_vault} with vault data ({slots} slots total), \
+             {unclaimed} with an unclaimed reward, {locked} with lockouts"
+        );
         for c in data.characters.iter().take(3) {
             eprintln!(
-                "  {} - {} | lvl {:?} | ilvl {:?} | {:?} | {:?} | gold {:?} | {} currencies",
+                "  {} - {} | lvl {:?} | ilvl {:?} | {:?} | gold {:?} | {} currencies | key {:?} | {} locks",
                 c.name,
                 c.realm,
                 c.level,
                 c.item_level,
                 c.class_key,
-                c.spec,
                 c.gold,
-                c.currencies.len()
+                c.currencies.len(),
+                c.weekly.as_ref().and_then(|w| w.keystone_level),
+                c.locks.len()
             );
         }
     }
