@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   assertConsistent,
@@ -5,6 +7,7 @@ import {
   extractVersion,
   isValidVersion,
   readAllVersions,
+  repoRoot,
   setVersion,
   versionFromTag,
   VERSION_FILES,
@@ -152,5 +155,21 @@ describe("the committed repo files", () => {
     // Reads the real package.json / tauri.conf.json / Cargo.toml / Cargo.lock. This is the local
     // mirror of the CI drift guard: a hand-edit to one file's version fails the test suite.
     expect(() => assertConsistent(readAllVersions())).not.toThrow();
+  });
+
+  it("the README's Status section names that same version", () => {
+    // The README isn't a `bump` target — it's prose — so its stated version is the one place that
+    // silently goes stale. It did: the Status section still read "Beta (0.5.0)" going into 1.0.
+    const readme = readFileSync(join(repoRoot, "README.md"), "utf8");
+    // Split rather than one lookahead regex: Status is the last section, and an `m`-flagged `$` would
+    // end the match at the first line break instead of at end-of-file.
+    const afterHeading = readme.split(/^## Status\r?\n/m)[1];
+    expect(afterHeading, "README has no '## Status' section").toBeDefined();
+    const section = afterHeading.split(/\r?\n## /)[0];
+
+    // The first full semver in the section — "1.0" in prose like "pre-1.0" has too few parts to match.
+    const stated = /\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/.exec(section);
+    expect(stated, "README's Status section states no version").not.toBeNull();
+    expect(stated[0]).toBe(assertConsistent(readAllVersions()));
   });
 });
