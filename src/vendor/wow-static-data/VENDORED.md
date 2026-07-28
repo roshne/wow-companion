@@ -62,8 +62,8 @@ Two upstream details this depends on:
 
 ```jsonc
 {
-  "build": "12.0.7.68453",     // client build the data came from
-  "buildDate": "2026-07-06",
+  "build": "12.0.7.68887",     // client build the data came from
+  "buildDate": "2026-07-23",
   "currencies": {
     "1792": {
       "name": "Honor",
@@ -71,9 +71,21 @@ Two upstream details this depends on:
       "maxQty": 15000,                      // 0 = uncapped
       "quality": 3
     }
+  },
+  "achievements": {
+    "62386": {
+      "name": "Light Up the Night",
+      "icon": "inv_12_dualityphoenix_lightvoid_explosion",
+      "points": 40
+    }
   }
 }
 ```
+
+`achievements` first appeared in build `12.0.7.68887` and is **not consumed here** — achievement
+names and icons resolve through the REST client in `src/lib/achievements.ts`, which the Game Data
+API does cover. It is vendored as published rather than trimmed, so this file stays a faithful copy
+of the release asset.
 
 `icon` is `null` for the majority of rows — roughly 916 of 1,490 currencies carry no icon in
 DB2 at all. That is expected, not a fetch failure; render a fallback rather than treating it
