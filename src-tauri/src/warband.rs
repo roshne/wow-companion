@@ -150,6 +150,12 @@ pub struct WarbandCharacter {
     pub profession_secondary: Option<String>,
     pub guild: Option<String>,
     pub faction: Option<String>,
+    /// Server time of the last completed scan of this character (the addon's `lastRefresh`).
+    ///
+    /// The freshness anchor for everything else here: SavedVariables is only written when the game
+    /// writes it, so comparing this against the current weekly reset is what distinguishes "this
+    /// character did nothing this week" from "this character hasn't been played since the reset".
+    pub last_refresh: Option<i64>,
     /// This character's own gold in copper (`currency.gold`), promoted out of the currency map
     /// because it's money rather than a catalogued currency and has no static-data entry.
     pub gold: Option<i64>,
@@ -198,6 +204,8 @@ struct RawCharacter {
     #[serde(rename = "isAlliance")]
     is_alliance: Option<bool>,
     guild: Option<String>,
+    #[serde(rename = "lastRefresh")]
+    last_refresh: Option<f64>,
     ilvl: Option<f64>,
     basic: Option<RawBasic>,
     equipment: Option<RawEquipment>,
@@ -376,6 +384,7 @@ fn build_character(
         class_name,
         is_alliance,
         guild,
+        last_refresh,
         ilvl,
         basic,
         equipment,
@@ -418,6 +427,7 @@ fn build_character(
         profession_secondary,
         guild,
         faction: is_alliance.map(|a| if a { "Alliance" } else { "Horde" }.to_string()),
+        last_refresh: last_refresh.map(|n| n as i64),
         gold,
         currencies,
         weekly,
@@ -731,6 +741,7 @@ mod tests {
               ["className"] = "Death Knight",
               ["isAlliance"] = true,
               ["guild"] = "Test Guild",
+              ["lastRefresh"] = 1785200000,
               ["ilvl"] = 644,
               ["basic"] = {
                 ["level"] = 90,
@@ -836,6 +847,8 @@ mod tests {
         assert_eq!(k.profession_primary.as_deref(), Some("Blacksmithing"));
         assert_eq!(k.profession_secondary.as_deref(), Some("Mining"));
         assert_eq!(k.faction.as_deref(), Some("Alliance"));
+        // The freshness anchor: without it there's no way to tell an empty week from an unplayed one.
+        assert_eq!(k.last_refresh, Some(1785200000));
     }
 
     #[test]
@@ -1278,6 +1291,15 @@ mod tests {
             "LIVE weekly: {with_vault} with vault data ({slots} slots total), \
              {unclaimed} with an unclaimed reward, {locked} with lockouts"
         );
+        // The vault board derives its level cap from the warband's own highest character rather than
+        // hardcoding one; this reports what that resolves to on real data.
+        let cap = data.characters.iter().filter_map(|c| c.level).max();
+        let at_cap = data
+            .characters
+            .iter()
+            .filter(|c| c.level.is_some() && c.level == cap)
+            .count();
+        eprintln!("LIVE levels: cap {cap:?}, {at_cap} character(s) at it");
         for c in data.characters.iter().take(3) {
             eprintln!(
                 "  {} - {} | lvl {:?} | ilvl {:?} | {:?} | gold {:?} | {} currencies | key {:?} | {} locks",
