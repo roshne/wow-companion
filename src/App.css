@@ -1346,3 +1346,25 @@ button.doll-slot:focus-visible {
   white-space: pre-wrap;
   word-break: break-all;
 }
+
+/* Great Vault board: three tracks of three slots as pips, plus a chip for an uncollected reward.
+   Pips differ by shape (filled vs hollow) as well as colour, so the unlocked/locked distinction
+   survives without colour vision; the row-level aria-label carries the count for screen readers. */
+.vault-pip {
+  color: var(--muted);
+  letter-spacing: 0.15em;
+  font-size: 0.95rem;
+}
+.vault-pip-on {
+  color: var(--up);
+}
+.vault-badge {
+  display: inline-block;
+  padding: 0 0.35rem;
+  border: 1px solid var(--up);
+  border-radius: 999px;
+  color: var(--up);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}

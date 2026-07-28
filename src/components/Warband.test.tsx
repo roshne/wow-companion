@@ -32,6 +32,7 @@ function character(overrides: Partial<WarbandCharacter> = {}): WarbandCharacter 
     professionSecondary: null,
     guild: null,
     faction: null,
+    lastRefresh: null,
     gold: null,
     currencies: [],
     weekly: null,

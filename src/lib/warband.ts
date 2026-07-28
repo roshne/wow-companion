@@ -117,6 +117,14 @@ export interface WarbandCharacter {
   professionSecondary: string | null;
   guild: string | null;
   faction: string | null;
+  /**
+   * Server time of the last completed scan of this character.
+   *
+   * The freshness anchor: SavedVariables is written only when the game writes it, so comparing this
+   * against the current weekly reset is what separates "did nothing this week" from "hasn't been
+   * played since the reset".
+   */
+  lastRefresh: number | null;
   /** This character's own gold in **copper**, lifted out of the currency table. */
   gold: number | null;
   /** Every other recorded currency, sorted by key so the list is stable across reads. */

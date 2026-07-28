@@ -4,6 +4,7 @@ import type { Region } from "../vendor/battlenet-wow-client";
 import type { WarbandCharacter, WarbandData } from "../lib/warband";
 import { CLASS_COLORS } from "../lib/wow";
 import { WarbandGearBoard } from "./WarbandGearBoard";
+import { WarbandVaultBoard } from "./WarbandVaultBoard";
 
 const ROLE_LABEL: Record<string, string> = {
   TANK: "Tank",
@@ -45,9 +46,10 @@ export function Warband({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [sort, setSort] = useState<Sort>({ key: "itemLevel", dir: -1 });
-  // Roster (the default) vs. the warband-wide gear board. The board only mounts — and only then fetches
-  // every alt's equipment — when selected, so the fetch stays lazy.
-  const [view, setView] = useState<"roster" | "board">("roster");
+  // Roster (the default), the warband-wide gear board, or the Great Vault board. The gear board only
+  // mounts — and only then fetches every alt's equipment — when selected, so that fetch stays lazy.
+  // The vault board needs no fetch at all: it reads the same local export the roster already has.
+  const [view, setView] = useState<"roster" | "board" | "vault">("roster");
 
   async function load() {
     setBusy(true);
@@ -141,11 +143,22 @@ export function Warband({
           >
             Gear board
           </button>
+          <button
+            className={view === "vault" ? "" : "ghost"}
+            aria-pressed={view === "vault"}
+            onClick={() => setView("vault")}
+          >
+            Great Vault
+          </button>
         </div>
       )}
 
       {!error && view === "board" && data && data.characters.length > 0 && (
         <WarbandGearBoard characters={data.characters} region={region} />
+      )}
+
+      {!error && view === "vault" && data && data.characters.length > 0 && (
+        <WarbandVaultBoard data={data} />
       )}
 
       {!error && view === "roster" && rows.length > 0 && (
