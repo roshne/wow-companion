@@ -172,6 +172,45 @@ describe("buildCurrencyBoard", () => {
     expect(board.rows[0].cells.MythDawncrest.capKind).toBe("hold");
   });
 
+  it("treats the addon's zero cap as uncapped and falls through to the bundle's real one", () => {
+    // Found by running the app: the addon writes max: 0 for Dawncrests (Blizzard reports no weekly
+    // earn limit), which rendered as "11 / 0" and also masked the bundle's genuine hold cap of 100.
+    const board = buildCurrencyBoard(
+      data([
+        character({
+          currencies: [currency({ key: "HeroDawncrest", quantity: 11, earned: 0, max: 0 })],
+        }),
+      ]),
+    );
+    const cell = board.rows[0].cells.HeroDawncrest;
+    expect(cell.cap).toBe(100);
+    expect(cell.capKind).toBe("hold");
+  });
+
+  it("ignores a zero weekly cap in favour of a real hold cap", () => {
+    const board = buildCurrencyBoard(
+      data([
+        character({
+          currencies: [currency({ key: "Catalyst", quantity: 3, weeklyMax: 0, max: 8 })],
+        }),
+      ]),
+    );
+    expect(board.rows[0].cells.Catalyst.cap).toBe(8);
+    expect(board.rows[0].cells.Catalyst.capKind).toBe("hold");
+  });
+
+  it("reports no cap when both the addon's caps are zero and the bundle has none", () => {
+    const board = buildCurrencyBoard(
+      data([
+        character({
+          currencies: [currency({ key: "FieldAccolade", quantity: 516, max: 0, weeklyMax: 0 })],
+        }),
+      ]),
+    );
+    expect(board.rows[0].cells.FieldAccolade.cap).toBeNull();
+    expect(board.rows[0].cells.FieldAccolade.capKind).toBeNull();
+  });
+
   it("leaves an uncapped currency without a cap", () => {
     const board = buildCurrencyBoard(
       data([character({ currencies: [currency({ key: "FieldAccolade", quantity: 4 })] })]),

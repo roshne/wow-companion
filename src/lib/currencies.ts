@@ -120,11 +120,22 @@ export interface CurrencyBoard {
   weekStart: number | null;
 }
 
+/**
+ * A cap of zero means *uncapped*, in both sources — never "a cap of zero".
+ *
+ * The addon writes `max: 0` whenever the game reports no cap of that kind (Blizzard's
+ * `maxWeeklyQuantity` is 0 for a currency with no weekly earn limit). Treating that as a real value
+ * renders "11 / 0", and — because `??` only falls through on null/undefined — it also suppresses the
+ * bundle's genuine hold cap, so the one useful number is lost twice over.
+ */
+const positiveCap = (n: number | null | undefined): number | null =>
+  typeof n === "number" && n > 0 ? n : null;
+
 function cellOf(c: WarbandCurrency, resolved: ResolvedCurrency): CurrencyCell {
   // Weekly earn cap wins: it's the one that resets and therefore the one worth chasing this week.
-  const weekly = c.weeklyMax ?? null;
-  const hold = c.max ?? resolved.bundleMaxQty;
-  const cap = weekly ?? hold ?? null;
+  const weekly = positiveCap(c.weeklyMax);
+  const hold = positiveCap(c.max) ?? resolved.bundleMaxQty;
+  const cap = weekly ?? hold;
   return {
     quantity: c.quantity,
     earned: c.earned,
