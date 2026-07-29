@@ -71,7 +71,8 @@ export function mergeRoster(api: AccountCharacter[], addon: WarbandCharacter[]):
 
   const rows: RosterRow[] = api.map((a) => {
     const match =
-      byIdentity.get(identity(a.name, a.realmName)) ?? byIdentity.get(identity(a.name, a.realmSlug));
+      byIdentity.get(identity(a.name, a.realmName)) ??
+      byIdentity.get(identity(a.name, a.realmSlug));
     if (match) consumed.add(match);
     return {
       key: identity(a.name, a.realmName),

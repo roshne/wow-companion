@@ -24,12 +24,7 @@ const MINUTE = 60 * 1000;
  * Battle.net knows it has been revoked.
  */
 export type AccountErrorKind =
-  | "noGrant"
-  | "expired"
-  | "unauthorized"
-  | "http"
-  | "network"
-  | "parse";
+  "noGrant" | "expired" | "unauthorized" | "http" | "network" | "parse";
 
 /** A failed account read, carrying the kind so callers route on a value rather than on prose. */
 export class AccountError extends Error {
