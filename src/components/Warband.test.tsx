@@ -58,6 +58,47 @@ function warband(characters: WarbandCharacter[], account = "TESTACCOUNT"): Warba
   };
 }
 
+describe("Warband without Battle.net credentials", () => {
+  beforeEach(() => {
+    mockInvoke.mockReset();
+    onOpen.mockReset();
+  });
+
+  it("still renders the roster, which comes from the local addon export", async () => {
+    mockInvoke.mockResolvedValue(warband([character({ name: "Testchar", level: 90 })]));
+    render(<Warband onOpenCharacter={onOpen} region="us" hasCredentials={false} />);
+    await screen.findByText("Testchar");
+  });
+
+  it("renders character names as plain text, since the Character tab needs the API", async () => {
+    // Left as buttons they'd navigate to a tab that doesn't exist at the credentials gate.
+    mockInvoke.mockResolvedValue(warband([character({ name: "Testchar", realm: "Testrealm" })]));
+    render(<Warband onOpenCharacter={onOpen} region="us" hasCredentials={false} />);
+    await screen.findByText("Testchar");
+    expect(screen.queryByRole("button", { name: "Testchar" })).not.toBeInTheDocument();
+  });
+
+  it("says the gear board needs a connection rather than failing row by row", async () => {
+    mockInvoke.mockResolvedValue(warband([character({ name: "Testchar" })]));
+    render(<Warband onOpenCharacter={onOpen} region="us" hasCredentials={false} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Gear board" }));
+
+    expect(screen.getByText(/needs a Client ID \/ Secret/)).toBeInTheDocument();
+    expect(screen.queryByTestId("gear-board")).not.toBeInTheDocument();
+  });
+
+  it("keeps the addon-only views available", async () => {
+    // Great Vault, Currencies and Titles never touch the API — they must not be gated with it.
+    mockInvoke.mockResolvedValue(warband([character({ name: "Testchar", level: 90 })]));
+    render(<Warband onOpenCharacter={onOpen} region="us" hasCredentials={false} />);
+    await screen.findByText("Testchar");
+
+    for (const view of ["Great Vault", "Currencies", "Titles"]) {
+      expect(screen.getByRole("button", { name: view })).toBeEnabled();
+    }
+  });
+});
+
 describe("Warband", () => {
   beforeEach(() => {
     mockInvoke.mockReset();

@@ -40,11 +40,17 @@ function compare(a: WarbandCharacter, b: WarbandCharacter, key: SortKey): number
 export function Warband({
   onOpenCharacter,
   region,
+  hasCredentials = true,
 }: {
   /** Open a character's detail sheet — the roster row's name button calls this. */
   onOpenCharacter: (sel: { realm: string; characterName: string }) => void;
   /** The app's current region — the fallback for resolving each alt's region on the gear board. */
   region: Region;
+  /**
+   * Whether a Battle.net client is connected. This tab is reachable without one — the export is a
+   * local file — but the two views that call the API can't work, so they say so instead of failing.
+   */
+  hasCredentials?: boolean;
 }) {
   const [data, setData] = useState<WarbandData | null>(null);
   const [busy, setBusy] = useState(false);
@@ -186,9 +192,21 @@ export function Warband({
         </div>
       )}
 
-      {!error && view === "board" && data && data.characters.length > 0 && (
-        <WarbandGearBoard characters={data.characters} region={region} />
-      )}
+      {!error &&
+        view === "board" &&
+        data &&
+        data.characters.length > 0 &&
+        // The only view here that genuinely needs the API: it fetches every character's equipment.
+        // Without a client it would render a row per character, each failing separately.
+        (hasCredentials ? (
+          <WarbandGearBoard characters={data.characters} region={region} />
+        ) : (
+          <p className="muted">
+            The gear board reads each character&rsquo;s equipment from the Battle.net API, so it
+            needs a Client ID / Secret. Add one in Settings — the other views here come from the
+            addon and work without it.
+          </p>
+        ))}
 
       {!error && view === "vault" && data && data.characters.length > 0 && (
         <WarbandVaultBoard data={data} />
@@ -226,7 +244,9 @@ export function Warband({
                 return (
                   <tr key={c.guid ?? `${c.name}-${c.realm}`}>
                     <td style={{ whiteSpace: "nowrap" }}>
-                      {c.realm ? (
+                      {/* The name links to the Character tab, which is an API view — without a
+                          client there's nowhere to go, so it renders as plain text. */}
+                      {c.realm && hasCredentials ? (
                         <button
                           type="button"
                           className="rowlink"

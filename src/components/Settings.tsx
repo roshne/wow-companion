@@ -18,11 +18,21 @@ const REGIONS: Region[] = ["us", "eu", "kr", "tw"];
 export function Settings({
   region,
   onRegionChange,
+  hasCredentials,
+  onCredentialsSaved,
   onDisconnect,
   onClose,
 }: {
   region: Region;
   onRegionChange: (region: Region) => void;
+  /**
+   * Whether a client id/secret is stored. False at the credentials gate, where this dialog is the
+   * place credentials get *added* rather than replaced — so the form leads instead of hiding behind
+   * a disclosure, and there's nothing to disconnect.
+   */
+  hasCredentials: boolean;
+  /** Called after credentials are saved, so the gate can let the app through. */
+  onCredentialsSaved?: () => void;
   onDisconnect: () => void;
   onClose: () => void;
 }) {
@@ -63,6 +73,7 @@ export function Settings({
       // Collapse on success only: a failure keeps the editor open so the values can be corrected
       // rather than retyped from scratch.
       setEditing(false);
+      onCredentialsSaved?.();
     } catch (err) {
       setStatus(`Error: ${String(err)}`);
     }
@@ -126,15 +137,15 @@ export function Settings({
 
         <div className="settings-section">
           <h3 style={{ margin: "0 0 0.35rem" }}>Battle.net credentials</h3>
-          {/* Collapsed by default. Settings is only reachable once credentials exist — App routes
-              the empty case to the connect gate, which has its own form — so this one only ever
-              *replaces* a working pair. Showing two prefilled-looking fields by default invites
-              editing something that isn't broken. */}
-          {editing ? (
+          {/* Collapsed only when there's something to collapse. With credentials stored this form
+              merely *replaces* a working pair, and showing it by default invites editing something
+              that isn't broken. With none — this dialog is reachable from the credentials gate —
+              the form is the whole point, so it leads. */}
+          {editing || !hasCredentials ? (
             <form onSubmit={replaceCreds}>
               <p className="muted" style={{ margin: "0 0 0.35rem" }}>
-                Replace your Client ID / Secret. The secret is stored in your OS keychain — never in
-                the app.
+                {hasCredentials ? "Replace your" : "Add a"} Client ID / Secret. The secret is stored
+                in your OS keychain — never in the app.
               </p>
               <input
                 aria-label="Client ID"
@@ -150,9 +161,13 @@ export function Settings({
                 onChange={(e) => setClientSecret(e.currentTarget.value)}
               />
               <button type="submit">Save to keychain</button>
-              <button type="button" className="ghost" onClick={cancelEdit}>
-                Cancel
-              </button>
+              {/* No Cancel with nothing stored: there's no previous state to return to, and the
+                  form is the only way out of the gate. */}
+              {hasCredentials && (
+                <button type="button" className="ghost" onClick={cancelEdit}>
+                  Cancel
+                </button>
+              )}
             </form>
           ) : (
             <p className="muted" style={{ margin: "0 0 0.35rem" }}>
@@ -168,21 +183,32 @@ export function Settings({
             </p>
           )}
 
-          {!editing && (
+          {hasCredentials && !editing && (
             <button type="button" onClick={() => setEditing(true)}>
               Edit credentials
             </button>
           )}
           {/* Named for what it disconnects: the account section below has its own, and two buttons
-              called "Disconnect" in one dialog meaning different things is a trap. */}
-          <button type="button" className="ghost settings-disconnect" onClick={onDisconnect}>
-            Disconnect credentials
-          </button>
+              called "Disconnect" in one dialog meaning different things is a trap. Absent with
+              nothing stored — there'd be nothing to disconnect from. */}
+          {hasCredentials && (
+            <button type="button" className="ghost settings-disconnect" onClick={onDisconnect}>
+              Disconnect credentials
+            </button>
+          )}
         </div>
 
         <div className="settings-section">
           <h3 style={{ margin: "0 0 0.35rem" }}>Battle.net account</h3>
-          <AccountSection />
+          {hasCredentials ? (
+            <AccountSection />
+          ) : (
+            // Connecting an account exchanges a code using the client secret, so it can't work
+            // before one exists. Saying so beats a button that fails with a backend error.
+            <p className="muted" style={{ margin: 0 }}>
+              Add a Client ID / Secret above first — connecting an account uses them.
+            </p>
+          )}
         </div>
       </div>
     </div>
