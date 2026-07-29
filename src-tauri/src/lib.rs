@@ -10,10 +10,15 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use serde::Deserialize;
 use tauri::State;
 
+mod account_auth;
 mod warband;
 
 const KEYRING_SERVICE: &str = "wow-companion";
 const KEYRING_ACCOUNT: &str = "battlenet-oauth-client";
+/// The account-wide grant, stored **beside** the client credentials rather than replacing them.
+/// The two authorisations are independent: client credentials serve every data tab, this one only
+/// `/profile/user/wow*`, and losing either must not affect the other.
+const KEYRING_ACCOUNT_GRANT: &str = "battlenet-account-grant";
 const TOKEN_URL: &str = "https://oauth.battle.net/token";
 /// Refresh this many seconds before expiry to avoid using a token that dies mid-request.
 const EXPIRY_SKEW_SECS: u64 = 60;
@@ -43,6 +48,19 @@ fn now_secs() -> u64 {
 
 fn cred_entry() -> Result<keyring::Entry, String> {
     keyring::Entry::new(KEYRING_SERVICE, KEYRING_ACCOUNT).map_err(|e| e.to_string())
+}
+
+fn account_entry() -> Result<keyring::Entry, String> {
+    keyring::Entry::new(KEYRING_SERVICE, KEYRING_ACCOUNT_GRANT).map_err(|e| e.to_string())
+}
+
+/// Split a stored `"<access_token>\n<expires_at>"` account grant.
+///
+/// Kept as a pure function so the storage format is testable without a keychain.
+fn parse_stored_grant(payload: &str) -> Option<(&str, u64)> {
+    let (token, expiry) = payload.split_once('\n')?;
+    let expires_at = expiry.trim().parse::<u64>().ok()?;
+    (!token.is_empty()).then_some((token, expires_at))
 }
 
 /// Store the Battle.net client id/secret in the OS keychain (overwrites any existing pair).
@@ -147,6 +165,66 @@ async fn get_access_token(state: State<'_, AppState>) -> Result<String, String> 
     Ok(token)
 }
 
+/// Run the consent flow: open Battle.net in the system browser, wait for the loopback callback,
+/// exchange the code, and store the resulting token in the keychain.
+///
+/// Resolves only once the round trip finishes, so the UI can drive it with a single call and show a
+/// pending state meanwhile. The client secret is read here and never leaves Rust — the same rule the
+/// client-credentials path follows.
+#[tauri::command]
+async fn begin_account_login(app: tauri::AppHandle) -> Result<(), String> {
+    let payload = cred_entry()?
+        .get_password()
+        .map_err(|_| "No Battle.net credentials saved. Add them in the app first.".to_string())?;
+    let (client_id, client_secret) = parse_stored_credentials(&payload)?;
+
+    let state = account_auth::new_state()?;
+    let url = account_auth::authorize_url(client_id, &state);
+
+    // Bind the port *before* sending the browser anywhere: if the port is unavailable, failing here
+    // is far clearer than sending the user through a consent screen that then dead-ends.
+    let expected = state.clone();
+    let waiting =
+        tauri::async_runtime::spawn_blocking(move || account_auth::await_callback(&expected));
+
+    tauri_plugin_opener::OpenerExt::opener(&app)
+        .open_url(url, None::<&str>)
+        .map_err(|e| format!("could not open the browser: {e}"))?;
+
+    let code = waiting
+        .await
+        .map_err(|e| format!("callback listener stopped unexpectedly: {e}"))??;
+
+    let token = account_auth::exchange_code(client_id, client_secret, &code).await?;
+    let expires_at = now_secs() + token.expires_in;
+    account_entry()?
+        .set_password(&format!("{}\n{}", token.access_token, expires_at))
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Whether a usable account grant is stored.
+///
+/// Expiry counts as not-connected: Blizzard issues no refresh token, so a stale grant can only be
+/// replaced by consenting again, and reporting it as connected would strand the UI.
+#[tauri::command]
+fn has_account_grant() -> bool {
+    account_entry()
+        .and_then(|e| e.get_password().map_err(|err| err.to_string()))
+        .ok()
+        .and_then(|p| parse_stored_grant(&p).map(|(_, expires_at)| expires_at))
+        .is_some_and(|expires_at| now_secs() + EXPIRY_SKEW_SECS < expires_at)
+}
+
+/// Forget the account grant. Deliberately leaves the client credentials alone.
+#[tauri::command]
+fn clear_account_grant() -> Result<(), String> {
+    if let Ok(entry) = account_entry() {
+        let _ = entry.delete_credential();
+    }
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Keeps the pre-extraction override working now that the Bot Ops backend is the vendored
@@ -165,6 +243,9 @@ pub fn run() {
             has_credentials,
             clear_credentials,
             get_access_token,
+            begin_account_login,
+            has_account_grant,
+            clear_account_grant,
             warband::get_warband,
             bot_ops::commands::ops_config,
             bot_ops::commands::bot_status,
@@ -247,5 +328,34 @@ mod tests {
     #[test]
     fn parse_stored_credentials_rejects_a_blob_with_no_newline() {
         assert!(parse_stored_credentials("no-newline-here").is_err());
+    }
+
+    #[test]
+    fn parse_stored_grant_reads_the_token_and_its_absolute_expiry() {
+        assert_eq!(
+            parse_stored_grant("tok-abc\n1785200000"),
+            Some(("tok-abc", 1785200000))
+        );
+    }
+
+    #[test]
+    fn parse_stored_grant_rejects_anything_it_cannot_trust() {
+        // Each of these would otherwise be reported as a usable grant and strand the UI on a token
+        // that can't work — with no refresh path to recover through.
+        for payload in [
+            "tok-abc",               // no expiry at all
+            "tok-abc\nnot-a-number", // unparseable expiry
+            "\n1785200000",          // empty token
+            "",
+        ] {
+            assert_eq!(parse_stored_grant(payload), None, "payload: {payload:?}");
+        }
+    }
+
+    #[test]
+    fn the_account_grant_is_stored_separately_from_the_client_credentials() {
+        // The two authorisations are independent: disconnecting an account must not disturb the
+        // credentials every data tab depends on.
+        assert_ne!(KEYRING_ACCOUNT, KEYRING_ACCOUNT_GRANT);
     }
 }
