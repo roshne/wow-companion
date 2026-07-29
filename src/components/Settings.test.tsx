@@ -13,6 +13,7 @@ function renderSettings(over: Partial<Parameters<typeof Settings>[0]> = {}) {
   const props = {
     region: "us" as Region,
     onRegionChange: vi.fn(),
+    hasCredentials: true,
     onDisconnect: vi.fn(),
     onClose: vi.fn(),
     ...over,
@@ -134,6 +135,60 @@ describe("Settings", () => {
     expect(screen.getByPlaceholderText("Client ID")).toHaveValue("");
   });
 
+  describe("with no credentials stored (reachable from the gate)", () => {
+    const renderEmpty = (over = {}) => renderSettings({ hasCredentials: false, ...over });
+
+    it("leads with the form, since adding is the whole point here", () => {
+      renderEmpty();
+      // No disclosure to click through: there's nothing stored to protect from an accidental edit.
+      expect(screen.getByPlaceholderText("Client ID")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Edit credentials" })).not.toBeInTheDocument();
+      // Specific enough to distinguish the form's own copy from the account section's pointer to it.
+      expect(
+        screen.getByText(/Add a Client ID \/ Secret\. The secret is stored/),
+      ).toBeInTheDocument();
+    });
+
+    it("offers nothing to disconnect or cancel", () => {
+      renderEmpty();
+      // Both would be dead ends: no stored pair to drop, no previous state to return to.
+      expect(
+        screen.queryByRole("button", { name: "Disconnect credentials" }),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument();
+    });
+
+    it("tells the user to add credentials before connecting an account", async () => {
+      // begin_account_login exchanges a code using the client secret, so it can't work yet. Saying
+      // so beats a button that fails with a backend error.
+      renderEmpty();
+      expect(screen.getByText(/Add a Client ID \/ Secret above first/)).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Connect account" })).not.toBeInTheDocument();
+    });
+
+    it("reports a successful save so the gate can let the app through", async () => {
+      const onCredentialsSaved = vi.fn();
+      renderEmpty({ onCredentialsSaved });
+      fireEvent.change(screen.getByPlaceholderText("Client ID"), { target: { value: "id" } });
+      fireEvent.change(screen.getByPlaceholderText("Client Secret"), { target: { value: "sec" } });
+      fireEvent.click(screen.getByRole("button", { name: "Save to keychain" }));
+
+      await waitFor(() => expect(onCredentialsSaved).toHaveBeenCalledTimes(1));
+    });
+
+    it("does not report a failed save, so the gate stays put", async () => {
+      const onCredentialsSaved = vi.fn();
+      mockInvoke.mockImplementation((cmd: string) =>
+        cmd === "save_credentials" ? Promise.reject("nope") : Promise.resolve(undefined),
+      );
+      renderEmpty({ onCredentialsSaved });
+      fireEvent.click(screen.getByRole("button", { name: "Save to keychain" }));
+
+      expect(await screen.findByRole("status")).toHaveTextContent(/nope/);
+      expect(onCredentialsSaved).not.toHaveBeenCalled();
+    });
+  });
+
   it("offers to connect an account when none is connected", async () => {
     mockInvoke.mockImplementation((cmd: string) =>
       Promise.resolve(cmd === "has_account_grant" ? false : undefined),
@@ -242,7 +297,13 @@ describe("Settings", () => {
   it("closes on the close button, Escape, and a backdrop press", () => {
     const onClose = vi.fn();
     const { container } = render(
-      <Settings region="us" onRegionChange={() => {}} onDisconnect={() => {}} onClose={onClose} />,
+      <Settings
+        region="us"
+        onRegionChange={() => {}}
+        hasCredentials
+        onDisconnect={() => {}}
+        onClose={onClose}
+      />,
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Close" }));

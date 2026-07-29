@@ -14,6 +14,7 @@ import { CharacterLookup } from "./components/CharacterLookup";
 import { GuildLookup } from "./components/GuildLookup";
 import { AuctionHouse } from "./components/AuctionHouse";
 import { Warband } from "./components/Warband";
+import type { WarbandData } from "./lib/warband";
 import { Settings } from "./components/Settings";
 import { BotOps } from "./components/BotOps";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -33,9 +34,8 @@ const MAIN_TABS: TabSpec<Tab>[] = [
 ];
 
 const BOT_OPS_TAB: TabSpec<Tab> = { key: "botops", label: "Bot Ops" };
-
-/** The credentials gate's two views, shown only when ops mode lets an operator skip connecting. */
-const GATE_TABS: TabSpec<Tab>[] = [{ key: "token", label: "Connect" }, BOT_OPS_TAB];
+const CONNECT_TAB: TabSpec<Tab> = { key: "token", label: "Connect" };
+const WARBAND_TAB: TabSpec<Tab> = { key: "warband", label: "Warband" };
 
 function App() {
   const [hasCreds, setHasCreds] = useState<boolean | null>(null);
@@ -46,6 +46,8 @@ function App() {
   const [status, setStatus] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [ops, setOps] = useState<OpsTargetInfo[] | null>(null);
+  /** Whether the local Warbandeer export holds characters — only probed at the credentials gate. */
+  const [warbandLocal, setWarbandLocal] = useState(false);
   // A character to open on the Character tab (set when a Warband roster row is clicked); cleared
   // once CharacterLookup has consumed it, so it's a one-shot open.
   const [selectedCharacter, setSelectedCharacter] = useState<{
@@ -93,6 +95,22 @@ function App() {
       .then(setOps)
       .catch(() => setOps(null));
   }, []);
+
+  // Most of the Warband tab is local addon data and needs no Battle.net client at all, so it's
+  // offered at the credentials gate too. Probed only when there are no credentials — in the normal
+  // path the tab is always present — and offered only when the export actually holds characters,
+  // mirroring Bot Ops appearing only when an ops.json exists. An empty tab and a puzzle is worse
+  // than no tab.
+  useEffect(() => {
+    if (hasCreds !== false) return;
+    let cancelled = false;
+    invoke<WarbandData>("get_warband")
+      .then((d) => !cancelled && setWarbandLocal(d.characters.length > 0))
+      .catch(() => !cancelled && setWarbandLocal(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [hasCreds]);
 
   // A 401 from any data call means the stored secret is invalid/expired: clear it and route back to
   // the connect form so the user can reconnect, instead of failing silently.
@@ -143,24 +161,56 @@ function App() {
   }
 
   if (!hasCreds) {
-    // Bot Ops is independent of Battle.net creds — when ops mode is on, let the operator reach it
-    // without connecting. Otherwise the connect form is the whole view, as before.
-    const gateTab: Tab = opsTargets && tab === "botops" ? "botops" : "token";
+    // Neither Bot Ops nor most of Warband needs a Battle.net client, so both are reachable here.
+    // Each appears only when it has something to show: ops mode configured, local addon data found.
+    const gateTabs: TabSpec<Tab>[] = [
+      CONNECT_TAB,
+      ...(warbandLocal ? [WARBAND_TAB] : []),
+      ...(opsTargets ? [BOT_OPS_TAB] : []),
+    ];
+    const available = new Set(gateTabs.map((t) => t.key));
+    // Fall back to Connect if the selected tab isn't offered here (e.g. Auctions, or Warband before
+    // the probe resolves), so the gate can never render a panel for a tab that isn't in its list.
+    const gateTab: Tab = available.has(tab) ? tab : "token";
+    const showTabs = gateTabs.length > 1;
     return (
       <div className="container">
         <header className="appbar">
           <h1>WoW Companion</h1>
+          <div className="spacer" />
+          {/* Reachable here too: region and theme are worth having before connecting, and this is
+              where credentials get added when there are none. */}
+          <button className="ghost" onClick={() => setSettingsOpen(true)} aria-haspopup="dialog">
+            <span aria-hidden="true">⚙</span> Settings
+          </button>
         </header>
-        {opsTargets && (
-          <Tabs base={tabsBase} label="Views" tabs={GATE_TABS} active={gateTab} onSelect={setTab} />
+        {settingsOpen && (
+          <Settings
+            region={region}
+            onRegionChange={setRegion}
+            hasCredentials={false}
+            onCredentialsSaved={() => {
+              setSettingsOpen(false);
+              setHasCreds(true);
+            }}
+            onDisconnect={() => setSettingsOpen(false)}
+            onClose={() => setSettingsOpen(false)}
+          />
+        )}
+        {showTabs && (
+          <Tabs base={tabsBase} label="Views" tabs={gateTabs} active={gateTab} onSelect={setTab} />
         )}
         <main
-          id={opsTargets ? panelId(tabsBase) : undefined}
-          role={opsTargets ? "tabpanel" : undefined}
-          aria-labelledby={opsTargets ? tabId(tabsBase, gateTab) : undefined}
+          id={showTabs ? panelId(tabsBase) : undefined}
+          role={showTabs ? "tabpanel" : undefined}
+          aria-labelledby={showTabs ? tabId(tabsBase, gateTab) : undefined}
         >
           {opsTargets && gateTab === "botops" ? (
             <BotOps targets={opsTargets} />
+          ) : gateTab === "warband" ? (
+            // No credentials: the roster's character links and the gear board both need the API, so
+            // Warband renders them as unavailable rather than letting them fail row by row.
+            <Warband onOpenCharacter={openCharacter} region={region} hasCredentials={false} />
           ) : (
             <form
               className="card"
@@ -215,6 +265,7 @@ function App() {
         <Settings
           region={region}
           onRegionChange={setRegion}
+          hasCredentials
           onDisconnect={() => {
             setSettingsOpen(false);
             void clearCreds();

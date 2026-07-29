@@ -90,6 +90,79 @@ describe("App", () => {
     expect(screen.getByLabelText("Client Secret")).toBeInTheDocument();
   });
 
+  /** The gate: no credentials, with control over whether the local addon export has characters. */
+  function renderGate({ warbandCharacters = 0 }: { warbandCharacters?: number } = {}) {
+    mockInvoke.mockImplementation((cmd: string) => {
+      if (cmd === "has_credentials") return Promise.resolve(false);
+      if (cmd === "get_warband") {
+        return warbandCharacters > 0
+          ? Promise.resolve({
+              account: "TEST",
+              source: "C:/wow.lua",
+              characters: Array.from({ length: warbandCharacters }, (_, i) => ({
+                name: `Alt${i}`,
+                realm: "Testrealm",
+                guid: null,
+                classId: null,
+                classKey: null,
+                className: null,
+                level: 90,
+                itemLevel: null,
+                spec: null,
+                role: null,
+                professionPrimary: null,
+                professionSecondary: null,
+                guild: null,
+                faction: null,
+                lastRefresh: null,
+                gold: null,
+                currencies: [],
+                weekly: null,
+                locks: [],
+                titles: null,
+              })),
+              wealth: null,
+              titleCatalog: null,
+            })
+          : Promise.reject("no addon export found");
+      }
+      return Promise.resolve(undefined);
+    });
+    renderWithClient(<App />);
+  }
+
+  it("offers the Warband tab at the gate when local addon data exists", async () => {
+    // Most of that tab is a local file read and needs no Battle.net client at all.
+    renderGate({ warbandCharacters: 3 });
+    expect(await screen.findByRole("tab", { name: "Warband" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Connect" })).toBeInTheDocument();
+  });
+
+  it("omits the Warband tab at the gate when there is no addon data", async () => {
+    // An empty tab and a puzzle is worse than no tab.
+    renderGate({ warbandCharacters: 0 });
+    await screen.findByText(/Connect your Battle.net client/);
+    expect(screen.queryByRole("tab", { name: "Warband" })).not.toBeInTheDocument();
+    // With nothing else on offer, the tablist itself stays hidden.
+    expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+  });
+
+  it("renders the warband roster at the gate without any credentials", async () => {
+    renderGate({ warbandCharacters: 2 });
+    fireEvent.click(await screen.findByRole("tab", { name: "Warband" }));
+    expect(await screen.findByText("Alt0")).toBeInTheDocument();
+  });
+
+  it("reaches Settings from the gate, which is where credentials get added", async () => {
+    renderGate({ warbandCharacters: 1 });
+    fireEvent.click(await screen.findByRole("button", { name: /Settings/ }));
+
+    const dialog = await screen.findByRole("dialog", { name: "Settings" });
+    // The form leads here — there's nothing stored to hide behind a disclosure.
+    expect(within(dialog).getByPlaceholderText("Client ID")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText(/Region/)).toBeInTheDocument();
+  });
+
   it("renders the Guild tab in the nav once connected", async () => {
     renderWithClient(<App />);
     expect(await screen.findByRole("tab", { name: "Guild" })).toBeInTheDocument();
