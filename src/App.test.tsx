@@ -114,13 +114,15 @@ describe("App", () => {
     const dialog = await screen.findByRole("dialog", { name: "Settings" });
     expect(within(dialog).getByLabelText(/Region/)).toBeInTheDocument();
     expect(within(dialog).getByLabelText(/Theme/)).toBeInTheDocument();
-    expect(within(dialog).getByRole("button", { name: "Disconnect" })).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("button", { name: "Disconnect credentials" }),
+    ).toBeInTheDocument();
   });
 
   it("disconnects from the settings dialog", async () => {
     renderWithClient(<App />);
     fireEvent.click(await screen.findByRole("button", { name: "Settings" }));
-    fireEvent.click(screen.getByRole("button", { name: "Disconnect" }));
+    fireEvent.click(screen.getByRole("button", { name: "Disconnect credentials" }));
 
     await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith("clear_credentials"));
     await screen.findByText(/Connect your Battle.net client/);
