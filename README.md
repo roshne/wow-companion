@@ -200,8 +200,18 @@ tag → the release workflow drafts a GitHub Release) and signing-key setup are 
 4. Open **[API Access → Clients](https://develop.battle.net/access/clients)** and click **Create Client**.
 5. Fill in:
    - **Client Name** — anything, e.g. `wow-companion`.
-   - **Redirect URLs** — required by the form but unused by this app (it uses client-credentials only);
-     enter `https://localhost`.
+   - **Redirect URLs** — enter exactly:
+
+     ```
+     http://localhost:48757/callback
+     ```
+
+     This is only needed to **connect your Battle.net account** (for account-wide data); every other
+     tab uses client credentials and no redirect at all. Blizzard matches this string **exactly** and
+     accepts only `http`/`https`, so the port can't be changed or chosen at runtime — if it doesn't
+     match, the consent screen refuses before it ever redirects back. Already created a client with a
+     placeholder here? Edit it and add this URL.
+
    - **Intended Use / Service URL** — optional; describe it (e.g. "personal WoW dashboard").
 6. Click **Create**, then open the client to copy its **Client ID** and **Client Secret**.
 7. In WoW Companion, paste both and click **Save to keychain** — the secret is stored by Rust in your OS
