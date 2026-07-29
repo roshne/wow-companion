@@ -36,6 +36,7 @@ function character(overrides: Partial<WarbandCharacter> = {}): WarbandCharacter 
       dungeonsMax: null,
     },
     locks: [],
+    titles: null,
     ...overrides,
   };
 }
@@ -45,6 +46,7 @@ function data(characters: WarbandCharacter[], weekStart: number | null = WEEK_ST
     account: "TESTACCOUNT",
     source: "C:/wow/Warbandeer_Characters.lua",
     characters,
+    titleCatalog: null,
     wealth:
       weekStart == null
         ? null

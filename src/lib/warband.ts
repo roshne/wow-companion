@@ -101,6 +101,37 @@ export interface WarbandWeekly {
   dungeonsMax: number | null;
 }
 
+/** One player title: its `titleMaskID` and display name. */
+export interface Title {
+  id: number;
+  name: string;
+}
+
+/** A character's earned titles and the one they're currently displaying. */
+export interface CharacterTitles {
+  /** Earned titles, sorted by name. */
+  known: Title[];
+  current: number | null;
+  currentName: string | null;
+}
+
+/**
+ * The account-wide title catalog — every player title the game knows, earned or not.
+ *
+ * The reason it exists: an earned list can't tell you what's *missing*, and Blizzard's REST API has
+ * no title catalogue to diff against. Names follow the game client's language, hence `locale`.
+ */
+export interface TitleCatalog {
+  /** Every catalogued title, sorted by name. */
+  titles: Title[];
+  locale: string | null;
+  /** The addon's own tally of what it scanned — a cross-check against `titles.length`. */
+  count: number | null;
+  scannedAt: number | null;
+  /** Which character produced the scan; titles are account-wide, so one scan serves the warband. */
+  scannedBy: string | null;
+}
+
 /** One character from the Warbandeer addon export (via the `get_warband` Rust command). */
 export interface WarbandCharacter {
   name: string;
@@ -133,6 +164,8 @@ export interface WarbandCharacter {
   weekly: WarbandWeekly | null;
   /** Instance lockouts, sorted by instance then difficulty so the list is stable across reads. */
   locks: InstanceLock[];
+  /** Earned titles and the featured one. Null for a character the addon hasn't seen since v37. */
+  titles: CharacterTitles | null;
 }
 
 /** The full warband export: account label, source path, the character list, and account-wide wealth. */
@@ -142,6 +175,8 @@ export interface WarbandData {
   characters: WarbandCharacter[];
   /** Null when the export predates the addon's account-wide wealth tracking. */
   wealth: WarbandWealth | null;
+  /** The account-wide title catalog. Null on an export written before the addon scanned it. */
+  titleCatalog: TitleCatalog | null;
 }
 
 /**
