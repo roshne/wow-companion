@@ -50,8 +50,14 @@ React webview  ──invoke("get_access_token")──►  Rust (Tauri)
 - **Auctions** — a connected realm's auction house (or the region-wide commodities), aggregated by
   item and sortable over a virtualized list.
 - **Warband** — everything the [Warbandeer](https://github.com/nazumods/wow) addon records about your
-  alts, read from a local file, across six views:
+  alts, read from a local file, across seven views (six from the addon, one from Blizzard):
   - **Roster** — name, class colour, level, item level, spec and professions for every alt.
+  - **All characters** — the one view sourced from Blizzard rather than the addon: **every** character
+    on your Battle.net account, across all of its WoW accounts, merged with what the addon knows about
+    each. Needs a [connected account](#3-connecting-a-battlenet-account). The two sources are
+    authorities over different things — Blizzard knows which characters _exist_, the addon knows what
+    they've _done_ — so rows the addon has never recorded are marked as such rather than appearing as
+    neglected characters with no item level.
   - **Gear board** — a characters × slots item-level matrix that streams in row by row, sorts/filters
     by item level / issues / class / role, and shows a warband-wide **"needs attention"** gear-fix
     roll-up.
@@ -66,11 +72,13 @@ React webview  ──invoke("get_access_token")──►  Rust (Tauri)
   Above them all, a wealth line: total warband gold and what it converts to in **WoW Tokens**.
 
   Most of this has no Web API equivalent at all — Blizzard exposes no endpoint for gold, currencies,
-  the Great Vault, lockouts or a title catalogue — so the addon is the only source. The Web API
-  contributes three things here and nothing else: the equipment behind the gear board, the dungeon
-  names on Keys & locks, and the token price the wealth line converts against. (Currency icons load
-  from Blizzard's public render CDN — images, not an API call.) Each says so or falls
-  back to the addon's own data when there's no client — see [Requirements](#requirements).
+  the Great Vault, lockouts or a title catalogue — so the addon is the only source for them. The Web
+  API contributes four things here and nothing else: the equipment behind the gear board, the dungeon
+  names on Keys & locks, the token price the wealth line converts against, and the whole of **All
+  characters**. (Currency icons load from Blizzard's public render CDN — images, not an API call.)
+  The first three say so or fall back to the addon's own data when there's no client — see
+  [Requirements](#requirements). **All characters** is the exception in both directions: it's the one
+  view the API can serve on its own, and the one view that works with no addon installed.
 
 - **Bot Ops** _(operator-only, hidden by default)_ — manage the self-hosted
   [`warbandeer-discord`](https://github.com/nazumods/wow/tree/main/apps/warbandeer-discord) bot on the
@@ -163,6 +171,7 @@ Which tab needs which:
 | ------------------------------------------------------- | ----------------------------- | -------------------------- |
 | WoW Token, Realm Status, Character, Guild, Auctions     | yes                           | —                          |
 | Warband — **gear board**                                | yes (each alt's equipment)    | the addon                  |
+| Warband — **all characters**                            | yes (your account's own data) | a connected account        |
 | Warband — roster, Great Vault, keys, currencies, titles | no (parsed from a local file) | the addon                  |
 | Bot Ops _(operator-only)_                               | no (SSH)                      | `ops.json` + key-based SSH |
 
@@ -173,11 +182,15 @@ currencies and titles. (Bot Ops appears there too, when an `ops.json` exists.) T
 the API degrade rather than fail:
 
 - the **gear board** says it needs a client, instead of rendering one failed row per character;
+- **All characters** says the same, and needs a connected account on top of the client;
 - the **wealth line** shows your gold but drops the WoW Token conversion, and **Keys & locks** falls
   back to raw dungeon ids in place of names;
 - roster names render as plain text, because the Character tab they open isn't there either.
 
 Every other tab needs step 1.
+
+Note the asymmetry in the last column: **all characters** is the only Warband view that works _without_
+the addon, and the only one that needs a connected account. Everything else on that tab is the reverse.
 
 ### 1. A Battle.net developer client (Client ID + Secret)
 
@@ -221,22 +234,27 @@ on drives `C:` through `F:` (`candidate_roots()` in
 [`src-tauri/src/warband.rs`](src-tauri/src/warband.rs)). An install anywhere else isn't found. Only
 this tab is affected — nothing else in the app cares where WoW lives.
 
-### 3. Connecting a Battle.net account — optional, and nothing uses it yet
+### 3. Connecting a Battle.net account
 
-**Settings → Connect account** runs an OAuth **authorization-code** flow for account-wide data. It
-needs `http://localhost:48757/callback` on your developer client's **Redirect URLs** — step 5 of
-_Getting a Client ID & Secret_ below, where the exact-match rule is spelled out. It also needs step 1
-done first: the code exchange is authenticated with the client secret, so Settings says as much
-rather than offering a button that would fail in the backend.
+**Settings → Connect account** (or the button on **Warband → All characters**) runs an OAuth
+**authorization-code** flow for account-wide data. It needs `http://localhost:48757/callback` on your
+developer client's **Redirect URLs** — step 5 of _Getting a Client ID & Secret_ below, where the
+exact-match rule is spelled out. It also needs step 1 done first: the code exchange is authenticated
+with the client secret, so Settings says as much rather than offering a button that would fail in the
+backend.
 
 A connection lasts about **24 hours**. Blizzard issues **no refresh token** for this grant — the
 token response carries only the token, its `scope`, `sub` and `token_type`, with `expires_in=86399` —
 so reconnecting periodically is the documented behaviour rather than a fault.
 
-**Nothing consumes it yet.** The plumbing landed before the views that will use it, so connecting
-today changes nothing you can see; the first consumer (the account's own character index) is still
-open work — issue [#175](https://github.com/roshne/wow-companion/issues/175). It's documented here
-because the button is visible in Settings and ought to be explicable.
+This is **optional**: it unlocks the **All characters** view and nothing else today. What it buys is
+reach — that view is the only one in the app that doesn't need the addon, because Blizzard lists every
+character on your account whether or not you've played it lately. On the account this was built
+against, that's 68 characters against the addon's 58.
+
+Ordinary self-service credentials are enough for it — no partner approval or special client role,
+which was worth confirming rather than assuming, given that Blizzard does gate other grant types
+per client.
 
 ## Run it
 
@@ -325,6 +343,9 @@ src/                     # React frontend
   vendor/bot-ops/        # vendored shared module (frontend half) — nazumods/wow apps/bot-ops
 src-tauri/               # Rust backend
   src/lib.rs             # keychain + OAuth token commands
+  src/account_auth.rs    # account-wide consent flow (authorization code + loopback listener)
+  src/account_profile.rs # the account's character index — fetched here, since the user token
+                         #   never crosses into the webview
   src/warband.rs         # Warbandeer SavedVariables parser (sandboxed mlua VM)
   vendor/bot-ops/        # vendored shared module (Rust half) — the SSH ops commands
   capabilities/          # HTTP scope for *.api.blizzard.com

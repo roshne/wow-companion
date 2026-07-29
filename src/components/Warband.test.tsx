@@ -13,6 +13,12 @@ vi.mock("./WarbandGearBoard", () => ({
 vi.mock("./WarbandWealth", () => ({
   WarbandWealth: () => <div data-testid="wealth">wealth</div>,
 }));
+// Same reason again: this one reads the account index through useQuery, and it mounts on the very
+// first render (before the addon export has loaded, when there's nothing else to show). Its own
+// behaviour is covered by WarbandAllCharacters.test.tsx.
+vi.mock("./WarbandAllCharacters", () => ({
+  WarbandAllCharacters: () => <div data-testid="all-characters">all</div>,
+}));
 
 import { Warband } from "./Warband";
 import { invoke } from "@tauri-apps/api/core";
@@ -85,6 +91,15 @@ describe("Warband without Battle.net credentials", () => {
 
     expect(screen.getByText(/needs a Client ID \/ Secret/)).toBeInTheDocument();
     expect(screen.queryByTestId("gear-board")).not.toBeInTheDocument();
+  });
+
+  it("explains that seeing every character needs a client, rather than offering a dead view", async () => {
+    mockInvoke.mockResolvedValue(warband([character({ name: "Testchar" })]));
+    render(<Warband onOpenCharacter={onOpen} region="us" hasCredentials={false} />);
+    fireEvent.click(await screen.findByRole("button", { name: "All characters" }));
+
+    expect(screen.getByText(/needs a Client ID \/ Secret/)).toBeInTheDocument();
+    expect(screen.queryByTestId("all-characters")).not.toBeInTheDocument();
   });
 
   it("keeps the addon-only views available", async () => {
@@ -194,6 +209,44 @@ describe("Warband", () => {
 
     await screen.findByText("Ghost");
     expect(screen.queryByRole("button", { name: "Ghost" })).toBeNull();
+  });
+
+  it("falls back to the account view when there is no addon export at all", async () => {
+    // The case that makes this app usable by someone who doesn't run the addon: the six addon-backed
+    // views have nothing to show, so their toggles aren't offered and the one view that asks
+    // Battle.net directly is what renders.
+    mockInvoke.mockRejectedValue("Could not find Warbandeer_Characters.lua.");
+    render(<Warband onOpenCharacter={onOpen} region="us" />);
+
+    expect(await screen.findByTestId("all-characters")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "All characters" })).toBeInTheDocument();
+    for (const view of ["Roster", "Gear board", "Great Vault", "Currencies", "Titles"]) {
+      expect(screen.queryByRole("button", { name: view })).not.toBeInTheDocument();
+    }
+  });
+
+  it("offers every view once the addon export has characters", async () => {
+    mockInvoke.mockResolvedValue(warband([character({ name: "Testchar" })]));
+    render(<Warband onOpenCharacter={onOpen} region="us" />);
+
+    await screen.findByText("Testchar");
+    for (const view of ["Roster", "All characters", "Gear board", "Great Vault", "Titles"]) {
+      expect(screen.getByRole("button", { name: view })).toBeInTheDocument();
+    }
+  });
+
+  it("toggles to the account view and back", async () => {
+    mockInvoke.mockResolvedValue(warband([character({ name: "Testchar" })]));
+    render(<Warband onOpenCharacter={onOpen} region="us" />);
+
+    await screen.findByText("Testchar");
+    fireEvent.click(screen.getByRole("button", { name: "All characters" }));
+    expect(screen.getByTestId("all-characters")).toBeInTheDocument();
+    expect(screen.queryByText("Testchar")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Roster" }));
+    expect(screen.getByText("Testchar")).toBeInTheDocument();
+    expect(screen.queryByTestId("all-characters")).toBeNull();
   });
 
   it("toggles between the roster and the gear board", async () => {
