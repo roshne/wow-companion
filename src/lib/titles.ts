@@ -9,6 +9,21 @@ export interface TitleRow {
   earned: boolean;
 }
 
+/**
+ * Blizzard's internal placeholders for unreleased titles, which the catalog scan picks up because it
+ * deliberately reads the whole id range rather than only known titles.
+ *
+ * Matched on a name wrapped entirely in square brackets rather than the literal `[PH]`, so a later
+ * variant is caught too. Verified safe against the live catalog: of 703 entries, exactly 4 match —
+ * all named `[PH]` — and no legitimate title name is bracketed.
+ */
+const PLACEHOLDER_NAME = /^\[.*\]$/;
+
+/** Whether a catalogued name is one of Blizzard's unreleased-title placeholders. */
+export function isPlaceholderTitle(name: string): boolean {
+  return PLACEHOLDER_NAME.test(name.trim());
+}
+
 export interface TitleBoard {
   rows: TitleRow[];
   earnedCount: number;
@@ -21,6 +36,11 @@ export interface TitleBoard {
   scannedBy: string | null;
   /** Characters carrying a featured title, as `[character, title]`, sorted by character. */
   featured: [character: string, title: string][];
+  /**
+   * Placeholder titles dropped from `rows`. Reported rather than discarded silently, so the counts
+   * can be reconciled against the addon's own catalog tally.
+   */
+  placeholdersHidden: number;
 }
 
 /** Case-insensitive substring match, the behaviour a browse-and-search list wants. */
@@ -50,6 +70,7 @@ export function buildTitleBoard(data: WarbandData | null): TitleBoard {
     scannedAt: null,
     scannedBy: null,
     featured: [],
+    placeholdersHidden: 0,
   };
   if (!data) return empty;
 
@@ -80,11 +101,19 @@ export function buildTitleBoard(data: WarbandData | null): TitleBoard {
   // catalog is one character's scan, not a guaranteed superset.
   const ids = new Set<number>([...namesById.keys()]);
   const rows: TitleRow[] = [];
+  let placeholdersHidden = 0;
   for (const id of ids) {
+    const name = namesById.get(id) ?? `Title ${id}`;
+    // Placeholders aren't obtainable, so they're noise in a "what's left to earn" list. Dropped
+    // before the counts are taken, so "still to earn" describes titles you could actually get.
+    if (isPlaceholderTitle(name)) {
+      placeholdersHidden += 1;
+      continue;
+    }
     const holders = earnedBy.get(id) ?? [];
     rows.push({
       id,
-      name: namesById.get(id) ?? `Title ${id}`,
+      name,
       earnedBy: [...holders].sort((a, b) => a.localeCompare(b)),
       earned: holders.length > 0,
     });
@@ -102,6 +131,7 @@ export function buildTitleBoard(data: WarbandData | null): TitleBoard {
     scannedAt: catalog?.scannedAt ?? null,
     scannedBy: catalog?.scannedBy ?? null,
     featured,
+    placeholdersHidden,
   };
 }
 
