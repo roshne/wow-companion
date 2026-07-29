@@ -49,11 +49,25 @@ React webview  ──invoke("get_access_token")──►  Rust (Tauri)
   class, realm), guild **achievements**, and recent **activity**.
 - **Auctions** — a connected realm's auction house (or the region-wide commodities), aggregated by
   item and sortable over a virtualized list.
-- **Warband** — a warband-wide roster (name, class colour, level, item level, spec, professions for
-  every alt) read locally from the [Warbandeer](https://github.com/nazumods/wow) addon — no API call —
-  plus a **gear board**: a characters × slots item-level matrix that streams in row by row,
-  sorts/filters by item level / issues / class / role, and shows a warband-wide **"needs attention"**
-  gear-fix roll-up.
+- **Warband** — everything the [Warbandeer](https://github.com/nazumods/wow) addon records about your
+  alts, read locally with no API call, across six views:
+  - **Roster** — name, class colour, level, item level, spec and professions for every alt.
+  - **Gear board** — a characters × slots item-level matrix that streams in row by row, sorts/filters
+    by item level / issues / class / role, and shows a warband-wide **"needs attention"** gear-fix
+    roll-up.
+  - **Great Vault** — each max-level character's three reward tracks as pips, plus this week's raid
+    lockouts. Characters not played since the weekly reset are marked as such rather than shown with
+    an empty vault.
+  - **Keys & locks** — held Mythic+ keystones (dungeon names resolved from the API), the week's M+
+    count, and instance lockouts.
+  - **Currencies** — every currency and crest across the warband, with names, icons and cap progress.
+  - **Titles** — every player title, who has earned it and what remains, with filters and search.
+
+  Above them all, a wealth line: total warband gold and what it converts to in **WoW Tokens**.
+
+  Most of this has no Web API equivalent at all — Blizzard exposes no endpoint for gold, currencies,
+  the Great Vault, lockouts or a title catalogue — so the addon is the only source.
+
 - **Bot Ops** _(operator-only, hidden by default)_ — manage the self-hosted
   [`warbandeer-discord`](https://github.com/nazumods/wow/tree/main/apps/warbandeer-discord) bot on the
   box over SSH: status, log tail, restart, and edits to its **non-secret** settings. Appears only when
@@ -217,10 +231,17 @@ src-tauri/               # Rust backend
 
 ## Status
 
-**Stable (1.0.0).** Compiles end-to-end (`cargo check` + `tsc` + `vite build` all pass), the test suite
-is green, and every tab is live. Response bodies for the endpoints the app uses are now typed by the
+**Stable (1.1.0).** Compiles end-to-end (`cargo check` + `tsc` + `vite build` all pass), the test suite
+is green, and every tab is live. Response bodies for the endpoints the app uses are typed by the
 vendored client — captured upstream and re-vendored through the `battlenet-api-research` pipeline — so
 data flows through the typed client end-to-end. Exercising the live data views needs your Battle.net
-credentials (see above). The footer reads `v1.0.0 (9502198)` — the version plus the commit it was
-built from, so two builds of the same version are still tellable apart (`-dirty` marks a build made
-with uncommitted changes).
+credentials (see above); the Warband tab needs none.
+
+1.1 mines the local addon database far deeper than 1.0 did: the parser went from 14 fields to also
+reading wealth, currencies, the Great Vault, lockouts, keystones and titles, and four new Warband
+views were built on top. Figures sourced from the addon show when they were last scanned — the file
+is only written when the game writes it, so a character not played since the weekly reset carries
+last week's numbers, and the views say so rather than implying otherwise.
+
+The footer reads `v1.1.0 (9502198)` — the version plus the commit it was built from, so two builds of
+the same version are still tellable apart (`-dirty` marks a build made with uncommitted changes).
