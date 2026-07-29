@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildTitleBoard, filterTitles, matchesQuery } from "./titles";
+import { buildTitleBoard, filterTitles, isPlaceholderTitle, matchesQuery } from "./titles";
 import type { CharacterTitles, TitleCatalog, WarbandCharacter, WarbandData } from "./warband";
 
 function character(name: string, titles: CharacterTitles | null): WarbandCharacter {
@@ -157,6 +157,62 @@ describe("buildTitleBoard", () => {
 
   it("returns an empty board for no data", () => {
     expect(buildTitleBoard(null).rows).toHaveLength(0);
+  });
+
+  it("drops Blizzard's unreleased-title placeholders and counts them", () => {
+    // The catalog scan reads the whole id range deliberately, so it picks up ids with no released
+    // title. They aren't obtainable, so they're noise in a "what's left to earn" list.
+    const board = buildTitleBoard(
+      data(
+        [character("Aria", known([[1, "Private"]]))],
+        catalog([
+          [1, "Private"],
+          [2, "[PH]"],
+          [3, "[PH]"],
+          [4, "Corporal"],
+        ]),
+      ),
+    );
+    expect(board.rows.map((r) => r.name)).toEqual(["Corporal", "Private"]);
+    expect(board.placeholdersHidden).toBe(2);
+  });
+
+  it("excludes placeholders from the counts, so 'still to earn' means obtainable", () => {
+    const board = buildTitleBoard(
+      data(
+        [character("Aria", known([[1, "Private"]]))],
+        catalog([
+          [1, "Private"],
+          [2, "[PH]"],
+          [3, "Corporal"],
+        ]),
+      ),
+    );
+    expect(board.earnedCount).toBe(1);
+    // Corporal only — not Corporal plus the placeholder.
+    expect(board.unearnedCount).toBe(1);
+  });
+
+  it("drops a placeholder even if some character somehow earned it", () => {
+    const board = buildTitleBoard(data([character("Aria", known([[2, "[PH]"]]))]));
+    expect(board.rows).toHaveLength(0);
+    expect(board.placeholdersHidden).toBe(1);
+  });
+});
+
+describe("isPlaceholderTitle", () => {
+  it("matches a fully bracketed name", () => {
+    // Matched by shape rather than the literal "[PH]", so a later variant is caught too.
+    expect(isPlaceholderTitle("[PH]")).toBe(true);
+    expect(isPlaceholderTitle("[PH2]")).toBe(true);
+    expect(isPlaceholderTitle("  [PH]  ")).toBe(true);
+  });
+
+  it("leaves real titles alone, including ones containing brackets", () => {
+    expect(isPlaceholderTitle("the Explorer")).toBe(false);
+    expect(isPlaceholderTitle('"Conservationist"')).toBe(false);
+    // Not fully bracketed: a hypothetical real title mentioning one shouldn't vanish.
+    expect(isPlaceholderTitle("Champion [of the Light]")).toBe(false);
   });
 });
 
