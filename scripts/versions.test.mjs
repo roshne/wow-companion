@@ -55,6 +55,27 @@ dependencies = [
  "tauri",
 ]
 `,
+  // Two real sites, plus a dependency version that must survive untouched — the whole file has
+  // hundreds of those, so a bare `"version"` pattern would rewrite the dependency tree.
+  "package-lock.json": `{
+  "name": "wow-companion",
+  "version": "0.1.0",
+  "lockfileVersion": 3,
+  "packages": {
+    "": {
+      "name": "wow-companion",
+      "version": "0.1.0",
+      "dependencies": {
+        "react": "^19.1.0"
+      }
+    },
+    "node_modules/react": {
+      "version": "19.1.0",
+      "resolved": "https://registry.npmjs.org/react/-/react-19.1.0.tgz"
+    }
+  }
+}
+`,
 };
 
 describe("isValidVersion", () => {
@@ -121,6 +142,29 @@ describe("setVersion", () => {
     expect(() => setVersion(entry, `{ "name": "x" }`, "0.2.0")).toThrow(/found 0/);
     const doubled = `{ "version": "0.1.0", "nested": { "version": "0.1.0" } }`;
     expect(() => setVersion(entry, doubled, "0.2.0")).toThrow(/found 2/);
+  });
+
+  it("rewrites both of package-lock.json's version sites", () => {
+    // The lockfile carries the version twice — top level and the root `packages[""]` entry. Missing
+    // one is how its root version sat at 0.1.0 from the 0.2.0 bump until 1.0.0.
+    const entry = byLabel("package-lock.json");
+    const after = setVersion(entry, FIXTURES["package-lock.json"], "0.2.0");
+    expect([...after.matchAll(/"version": "0\.2\.0"/g)]).toHaveLength(2);
+    expect(after).not.toContain(`"version": "0.1.0"`);
+  });
+
+  it("leaves a dependency's version untouched in package-lock.json", () => {
+    // The real file has hundreds of these; a bare `"version"` pattern would rewrite the lot.
+    const after = setVersion(byLabel("package-lock.json"), FIXTURES["package-lock.json"], "0.2.0");
+    expect(after).toContain(`"version": "19.1.0"`);
+    expect(after).toContain(`"react": "^19.1.0"`);
+  });
+
+  it("throws when package-lock.json doesn't have exactly its two sites", () => {
+    const entry = byLabel("package-lock.json");
+    const onlyOne = `{ "name": "wow-companion", "version": "0.1.0" }`;
+    expect(() => setVersion(entry, onlyOne, "0.2.0")).toThrow(/Expected 2 version field\(s\)/);
+    expect(() => setVersion(entry, onlyOne, "0.2.0")).toThrow(/found 1/);
   });
 });
 

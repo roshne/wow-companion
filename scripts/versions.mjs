@@ -38,6 +38,11 @@ export function assertValidVersion(v) {
 // version, framed by leading/trailing groups so a replacement can reuse the exact surrounding text.
 // The value group is semver-shaped, not `[^"]*`, so the JSON patterns can't accidentally latch onto
 // some other "version"-keyed string.
+//
+// `occurrences` is how many times that pattern is expected to match, defaulting to 1. It exists for
+// package-lock.json, which carries the version at two sites; every other file asserts exactly one, so
+// a reformat that moves or renames the field still fails loudly rather than silently leaving the old
+// version behind.
 export const VERSION_FILES = [
   {
     label: "package.json",
@@ -62,6 +67,17 @@ export const VERSION_FILES = [
     path: join("src-tauri", "Cargo.lock"),
     re: new RegExp(`(name = "wow-companion"\\r?\\nversion = ")(${SEMVER})(")`),
   },
+  {
+    // Two sites: the top-level version, and the root package entry under `packages[""]`.
+    //
+    // Anchored to `"name": "wow-companion"` immediately followed by `"version"` — the only thing
+    // distinguishing them from the ~315 dependency versions in the same file, any one of which a bare
+    // `"version"` pattern would happily rewrite.
+    label: "package-lock.json",
+    path: "package-lock.json",
+    re: new RegExp(`("name":\\s*"wow-companion",\\s*"version":\\s*")(${SEMVER})(")`),
+    occurrences: 2,
+  },
 ];
 
 export function absPath(entry) {
@@ -79,17 +95,21 @@ export function extractVersion(entry, text) {
   return m[2];
 }
 
-// Return `text` with the version replaced. Asserts the pattern matched exactly once so a reformat
-// that moves or renames the field fails loudly instead of silently leaving the old version behind.
+// Return `text` with the version replaced everywhere the entry expects it. Asserts the match count is
+// exactly `entry.occurrences` (default 1) so a reformat that moves, renames or duplicates the field
+// fails loudly instead of silently leaving an old version behind — which is how package-lock.json's
+// root version sat at 0.1.0 from the 0.2.0 bump until 1.0.0.
 export function setVersion(entry, text, newVersion) {
   assertValidVersion(newVersion);
-  const matches = [...text.matchAll(globalize(entry.re))];
-  if (matches.length !== 1) {
+  const expected = entry.occurrences ?? 1;
+  const re = globalize(entry.re);
+  const matches = [...text.matchAll(re)];
+  if (matches.length !== expected) {
     throw new Error(
-      `Expected exactly one version field in ${entry.label}, found ${matches.length}.`,
+      `Expected ${expected} version field(s) in ${entry.label}, found ${matches.length}.`,
     );
   }
-  return text.replace(entry.re, (_full, pre, _old, post) => `${pre}${newVersion}${post}`);
+  return text.replace(re, (_full, pre, _old, post) => `${pre}${newVersion}${post}`);
 }
 
 // Read every version file from disk. Returns [{ label, version, entry }, …].
