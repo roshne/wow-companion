@@ -81,9 +81,9 @@ addon data; Bot Ops drives the bot over SSH), and the region (US/EU/KR/TW) is sw
 The Warband tab reads the `Warbandeer_Characters` addon's SavedVariables
 (`…\_retail_\WTF\Account\<ACCOUNT>\SavedVariables\Warbandeer_Characters.lua`) — a Lua table the addon
 rewrites each login. The Rust backend locates the newest such file across installed accounts and
-parses it in a sandboxed embedded Lua VM (`mlua`). It needs the
-[Warbandeer](https://github.com/nazumods/wow) addon installed and logged into at least once; no
-Battle.net credentials are involved.
+parses it in a sandboxed embedded Lua VM (`mlua`). No Battle.net credentials are involved — see
+[Requirements](#2-the-warbandeer-addon--for-the-warband-tab) for which addon to install and why the
+file's age matters.
 
 ### Bot Ops tab — operator-only
 
@@ -146,6 +146,83 @@ host must work (the app reuses your key), and that host must have the helper at
 `<remoteDir>/ops/bot-ops.sh`. The `prod` entry above is a placeholder — see the helper's
 [README](https://github.com/nazumods/wow/tree/main/apps/warbandeer-discord/ops) for the full format
 and prod setup breadcrumbs.
+
+## Requirements
+
+Two prerequisites, independent of each other: a **Battle.net developer client** for anything that
+calls the Web API, and the **Warbandeer addon** for the Warband tab. Plus **WebView2** to render the
+app at all — it ships with Windows 11, so on a current install you already have it.
+
+Which tab needs which:
+
+| Tab                                                     | Calls the Blizzard API?       | Also needs                 |
+| ------------------------------------------------------- | ----------------------------- | -------------------------- |
+| WoW Token, Realm Status, Character, Guild, Auctions     | yes                           | —                          |
+| Warband — **gear board**                                | yes (each alt's equipment)    | the addon                  |
+| Warband — roster, Great Vault, keys, currencies, titles | no (parsed from a local file) | the addon                  |
+| Bot Ops _(operator-only)_                               | no (SSH)                      | `ops.json` + key-based SSH |
+
+The middle column is about what actually calls Blizzard — it's why the Warband tab keeps working when
+the API doesn't. It isn't a way to skip step 1: the app routes you to the connect form before **any**
+data tab, so a developer client is needed to reach all of them today (Bot Ops with an `ops.json` is
+the one exception).
+
+### 1. A Battle.net developer client (Client ID + Secret)
+
+**You have to register your own** at [develop.battle.net](https://develop.battle.net/) — see
+_Getting a Client ID & Secret_ below for the walkthrough. Your Battle.net account needs an
+**Authenticator** attached first; Blizzard requires two-factor before it will grant API access at all.
+
+The app ships no credential, and there's no secret-free path to add later. Blizzard's token endpoint
+rejects a public client outright — probed directly against `oauth.battle.net`:
+
+- an authorization-code exchange **without a secret** (PKCE) returns `401 invalid_client`;
+- the **device-code** grant returns `401 unauthorized_client` — _"Client does not have a required
+  roles to use this grant type"_.
+
+A shipped secret would also be extractable from the binary, and every user would then share one rate
+limit — one abusive user would break the app for everyone. Yours stays on your machine: see
+[Architecture](#architecture--the-secret-never-touches-the-webview).
+
+### 2. The Warbandeer addon — for the Warband tab
+
+Two addons in [`nazumods/wow`](https://github.com/nazumods/wow) share the name, and it's the data one
+that matters:
+
+- **`Warbandeer_Characters`** is the headless data layer. It writes
+  `…\_retail_\WTF\Account\<ACCOUNT>\SavedVariables\Warbandeer_Characters.lua` — the file this app
+  parses. This is the addon that must be installed.
+- **`Warbandeer`** is the in-game viewer, and lists `Warbandeer_Characters` among its dependencies,
+  so installing it pulls the data layer in. That's why "install Warbandeer" is the usual instruction.
+
+Both also depend on `LibNAddOn` and `LibNUI` from the same repo.
+
+**Log into each character at least once** after installing it. The game writes SavedVariables only
+when it writes them — at logout or `/reload` — so a character you haven't played since installing
+isn't in the file at all, and one you haven't played since the weekly reset still carries last week's
+numbers. Hence the "as of" times on the Warband views, and why characters not seen since the reset
+are marked as such instead of being shown as though their vault were current.
+
+**Windows only.** Addon discovery walks fixed install paths — `\Program Files (x86)\World of
+Warcraft`, `\Program Files\World of Warcraft`, `\World of Warcraft` and `\Games\World of Warcraft`,
+on drives `C:` through `F:` (`candidate_roots()` in
+[`src-tauri/src/warband.rs`](src-tauri/src/warband.rs)). An install anywhere else isn't found. Only
+this tab is affected — nothing else in the app cares where WoW lives.
+
+### 3. Connecting a Battle.net account — optional, and nothing uses it yet
+
+**Settings → Connect account** runs an OAuth **authorization-code** flow for account-wide data. It
+needs `http://localhost:48757/callback` on your developer client's **Redirect URLs** — step 5 of
+_Getting a Client ID & Secret_ below, where the exact-match rule is spelled out.
+
+A connection lasts about **24 hours**. Blizzard issues **no refresh token** for this grant — the
+token response carries only the token, its `scope`, `sub` and `token_type`, with `expires_in=86399` —
+so reconnecting periodically is the documented behaviour rather than a fault.
+
+**Nothing consumes it yet.** The plumbing landed before the views that will use it, so connecting
+today changes nothing you can see; the first consumer (the account's own character index) is still
+open work — issue [#175](https://github.com/roshne/wow-companion/issues/175). It's documented here
+because the button is visible in Settings and ought to be explicable.
 
 ## Run it
 
