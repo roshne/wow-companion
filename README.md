@@ -162,10 +162,18 @@ Which tab needs which:
 | Warband — roster, Great Vault, keys, currencies, titles | no (parsed from a local file) | the addon                  |
 | Bot Ops _(operator-only)_                               | no (SSH)                      | `ops.json` + key-based SSH |
 
-The middle column is about what actually calls Blizzard — it's why the Warband tab keeps working when
-the API doesn't. It isn't a way to skip step 1: the app routes you to the connect form before **any**
-data tab, so a developer client is needed to reach all of them today (Bot Ops with an `ops.json` is
-the one exception).
+The middle column is what actually calls Blizzard, and it decides how far you get with **no developer
+client at all**. The app opens on the connect form, but it offers the **Warband** tab beside it when
+your addon export holds characters — so the addon on its own gets you the roster, Great Vault,
+currencies and titles. (Bot Ops appears there too, when an `ops.json` exists.) The views that do want
+the API degrade rather than fail:
+
+- the **gear board** says it needs a client, instead of rendering one failed row per character;
+- the **wealth line** shows your gold but drops the WoW Token conversion, and **Keys & locks** falls
+  back to raw dungeon ids in place of names;
+- roster names render as plain text, because the Character tab they open isn't there either.
+
+Every other tab needs step 1.
 
 ### 1. A Battle.net developer client (Client ID + Secret)
 
@@ -213,7 +221,9 @@ this tab is affected — nothing else in the app cares where WoW lives.
 
 **Settings → Connect account** runs an OAuth **authorization-code** flow for account-wide data. It
 needs `http://localhost:48757/callback` on your developer client's **Redirect URLs** — step 5 of
-_Getting a Client ID & Secret_ below, where the exact-match rule is spelled out.
+_Getting a Client ID & Secret_ below, where the exact-match rule is spelled out. It also needs step 1
+done first: the code exchange is authenticated with the client secret, so Settings says as much
+rather than offering a button that would fail in the backend.
 
 A connection lasts about **24 hours**. Blizzard issues **no refresh token** for this grant — the
 token response carries only the token, its `scope`, `sub` and `token_type`, with `expires_in=86399` —
