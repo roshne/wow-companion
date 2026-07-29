@@ -11,6 +11,7 @@ use serde::Deserialize;
 use tauri::State;
 
 mod account_auth;
+mod account_profile;
 mod warband;
 
 const KEYRING_SERVICE: &str = "wow-companion";
@@ -21,7 +22,7 @@ const KEYRING_ACCOUNT: &str = "battlenet-oauth-client";
 const KEYRING_ACCOUNT_GRANT: &str = "battlenet-account-grant";
 const TOKEN_URL: &str = "https://oauth.battle.net/token";
 /// Refresh this many seconds before expiry to avoid using a token that dies mid-request.
-const EXPIRY_SKEW_SECS: u64 = 60;
+pub(crate) const EXPIRY_SKEW_SECS: u64 = 60;
 
 #[derive(Default)]
 struct AppState {
@@ -39,7 +40,7 @@ struct TokenResponse {
     expires_in: u64,
 }
 
-fn now_secs() -> u64 {
+pub(crate) fn now_secs() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs())
@@ -50,14 +51,14 @@ fn cred_entry() -> Result<keyring::Entry, String> {
     keyring::Entry::new(KEYRING_SERVICE, KEYRING_ACCOUNT).map_err(|e| e.to_string())
 }
 
-fn account_entry() -> Result<keyring::Entry, String> {
+pub(crate) fn account_entry() -> Result<keyring::Entry, String> {
     keyring::Entry::new(KEYRING_SERVICE, KEYRING_ACCOUNT_GRANT).map_err(|e| e.to_string())
 }
 
 /// Split a stored `"<access_token>\n<expires_at>"` account grant.
 ///
 /// Kept as a pure function so the storage format is testable without a keychain.
-fn parse_stored_grant(payload: &str) -> Option<(&str, u64)> {
+pub(crate) fn parse_stored_grant(payload: &str) -> Option<(&str, u64)> {
     let (token, expiry) = payload.split_once('\n')?;
     let expires_at = expiry.trim().parse::<u64>().ok()?;
     (!token.is_empty()).then_some((token, expires_at))
@@ -246,6 +247,7 @@ pub fn run() {
             begin_account_login,
             has_account_grant,
             clear_account_grant,
+            account_profile::get_account_profile,
             warband::get_warband,
             bot_ops::commands::ops_config,
             bot_ops::commands::bot_status,
