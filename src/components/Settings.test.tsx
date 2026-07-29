@@ -33,7 +33,9 @@ describe("Settings", () => {
     const dialog = screen.getByRole("dialog", { name: "Settings" });
     expect(within(dialog).getByLabelText(/Region/)).toBeInTheDocument();
     expect(within(dialog).getByLabelText(/Theme/)).toBeInTheDocument();
-    expect(within(dialog).getByPlaceholderText("Client ID")).toBeInTheDocument();
+    // The credential form is collapsed by default; only its opener shows.
+    expect(within(dialog).queryByPlaceholderText("Client ID")).not.toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Edit credentials" })).toBeInTheDocument();
     expect(
       within(dialog).getByRole("button", { name: "Disconnect credentials" }),
     ).toBeInTheDocument();
@@ -41,6 +43,7 @@ describe("Settings", () => {
 
   it("names both credential fields, so they stay identifiable once typed into", () => {
     renderSettings();
+    fireEvent.click(screen.getByRole("button", { name: "Edit credentials" }));
     // A placeholder disappears the moment there's a value — it can't be the only label.
     expect(screen.getByLabelText("Client ID")).toBeInTheDocument();
     expect(screen.getByLabelText("Client Secret")).toBeInTheDocument();
@@ -54,6 +57,7 @@ describe("Settings", () => {
 
   it("saves replaced credentials to the keychain", async () => {
     renderSettings();
+    fireEvent.click(screen.getByRole("button", { name: "Edit credentials" }));
     fireEvent.change(screen.getByPlaceholderText("Client ID"), { target: { value: "id-123" } });
     fireEvent.change(screen.getByPlaceholderText("Client Secret"), {
       target: { value: "sec-456" },
@@ -74,6 +78,60 @@ describe("Settings", () => {
     const { onDisconnect } = renderSettings();
     fireEvent.click(screen.getByRole("button", { name: "Disconnect credentials" }));
     expect(onDisconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the credential form collapsed until asked for", () => {
+    // Settings is only reachable once credentials exist, so this form only ever *replaces* a
+    // working pair — showing it by default invites editing something that isn't broken.
+    renderSettings();
+    expect(screen.queryByPlaceholderText("Client ID")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Save to keychain" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit credentials" }));
+    expect(screen.getByPlaceholderText("Client ID")).toBeInTheDocument();
+    // The opener goes away while the editor is open, so there's one way back out.
+    expect(screen.queryByRole("button", { name: "Edit credentials" })).not.toBeInTheDocument();
+  });
+
+  it("collapses the form again after a successful save, keeping the result announced", async () => {
+    renderSettings();
+    fireEvent.click(screen.getByRole("button", { name: "Edit credentials" }));
+    fireEvent.change(screen.getByPlaceholderText("Client ID"), { target: { value: "id" } });
+    fireEvent.change(screen.getByPlaceholderText("Client Secret"), { target: { value: "sec" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save to keychain" }));
+
+    // "Saved." lives outside the form precisely so it survives the collapse.
+    expect(await screen.findByRole("status")).toHaveTextContent("Saved.");
+    await waitFor(() => expect(screen.queryByPlaceholderText("Client ID")).not.toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "Edit credentials" })).toBeInTheDocument();
+  });
+
+  it("keeps the form open when a save fails, so the values can be corrected", async () => {
+    mockInvoke.mockImplementation((cmd: string) =>
+      cmd === "save_credentials" ? Promise.reject("nope") : Promise.resolve(undefined),
+    );
+    renderSettings();
+    fireEvent.click(screen.getByRole("button", { name: "Edit credentials" }));
+    fireEvent.change(screen.getByPlaceholderText("Client ID"), { target: { value: "id" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save to keychain" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent(/nope/);
+    // Collapsing here would throw away what was typed and force a retype.
+    expect(screen.getByPlaceholderText("Client ID")).toBeInTheDocument();
+  });
+
+  it("cancels an edit without saving, discarding what was typed", () => {
+    renderSettings();
+    fireEvent.click(screen.getByRole("button", { name: "Edit credentials" }));
+    fireEvent.change(screen.getByPlaceholderText("Client ID"), { target: { value: "typed" } });
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(screen.queryByPlaceholderText("Client ID")).not.toBeInTheDocument();
+    expect(mockInvoke).not.toHaveBeenCalledWith("save_credentials", expect.anything());
+
+    // Reopening starts clean rather than restoring the abandoned value.
+    fireEvent.click(screen.getByRole("button", { name: "Edit credentials" }));
+    expect(screen.getByPlaceholderText("Client ID")).toHaveValue("");
   });
 
   it("offers to connect an account when none is connected", async () => {

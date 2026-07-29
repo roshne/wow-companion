@@ -31,6 +31,7 @@ export function Settings({
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
   const [status, setStatus] = useState("");
+  const [editing, setEditing] = useState(false);
 
   // `aria-modal="true"` below promises the rest of the app is unreachable; keep Tab inside the card.
   useFocusTrap(ref);
@@ -59,9 +60,20 @@ export function Settings({
       setClientId("");
       setClientSecret("");
       setStatus("Saved.");
+      // Collapse on success only: a failure keeps the editor open so the values can be corrected
+      // rather than retyped from scratch.
+      setEditing(false);
     } catch (err) {
       setStatus(`Error: ${String(err)}`);
     }
+  }
+
+  /** Abandon an edit: drop what was typed, and any stale result from a previous attempt. */
+  function cancelEdit() {
+    setClientId("");
+    setClientSecret("");
+    setStatus("");
+    setEditing(false);
   }
 
   return (
@@ -114,32 +126,53 @@ export function Settings({
 
         <div className="settings-section">
           <h3 style={{ margin: "0 0 0.35rem" }}>Battle.net credentials</h3>
-          <form onSubmit={replaceCreds}>
-            <p className="muted" style={{ margin: "0 0 0.35rem" }}>
-              Replace your Client ID / Secret. The secret is stored in your OS keychain — never in
-              the app.
-            </p>
-            <input
-              aria-label="Client ID"
-              placeholder="Client ID"
-              value={clientId}
-              onChange={(e) => setClientId(e.currentTarget.value)}
-            />
-            <input
-              type="password"
-              aria-label="Client Secret"
-              placeholder="Client Secret"
-              value={clientSecret}
-              onChange={(e) => setClientSecret(e.currentTarget.value)}
-            />
-            <button type="submit">Save to keychain</button>
-            {/* A live region, so "Saved." / an error is announced rather than only shown. */}
-            {status && (
-              <p className="muted" role="status">
-                {status}
+          {/* Collapsed by default. Settings is only reachable once credentials exist — App routes
+              the empty case to the connect gate, which has its own form — so this one only ever
+              *replaces* a working pair. Showing two prefilled-looking fields by default invites
+              editing something that isn't broken. */}
+          {editing ? (
+            <form onSubmit={replaceCreds}>
+              <p className="muted" style={{ margin: "0 0 0.35rem" }}>
+                Replace your Client ID / Secret. The secret is stored in your OS keychain — never in
+                the app.
               </p>
-            )}
-          </form>
+              <input
+                aria-label="Client ID"
+                placeholder="Client ID"
+                value={clientId}
+                onChange={(e) => setClientId(e.currentTarget.value)}
+              />
+              <input
+                type="password"
+                aria-label="Client Secret"
+                placeholder="Client Secret"
+                value={clientSecret}
+                onChange={(e) => setClientSecret(e.currentTarget.value)}
+              />
+              <button type="submit">Save to keychain</button>
+              <button type="button" className="ghost" onClick={cancelEdit}>
+                Cancel
+              </button>
+            </form>
+          ) : (
+            <p className="muted" style={{ margin: "0 0 0.35rem" }}>
+              Stored in your OS keychain — never in the app.
+            </p>
+          )}
+
+          {/* Outside the form, so "Saved." survives the editor collapsing on success. A live region,
+              so the result is announced rather than only shown. */}
+          {status && (
+            <p className="muted" role="status">
+              {status}
+            </p>
+          )}
+
+          {!editing && (
+            <button type="button" onClick={() => setEditing(true)}>
+              Edit credentials
+            </button>
+          )}
           {/* Named for what it disconnects: the account section below has its own, and two buttons
               called "Disconnect" in one dialog meaning different things is a trap. */}
           <button type="button" className="ghost settings-disconnect" onClick={onDisconnect}>
