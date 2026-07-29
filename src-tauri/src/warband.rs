@@ -129,6 +129,45 @@ pub struct WarbandWeekly {
     pub dungeons_max: Option<i64>,
 }
 
+/// One player title: its `titleMaskID` and display name.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Title {
+    pub id: i64,
+    pub name: String,
+}
+
+/// A character's titles, from the addon's `titles` broker.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CharacterTitles {
+    /// Earned titles, sorted by name so the payload is stable across reads.
+    pub known: Vec<Title>,
+    /// The featured title's id, and its display name. Both absent when none is active.
+    pub current: Option<i64>,
+    pub current_name: Option<String>,
+}
+
+/// The account-wide title catalog — every player title the game knows, earned or not.
+///
+/// The reason this is worth reading at all: an earned list can't tell you what's *missing*, and
+/// Blizzard's REST API has no title catalogue to diff against. The addon scans the full range
+/// without the "is it known" gate precisely so an offline reader can compute the unearned set.
+///
+/// `locale` matters because names follow the game client's language, not the app's.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TitleCatalog {
+    /// Every catalogued title, sorted by name.
+    pub titles: Vec<Title>,
+    pub locale: Option<String>,
+    /// The addon's own count of what it scanned — a cross-check against `titles.len()`.
+    pub count: Option<i64>,
+    pub scanned_at: Option<i64>,
+    /// Which character produced the scan. Titles are account-wide, so one scan serves the warband.
+    pub scanned_by: Option<String>,
+}
+
 /// One character extracted from `WarbandeerCharDB.characters[name]`. Most fields are
 /// optional — not every alt has every field populated.
 #[derive(Debug, Serialize)]
@@ -167,6 +206,9 @@ pub struct WarbandCharacter {
     pub weekly: Option<WarbandWeekly>,
     /// Instance lockouts, sorted by instance then difficulty so the payload is stable across reads.
     pub locks: Vec<InstanceLock>,
+    /// Earned titles and the featured one. `None` for a character the addon hasn't seen since it
+    /// began recording titles.
+    pub titles: Option<CharacterTitles>,
 }
 
 /// Result of a warband read: which account/file it came from, the characters, and account-wide wealth.
@@ -178,6 +220,8 @@ pub struct WarbandData {
     pub characters: Vec<WarbandCharacter>,
     /// `None` when the file predates the addon's account-wide wealth tracking (its schema v8).
     pub wealth: Option<WarbandWealth>,
+    /// The account-wide title catalog. `None` on a file written before the addon began scanning it.
+    pub title_catalog: Option<TitleCatalog>,
 }
 
 // --- Raw deserialize model -------------------------------------------------
@@ -349,6 +393,41 @@ struct RawLock {
     is_raid: Option<bool>,
 }
 
+/// `characters[name].titles` — the addon's per-character titles broker.
+#[derive(Debug, Deserialize)]
+struct RawCharacterTitles {
+    known: Option<Vec<RawTitle>>,
+    current: Option<f64>,
+    #[serde(rename = "currentName")]
+    current_name: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RawTitle {
+    id: Option<f64>,
+    name: Option<String>,
+}
+
+/// `WarbandeerCharDB.titleCatalog` — account-wide, so it sits beside `characters`.
+#[derive(Debug, Deserialize)]
+struct RawTitleCatalog {
+    /// Keyed by `titleMaskID`.
+    ///
+    /// This table is a Lua **array/map hybrid**: ids form a contiguous run from 1 (written as bare
+    /// array values) with several dozen sparse high ids written as explicit `[id] = name` pairs.
+    /// Deserializing it as a sequence would silently keep only the array part and drop the sparse
+    /// tail, so it is read as a map — which `pairs()` fills from both halves. That's also why the
+    /// catalog is read through `sub_tree` rather than an untagged wrapper: untagged buffers through
+    /// `deserialize_any`, where mlua would resolve the leading run to a sequence.
+    names: Option<HashMap<i64, String>>,
+    locale: Option<String>,
+    count: Option<f64>,
+    #[serde(rename = "scannedAt")]
+    scanned_at: Option<f64>,
+    #[serde(rename = "scannedBy")]
+    scanned_by: Option<String>,
+}
+
 /// `WarbandeerCharDB.warband` — account-wide, so it sits beside `characters` rather than inside it.
 #[derive(Debug, Deserialize)]
 struct RawWarband {
@@ -369,11 +448,18 @@ struct RawWeek {
 /// Fold a deserialized `RawCharacter` into the flat public payload, applying the
 /// fallbacks the file shape doesn't encode and casting numerics to `i64` here — at
 /// the payload edge — rather than at deserialize time.
+/// The optional sub-trees read separately from a character entry, rather than as `RawCharacter`
+/// fields — see the parse loop for why.
+struct CharacterSubTrees {
+    weekly: Option<WarbandWeekly>,
+    locks: Vec<InstanceLock>,
+    titles: Option<CharacterTitles>,
+}
+
 fn build_character(
     name_key: String,
     raw: RawCharacter,
-    weekly: Option<WarbandWeekly>,
-    locks: Vec<InstanceLock>,
+    subs: CharacterSubTrees,
 ) -> WarbandCharacter {
     let RawCharacter {
         name,
@@ -430,8 +516,55 @@ fn build_character(
         last_refresh: last_refresh.map(|n| n as i64),
         gold,
         currencies,
-        weekly,
-        locks,
+        weekly: subs.weekly,
+        locks: subs.locks,
+        titles: subs.titles,
+    }
+}
+
+/// Fold the raw per-character titles broker into the public payload.
+///
+/// Sorted by name because the earned list is browsed rather than indexed, and the addon's own order
+/// is its scan order. Entries missing an id or a name are dropped: a title that can't be identified
+/// or can't be shown is not something a consumer can do anything with.
+fn build_titles(raw: RawCharacterTitles) -> CharacterTitles {
+    let mut known: Vec<Title> = raw
+        .known
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|t| {
+            Some(Title {
+                id: t.id? as i64,
+                name: t.name?,
+            })
+        })
+        .collect();
+    known.sort_by(|a, b| a.name.cmp(&b.name));
+
+    CharacterTitles {
+        known,
+        current: raw.current.map(|n| n as i64),
+        current_name: raw.current_name,
+    }
+}
+
+/// Fold the raw account-wide catalog into the public payload.
+fn build_title_catalog(raw: RawTitleCatalog) -> TitleCatalog {
+    let mut titles: Vec<Title> = raw
+        .names
+        .unwrap_or_default()
+        .into_iter()
+        .map(|(id, name)| Title { id, name })
+        .collect();
+    // The source is a hash table, so iteration order is arbitrary; sort for a stable payload.
+    titles.sort_by(|a, b| a.name.cmp(&b.name).then(a.id.cmp(&b.id)));
+
+    TitleCatalog {
+        titles,
+        locale: raw.locale,
+        count: raw.count.map(|n| n as i64),
+        scanned_at: raw.scanned_at.map(|n| n as i64),
+        scanned_by: raw.scanned_by,
     }
 }
 
@@ -589,6 +722,7 @@ fn build_wealth(raw: RawWarband) -> WarbandWealth {
 struct ParsedDb {
     characters: Vec<WarbandCharacter>,
     wealth: Option<WarbandWealth>,
+    title_catalog: Option<TitleCatalog>,
 }
 
 /// Parse a `Warbandeer_Characters.lua` body into a name-sorted character list plus account-wide wealth.
@@ -623,14 +757,19 @@ fn parse_from_lua(content: &str) -> Result<ParsedDb, String> {
         // `RawCharacter`, for two reasons: a shape we don't recognise then costs only its own
         // section instead of the whole character, and each deserializes directly (no untagged
         // buffering), which is what lets `instances.locks` come through as an integer-keyed map.
-        let (weekly, locks) = match value.as_table() {
-            Some(t) => (
-                sub_tree::<RawWeeklies>(&lua, t, "weeklies").map(build_weekly),
-                build_locks(sub_tree::<RawInstances>(&lua, t, "instances")),
-            ),
-            None => (None, Vec::new()),
+        let subs = match value.as_table() {
+            Some(t) => CharacterSubTrees {
+                weekly: sub_tree::<RawWeeklies>(&lua, t, "weeklies").map(build_weekly),
+                locks: build_locks(sub_tree::<RawInstances>(&lua, t, "instances")),
+                titles: sub_tree::<RawCharacterTitles>(&lua, t, "titles").map(build_titles),
+            },
+            None => CharacterSubTrees {
+                weekly: None,
+                locks: Vec::new(),
+                titles: None,
+            },
         };
-        out.push(build_character(name_key, raw, weekly, locks));
+        out.push(build_character(name_key, raw, subs));
     }
     out.sort_by_key(|c| c.name.to_lowercase());
 
@@ -643,9 +782,18 @@ fn parse_from_lua(content: &str) -> Result<ParsedDb, String> {
         .and_then(|v| lua.from_value::<RawWarband>(v).ok())
         .map(build_wealth);
 
+    // Account-wide like `warband`, and read the same best-effort way — see RawTitleCatalog for why
+    // it must not go through an untagged wrapper.
+    let title_catalog = db
+        .get::<Value>("titleCatalog")
+        .ok()
+        .and_then(|v| lua.from_value::<RawTitleCatalog>(v).ok())
+        .map(build_title_catalog);
+
     Ok(ParsedDb {
         characters: out,
         wealth,
+        title_catalog,
     })
 }
 
@@ -721,6 +869,7 @@ pub fn get_warband() -> Result<WarbandData, String> {
         source: path.to_string_lossy().into_owned(),
         characters: parsed.characters,
         wealth: parsed.wealth,
+        title_catalog: parsed.title_catalog,
     })
 }
 
@@ -785,6 +934,16 @@ mod tests {
                   },
                 },
               },
+              ["titles"] = {
+                ["current"] = 284,
+                ["currentName"] = "Conservationist",
+                ["known"] = {
+                  { ["id"] = 474, ["name"] = "Ally of Dragons" },
+                  { ["id"] = 284, ["name"] = "Conservationist" },
+                  -- no name: unusable, so dropped
+                  { ["id"] = 999 },
+                },
+              },
               -- Integer-keyed both levels: [instanceID][difficultyID]
               ["instances"] = {
                 ["locks"] = {
@@ -808,6 +967,21 @@ mod tests {
               ["realm"] = "Altrealm",
               ["classKey"] = "Warrior",
               ["basic"] = { ["level"] = 60 },
+            },
+          },
+          -- The catalog's `names` table as the addon really writes it: a contiguous array part for
+          -- the low ids, then explicit [id] = name pairs for the sparse high ones.
+          ["titleCatalog"] = {
+            ["locale"] = "enUS",
+            ["scannedBy"] = "Testchar",
+            ["scannedAt"] = 1785200000,
+            ["count"] = 5,
+            ["names"] = {
+              "Private",           -- id 1
+              "Corporal",          -- id 2
+              [284] = "Conservationist",
+              [474] = "Ally of Dragons",
+              [743] = "the Explorer",
             },
           },
           ["warband"] = {
@@ -1176,6 +1350,112 @@ mod tests {
         assert_eq!(c.locks[0].name.as_deref(), Some("Readable"));
     }
 
+    #[test]
+    fn reads_a_characters_earned_and_featured_titles() {
+        let chars = parse_from_lua(FIXTURE).expect("parse").characters;
+        let titles = chars
+            .iter()
+            .find(|c| c.name == "Testchar")
+            .expect("Testchar")
+            .titles
+            .as_ref()
+            .expect("titles");
+
+        assert_eq!(titles.current, Some(284));
+        assert_eq!(titles.current_name.as_deref(), Some("Conservationist"));
+        // Sorted by name, and the entry with no name is dropped rather than rendered blank.
+        let names: Vec<&str> = titles.known.iter().map(|t| t.name.as_str()).collect();
+        assert_eq!(names, ["Ally of Dragons", "Conservationist"]);
+    }
+
+    #[test]
+    fn reads_both_halves_of_the_hybrid_title_catalog() {
+        // The regression this whole design guards: the addon writes low ids as a contiguous Lua
+        // array and high ids as explicit [id] = name pairs. Reading it as a sequence keeps only the
+        // array part and silently loses the sparse tail — which is most of the real catalog.
+        let catalog = parse_from_lua(FIXTURE)
+            .expect("parse")
+            .title_catalog
+            .expect("title catalog");
+
+        assert_eq!(
+            catalog.titles.len(),
+            5,
+            "array part and sparse pairs both present"
+        );
+        let by_id = |id: i64| {
+            catalog
+                .titles
+                .iter()
+                .find(|t| t.id == id)
+                .map(|t| t.name.as_str())
+        };
+        // From the array part...
+        assert_eq!(by_id(1), Some("Private"));
+        assert_eq!(by_id(2), Some("Corporal"));
+        // ...and from the explicitly-keyed tail.
+        assert_eq!(by_id(284), Some("Conservationist"));
+        assert_eq!(by_id(743), Some("the Explorer"));
+
+        assert_eq!(catalog.locale.as_deref(), Some("enUS"));
+        assert_eq!(catalog.scanned_by.as_deref(), Some("Testchar"));
+        assert_eq!(catalog.count, Some(5));
+    }
+
+    #[test]
+    fn sorts_the_catalog_by_name_for_a_stable_payload() {
+        let catalog = parse_from_lua(FIXTURE)
+            .expect("parse")
+            .title_catalog
+            .expect("title catalog");
+        let names: Vec<&str> = catalog.titles.iter().map(|t| t.name.as_str()).collect();
+        assert_eq!(
+            names,
+            [
+                "Ally of Dragons",
+                "Conservationist",
+                "Corporal",
+                "Private",
+                "the Explorer"
+            ]
+        );
+    }
+
+    #[test]
+    fn a_character_without_titles_reads_as_absent() {
+        let chars = parse_from_lua(FIXTURE).expect("parse").characters;
+        let alt = chars.iter().find(|c| c.name == "Altchar").expect("Altchar");
+        assert!(alt.titles.is_none());
+    }
+
+    // A file from before the addon began scanning the catalog.
+    const FIXTURE_NO_CATALOG: &str = r#"
+        WarbandeerCharDB = {
+          ["characters"] = {
+            ["Solo"] = {
+              ["realm"] = "Testrealm",
+              ["titles"] = { ["known"] = { { ["id"] = 1, ["name"] = "Private" } } },
+            },
+          },
+        }
+    "#;
+
+    #[test]
+    fn missing_catalog_still_yields_earned_titles() {
+        // Degrades to earned-only rather than costing the titles entirely.
+        let parsed = parse_from_lua(FIXTURE_NO_CATALOG).expect("parse");
+        assert!(parsed.title_catalog.is_none());
+        assert_eq!(
+            parsed.characters[0]
+                .titles
+                .as_ref()
+                .expect("titles")
+                .known
+                .len(),
+            1
+        );
+    }
+
     // Instance ids that form a contiguous run from 1 — the shape mlua renders as a *sequence*
     // rather than a map under `deserialize_any`.
     const FIXTURE_ARRAY_LIKE_LOCKS: &str = r#"
@@ -1261,6 +1541,21 @@ mod tests {
         );
         assert!(!data.characters.is_empty());
         eprintln!("LIVE wealth: {:?}", data.wealth);
+        // The catalog's own `count` is the addon's tally of what it scanned. If the hybrid
+        // array/map table were read as a sequence, `titles.len()` would fall short of it — this is
+        // the live check for that.
+        match &data.title_catalog {
+            Some(c) => eprintln!(
+                "LIVE titles: catalog {} entries (addon count {:?}), locale {:?}, scanned by {:?}; \
+                 {} characters carry titles",
+                c.titles.len(),
+                c.count,
+                c.locale,
+                c.scanned_by,
+                data.characters.iter().filter(|x| x.titles.is_some()).count()
+            ),
+            None => eprintln!("LIVE titles: no catalog"),
+        }
         let with_vault = data
             .characters
             .iter()

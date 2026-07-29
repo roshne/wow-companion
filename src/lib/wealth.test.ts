@@ -33,6 +33,7 @@ function character(overrides: Partial<WarbandCharacter> = {}): WarbandCharacter 
     currencies: [],
     weekly: null,
     locks: [],
+    titles: null,
     ...overrides,
   };
 }
@@ -45,6 +46,7 @@ function data(
     account: "TESTACCOUNT",
     source: "C:/wow/Warbandeer_Characters.lua",
     characters,
+    titleCatalog: null,
     wealth,
   };
 }

@@ -1404,3 +1404,16 @@ button.doll-slot:focus-visible {
   color: var(--down);
   font-weight: 600;
 }
+
+/* Titles browser: the featured-title list collapses, since a full warband makes it long enough to
+   push the table it sits above off-screen. */
+.titles-featured {
+  margin: 0 0 0.6rem;
+}
+.titles-featured > summary {
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.titles-featured > p {
+  margin: 0.35rem 0 0;
+}
