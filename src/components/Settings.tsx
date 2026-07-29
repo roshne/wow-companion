@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { Region } from "../vendor/battlenet-wow-client";
 import { useFocusTrap } from "../lib/useFocusTrap";
+import { GRANT_LIFETIME_HOURS, useAccountGrant } from "../lib/account";
 import { ThemeToggle } from "./ThemeToggle";
 
 const REGIONS: Region[] = ["us", "eu", "kr", "tw"];
@@ -139,11 +140,70 @@ export function Settings({
               </p>
             )}
           </form>
+          {/* Named for what it disconnects: the account section below has its own, and two buttons
+              called "Disconnect" in one dialog meaning different things is a trap. */}
           <button type="button" className="ghost settings-disconnect" onClick={onDisconnect}>
-            Disconnect
+            Disconnect credentials
           </button>
+        </div>
+
+        <div className="settings-section">
+          <h3 style={{ margin: "0 0 0.35rem" }}>Battle.net account</h3>
+          <AccountSection />
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Connect or disconnect the account-wide grant.
+ *
+ * Separate from the credentials above and independent of them: those serve every data tab, this one
+ * only the account-wide endpoints. Neither may break the other, which is why disconnecting here
+ * touches only the account grant.
+ */
+function AccountSection() {
+  const { state, connecting, error, connect, disconnect } = useAccountGrant();
+
+  return (
+    <>
+      <p className="muted" style={{ margin: "0 0 0.35rem" }}>
+        {state === "connected"
+          ? "Connected — account-wide data is available."
+          : "Connect to read account-wide data (your character list and collections). Optional: every other tab works without it."}
+      </p>
+
+      {state === "connected" ? (
+        <>
+          <button type="button" className="ghost" onClick={() => void disconnect()}>
+            Disconnect account
+          </button>
+          {/* A button that looks like it revokes access but only forgets a token locally is worse
+              than one that says so. */}
+          <p className="muted" style={{ margin: "0.35rem 0 0" }}>
+            This forgets the stored token on this machine. The authorisation itself stays on your
+            Battle.net account until you remove it there.
+          </p>
+        </>
+      ) : (
+        <>
+          <button type="button" onClick={() => void connect()} disabled={connecting}>
+            {connecting ? "Waiting for Battle.net…" : "Connect account"}
+          </button>
+          <p className="muted" style={{ margin: "0.35rem 0 0" }}>
+            Opens Battle.net in your browser. A connection lasts about {GRANT_LIFETIME_HOURS} hours
+            — Blizzard issues no refresh token, so reconnecting is expected rather than a fault.
+          </p>
+        </>
+      )}
+
+      {/* Announced, not merely shown: the outcome lands well after the click that caused it. */}
+      {error && (
+        <p className="muted" role="status">
+          {error}
+        </p>
+      )}
+    </>
   );
 }

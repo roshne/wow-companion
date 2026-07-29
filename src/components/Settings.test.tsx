@@ -34,7 +34,9 @@ describe("Settings", () => {
     expect(within(dialog).getByLabelText(/Region/)).toBeInTheDocument();
     expect(within(dialog).getByLabelText(/Theme/)).toBeInTheDocument();
     expect(within(dialog).getByPlaceholderText("Client ID")).toBeInTheDocument();
-    expect(within(dialog).getByRole("button", { name: "Disconnect" })).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("button", { name: "Disconnect credentials" }),
+    ).toBeInTheDocument();
   });
 
   it("names both credential fields, so they stay identifiable once typed into", () => {
@@ -70,8 +72,86 @@ describe("Settings", () => {
 
   it("disconnects through onDisconnect", () => {
     const { onDisconnect } = renderSettings();
-    fireEvent.click(screen.getByRole("button", { name: "Disconnect" }));
+    fireEvent.click(screen.getByRole("button", { name: "Disconnect credentials" }));
     expect(onDisconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it("offers to connect an account when none is connected", async () => {
+    mockInvoke.mockImplementation((cmd: string) =>
+      Promise.resolve(cmd === "has_account_grant" ? false : undefined),
+    );
+    renderSettings();
+    expect(await screen.findByRole("button", { name: "Connect account" })).toBeInTheDocument();
+    // The 24-hour expiry is stated, so a connection lapsing overnight reads as expected.
+    expect(screen.getByText(/lasts about 24 hours/)).toBeInTheDocument();
+  });
+
+  it("offers to disconnect when one is connected, and says what that does not do", async () => {
+    mockInvoke.mockImplementation((cmd: string) =>
+      Promise.resolve(cmd === "has_account_grant" ? true : undefined),
+    );
+    renderSettings();
+    expect(await screen.findByRole("button", { name: "Disconnect account" })).toBeInTheDocument();
+    // It forgets a local token; it does not revoke the authorisation on Battle.net.
+    expect(screen.getByText(/stays on your Battle.net account/)).toBeInTheDocument();
+  });
+
+  it("keeps the two disconnects distinct, so neither can be clicked by mistake", async () => {
+    // Both exist in one dialog and do different things: one drops the client credentials every data
+    // tab needs, the other only forgets the account grant.
+    mockInvoke.mockImplementation((cmd: string) =>
+      Promise.resolve(cmd === "has_account_grant" ? true : undefined),
+    );
+    renderSettings();
+    await screen.findByRole("button", { name: "Disconnect account" });
+    expect(screen.getByRole("button", { name: "Disconnect credentials" })).toBeInTheDocument();
+  });
+
+  it("disconnecting the account leaves the credentials alone", async () => {
+    // The regression that would take every data tab down with it.
+    mockInvoke.mockImplementation((cmd: string) =>
+      Promise.resolve(cmd === "has_account_grant" ? true : undefined),
+    );
+    const { onDisconnect } = renderSettings();
+    fireEvent.click(await screen.findByRole("button", { name: "Disconnect account" }));
+
+    await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith("clear_account_grant"));
+    const commands = mockInvoke.mock.calls.map(([cmd]) => cmd);
+    expect(commands).not.toContain("clear_credentials");
+    // ...and it doesn't drop the app back to the connect gate either.
+    expect(onDisconnect).not.toHaveBeenCalled();
+  });
+
+  it("disables the connect button while a consent round trip is in flight", async () => {
+    // Otherwise a second click opens another browser window against a port already bound.
+    let release: (() => void) | undefined;
+    mockInvoke.mockImplementation((cmd: string) => {
+      if (cmd === "has_account_grant") return Promise.resolve(false);
+      if (cmd === "begin_account_login") return new Promise<void>((r) => (release = r));
+      return Promise.resolve(undefined);
+    });
+    renderSettings();
+    const button = await screen.findByRole("button", { name: "Connect account" });
+    fireEvent.click(button);
+
+    const pending = await screen.findByRole("button", { name: "Waiting for Battle.net…" });
+    expect(pending).toBeDisabled();
+    release?.();
+  });
+
+  it("announces why a connection attempt failed", async () => {
+    mockInvoke.mockImplementation((cmd: string) => {
+      if (cmd === "has_account_grant") return Promise.resolve(false);
+      if (cmd === "begin_account_login")
+        return Promise.reject("Battle.net declined the request: access_denied");
+      return Promise.resolve(undefined);
+    });
+    renderSettings();
+    fireEvent.click(await screen.findByRole("button", { name: "Connect account" }));
+
+    // Announced rather than only shown — the outcome lands long after the click.
+    expect(await screen.findByRole("status")).toHaveTextContent(/access_denied/);
+    expect(screen.getByRole("button", { name: "Connect account" })).toBeEnabled();
   });
 
   it("traps Tab inside the dialog, wrapping at both ends", () => {
