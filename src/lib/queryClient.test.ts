@@ -3,6 +3,7 @@ import { createQueryClient } from "./queryClient";
 import { BnetError } from "./queries";
 import { onUnauthorized } from "./auth";
 import { onToast, type ToastMessage } from "./toast";
+import { AccountError } from "./accountProfile";
 
 describe("createQueryClient", () => {
   it("dedups concurrent identical fetches — the queryFn runs once", async () => {
@@ -135,5 +136,36 @@ describe("createQueryClient — error toasts", () => {
 
   it("does not toast a 401 (routes to reconnect instead)", async () => {
     expect(await toastsFor(new BnetError(401), "toast-401")).toEqual([]);
+  });
+
+  it("does not toast an account grant problem — the view says so inline, with a button", async () => {
+    expect(await toastsFor(new AccountError("noGrant", "none"), "toast-no-grant")).toEqual([]);
+    expect(await toastsFor(new AccountError("expired", "old"), "toast-expired")).toEqual([]);
+    expect(await toastsFor(new AccountError("unauthorized", "no"), "toast-revoked")).toEqual([]);
+  });
+
+  it("still toasts an account read that failed for an unrelated reason", async () => {
+    expect(await toastsFor(new AccountError("http", "500"), "toast-account-http")).toHaveLength(1);
+  });
+});
+
+describe("createQueryClient — account errors and client credentials", () => {
+  it("never clears the client credentials when an account grant is rejected", async () => {
+    // The two authorisations are independent: a revoked account grant says nothing about the
+    // Client ID / Secret, and clearing them would sign the user out of every data tab.
+    const client = createQueryClient();
+    const listener = vi.fn();
+    const off = onUnauthorized(listener);
+    await client
+      .fetchQuery({
+        queryKey: ["account-rejected"] as const,
+        queryFn: async () => {
+          throw new AccountError("unauthorized", "rejected");
+        },
+        retry: false,
+      })
+      .catch(() => {});
+    expect(listener).not.toHaveBeenCalled();
+    off();
   });
 });

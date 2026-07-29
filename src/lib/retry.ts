@@ -6,6 +6,7 @@
 // `Retry-After` when we parsed one, else capped exponential backoff with jitter.
 
 import { BnetError } from "./queries";
+import { AccountError } from "./accountProfile";
 
 /** Total attempts (initial + retries) before a transient failure is surfaced. */
 export const MAX_ATTEMPTS = 4;
@@ -16,6 +17,12 @@ const MAX_DELAY = 30_000;
 export function isRetryableError(error: unknown): boolean {
   if (error instanceof BnetError) {
     return error.status === 429 || (error.status >= 500 && error.status < 600);
+  }
+  // An account read that failed on the connection itself — missing, expired, or revoked — is the
+  // same class of definite failure as a 401: retrying can only fail identically. Only a transport
+  // failure is worth another attempt.
+  if (error instanceof AccountError) {
+    return error.kind === "network" || error.kind === "http";
   }
   // Non-BnetError (e.g. a network/fetch failure) — treat as transient.
   return true;

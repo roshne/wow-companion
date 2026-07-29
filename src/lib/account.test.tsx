@@ -53,7 +53,19 @@ describe("useAccountGrant", () => {
       "connect",
       "disconnect",
       "refresh",
+      "reportRejected",
     ]);
+  });
+
+  it("moves to rejected when a read reports Battle.net refused the grant", async () => {
+    // The state `has_account_grant` structurally cannot see: present and unexpired locally, revoked
+    // on Blizzard's side. Only something that actually calls an account endpoint can discover it.
+    routeInvoke({ has_account_grant: () => true });
+    const { result } = renderHook(() => useAccountGrant());
+    await waitFor(() => expect(result.current.state).toBe("connected"));
+
+    act(() => result.current.reportRejected());
+    expect(result.current.state).toBe("rejected");
   });
 
   it("connects and re-reads the resulting state", async () => {

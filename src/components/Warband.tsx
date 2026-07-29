@@ -9,6 +9,7 @@ import { WarbandKeystoneBoard } from "./WarbandKeystoneBoard";
 import { WarbandCurrencies } from "./WarbandCurrencies";
 import { WarbandWealth } from "./WarbandWealth";
 import { WarbandTitles } from "./WarbandTitles";
+import { WarbandAllCharacters } from "./WarbandAllCharacters";
 
 const ROLE_LABEL: Record<string, string> = {
   TANK: "Tank",
@@ -59,9 +60,9 @@ export function Warband({
   // Roster (the default), the warband-wide gear board, or the Great Vault board. The gear board only
   // mounts — and only then fetches every alt's equipment — when selected, so that fetch stays lazy.
   // The vault board needs no fetch at all: it reads the same local export the roster already has.
-  const [view, setView] = useState<"roster" | "board" | "vault" | "keys" | "currencies" | "titles">(
-    "roster",
-  );
+  const [view, setView] = useState<
+    "roster" | "all" | "board" | "vault" | "keys" | "currencies" | "titles"
+  >("roster");
 
   async function load() {
     setBusy(true);
@@ -84,6 +85,17 @@ export function Warband({
     if (!data) return [];
     return [...data.characters].sort((a, b) => sort.dir * compare(a, b, sort.key));
   }, [data, sort]);
+
+  // Whether the addon export gave us anything. Six of the seven views are built entirely from it; the
+  // seventh asks Battle.net instead, which is exactly the case where the addon may be absent — a
+  // player who has the app but not the addon still has characters, and this is where they see them.
+  const hasAddon = !!data && data.characters.length > 0;
+  // Whether the export read has produced an answer yet. The fallback below must wait for it —
+  // otherwise the first paint of every load shows the account view and then swaps to the roster.
+  const settled = data !== null || error !== "";
+  // Fall back to the one view that doesn't need the addon, so an addon-less load lands somewhere real
+  // rather than on an empty Roster.
+  const shownView = hasAddon ? view : "all";
 
   function toggleSort(key: SortKey) {
     setSort((s) =>
@@ -138,62 +150,76 @@ export function Warband({
         <WarbandWealth data={data} region={region} />
       )}
 
-      {!error && data && data.characters.length > 0 && (
-        // A pair of toggles rather than a tablist (they read as buttons, not a tab strip), so the
-        // active one announces itself through `aria-pressed`.
+      {settled && (hasAddon || hasCredentials) && (
+        // Toggles rather than a tablist (they read as buttons, not a tab strip), so the active one
+        // announces itself through `aria-pressed`. The addon-backed six only appear when there's an
+        // export to back them; "All characters" stands alone because it doesn't need one.
         <div
           className="row"
           style={{ gap: "0.25rem", marginBottom: "0.5rem" }}
           role="group"
           aria-label="Warband view"
         >
+          {hasAddon && (
+            <button
+              className={shownView === "roster" ? "" : "ghost"}
+              aria-pressed={shownView === "roster"}
+              onClick={() => setView("roster")}
+            >
+              Roster
+            </button>
+          )}
           <button
-            className={view === "roster" ? "" : "ghost"}
-            aria-pressed={view === "roster"}
-            onClick={() => setView("roster")}
+            className={shownView === "all" ? "" : "ghost"}
+            aria-pressed={shownView === "all"}
+            onClick={() => setView("all")}
           >
-            Roster
+            All characters
           </button>
-          <button
-            className={view === "board" ? "" : "ghost"}
-            aria-pressed={view === "board"}
-            onClick={() => setView("board")}
-          >
-            Gear board
-          </button>
-          <button
-            className={view === "vault" ? "" : "ghost"}
-            aria-pressed={view === "vault"}
-            onClick={() => setView("vault")}
-          >
-            Great Vault
-          </button>
-          <button
-            className={view === "keys" ? "" : "ghost"}
-            aria-pressed={view === "keys"}
-            onClick={() => setView("keys")}
-          >
-            Keys &amp; locks
-          </button>
-          <button
-            className={view === "currencies" ? "" : "ghost"}
-            aria-pressed={view === "currencies"}
-            onClick={() => setView("currencies")}
-          >
-            Currencies
-          </button>
-          <button
-            className={view === "titles" ? "" : "ghost"}
-            aria-pressed={view === "titles"}
-            onClick={() => setView("titles")}
-          >
-            Titles
-          </button>
+          {hasAddon && (
+            <>
+              <button
+                className={shownView === "board" ? "" : "ghost"}
+                aria-pressed={shownView === "board"}
+                onClick={() => setView("board")}
+              >
+                Gear board
+              </button>
+              <button
+                className={shownView === "vault" ? "" : "ghost"}
+                aria-pressed={shownView === "vault"}
+                onClick={() => setView("vault")}
+              >
+                Great Vault
+              </button>
+              <button
+                className={shownView === "keys" ? "" : "ghost"}
+                aria-pressed={shownView === "keys"}
+                onClick={() => setView("keys")}
+              >
+                Keys &amp; locks
+              </button>
+              <button
+                className={shownView === "currencies" ? "" : "ghost"}
+                aria-pressed={shownView === "currencies"}
+                onClick={() => setView("currencies")}
+              >
+                Currencies
+              </button>
+              <button
+                className={shownView === "titles" ? "" : "ghost"}
+                aria-pressed={shownView === "titles"}
+                onClick={() => setView("titles")}
+              >
+                Titles
+              </button>
+            </>
+          )}
         </div>
       )}
 
       {!error &&
-        view === "board" &&
+        shownView === "board" &&
         data &&
         data.characters.length > 0 &&
         // The only view here that genuinely needs the API: it fetches every character's equipment.
@@ -208,23 +234,38 @@ export function Warband({
           </p>
         ))}
 
-      {!error && view === "vault" && data && data.characters.length > 0 && (
+      {/* Deliberately not gated on `error`: a missing addon export is exactly when this view is the
+          only one with anything to show. Connecting an account does need the client credentials,
+          though — without them there's nothing to connect with. */}
+      {settled &&
+        shownView === "all" &&
+        (hasCredentials ? (
+          <WarbandAllCharacters data={data} region={region} />
+        ) : (
+          <p className="muted">
+            Seeing every character on your account means asking Battle.net, which needs a Client ID
+            / Secret. Add one in Settings — the other views here come from the addon and work
+            without it.
+          </p>
+        ))}
+
+      {!error && shownView === "vault" && data && data.characters.length > 0 && (
         <WarbandVaultBoard data={data} />
       )}
 
-      {!error && view === "keys" && data && data.characters.length > 0 && (
+      {!error && shownView === "keys" && data && data.characters.length > 0 && (
         <WarbandKeystoneBoard data={data} region={region} />
       )}
 
-      {!error && view === "currencies" && data && data.characters.length > 0 && (
+      {!error && shownView === "currencies" && data && data.characters.length > 0 && (
         <WarbandCurrencies data={data} region={region} />
       )}
 
-      {!error && view === "titles" && data && data.characters.length > 0 && (
+      {!error && shownView === "titles" && data && data.characters.length > 0 && (
         <WarbandTitles data={data} />
       )}
 
-      {!error && view === "roster" && rows.length > 0 && (
+      {!error && shownView === "roster" && rows.length > 0 && (
         <div style={{ overflowX: "auto" }}>
           <table className="grid">
             <thead>

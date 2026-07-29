@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { isRetryableError, shouldRetry, backoffMs, MAX_ATTEMPTS } from "./retry";
 import { BnetError } from "./queries";
+import { AccountError } from "./accountProfile";
 
 describe("isRetryableError", () => {
   it("retries 429 and 5xx", () => {
@@ -18,6 +19,18 @@ describe("isRetryableError", () => {
 
   it("retries non-HTTP (network) failures", () => {
     expect(isRetryableError(new Error("network down"))).toBe(true);
+  });
+
+  it("does not retry an account read that failed on the connection itself", () => {
+    // Missing, expired or revoked: three more attempts can only fail identically.
+    expect(isRetryableError(new AccountError("noGrant", ""))).toBe(false);
+    expect(isRetryableError(new AccountError("expired", ""))).toBe(false);
+    expect(isRetryableError(new AccountError("unauthorized", ""))).toBe(false);
+  });
+
+  it("still retries an account read that failed in transport", () => {
+    expect(isRetryableError(new AccountError("network", ""))).toBe(true);
+    expect(isRetryableError(new AccountError("http", ""))).toBe(true);
   });
 });
 
