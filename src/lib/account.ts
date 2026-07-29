@@ -16,11 +16,13 @@ export const GRANT_LIFETIME_HOURS = 24;
  * `unknown` is the pre-first-answer state, kept distinct from `disconnected` so the UI doesn't flash
  * "not connected" before it has actually asked.
  *
- * There is deliberately no `rejected` state yet: nothing calls an account endpoint until the first
- * consumer exists, and `has_account_grant` can only report present-and-unexpired. A state nothing
- * can currently produce would be untestable decoration.
+ * `rejected` is the state `has_account_grant` structurally cannot see: a grant that is present and
+ * unexpired locally, but which Battle.net has revoked on their side. It only became producible once
+ * something actually called an account endpoint — until then it would have been untestable
+ * decoration. It is distinct from `disconnected` because it needs a different sentence: nothing the
+ * player did ended this connection.
  */
-export type AccountState = "unknown" | "connected" | "disconnected";
+export type AccountState = "unknown" | "connected" | "disconnected" | "rejected";
 
 export interface AccountGrant {
   state: AccountState;
@@ -31,6 +33,11 @@ export interface AccountGrant {
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
   refresh: () => Promise<void>;
+  /**
+   * Record that Battle.net rejected the grant we hold. Called by whatever read got the rejection —
+   * the auth layer can't discover this on its own.
+   */
+  reportRejected: () => void;
 }
 
 /**
@@ -89,5 +96,10 @@ export function useAccountGrant(): AccountGrant {
     }
   }, [refresh]);
 
-  return { state, connecting, error, connect, disconnect, refresh };
+  // Rust already deletes a grant Battle.net rejected, so this doesn't clear anything — it moves the
+  // UI to the state that says so, instead of leaving a stale "connected" on screen until something
+  // else happens to re-read it.
+  const reportRejected = useCallback(() => setState("rejected"), []);
+
+  return { state, connecting, error, connect, disconnect, refresh, reportRejected };
 }

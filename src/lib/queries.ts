@@ -206,6 +206,12 @@ export const queryKeys = {
     ["realm-auctions", region, connectedRealmId] as const,
   commodities: (region: Region) => ["commodities", region] as const,
   keystoneDungeons: (region: Region) => ["keystone-dungeons", region] as const,
+  /**
+   * The account's own character index. Not a `bnet` read — it goes through Rust, since it needs the
+   * user's token — but its cache identity belongs here with every other key, and it is region-scoped
+   * for the same reason: the index is served per region host.
+   */
+  accountProfile: (region: Region) => ["account-profile", region] as const,
 };
 
 /** Fetch the current WoW Token price document. */

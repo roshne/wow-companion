@@ -2,6 +2,7 @@ import { QueryCache, QueryClient } from "@tanstack/react-query";
 import { shouldRetry, backoffMs } from "./retry";
 import { BnetError, describeError, shouldToastError } from "./queries";
 import { notifyUnauthorized } from "./auth";
+import { needsReconnect } from "./accountProfile";
 import { notifyError } from "./toast";
 
 /** How long unused (garbage-collectible) query data lingers in cache before eviction. */
@@ -27,6 +28,11 @@ export function createQueryClient(): QueryClient {
     queryCache: new QueryCache({
       onError: (error) => {
         if (error instanceof BnetError && error.status === 401) notifyUnauthorized();
+        // An account grant that's missing, expired or revoked is shown inline by the view that asked
+        // for it, with a Connect button — a toast on top would be noise. It must also never reach
+        // `notifyUnauthorized`: that clears the *client credentials*, which this failure says nothing
+        // about. The two authorisations are independent.
+        else if (needsReconnect(error)) return;
         else if (shouldToastError(error)) notifyError(describeError(error));
       },
     }),
