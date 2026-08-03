@@ -65,7 +65,8 @@ React webview  ──invoke("get_access_token")──►  Rust (Tauri)
     lockouts. Characters not played since the weekly reset are marked as such rather than shown with
     an empty vault.
   - **Keys & locks** — held Mythic+ keystones (dungeon names resolved from the API), the week's M+
-    count, and instance lockouts.
+    count, and instance lockouts, headed by the week's global **affix rotation** (best-effort — the
+    board is unaffected if it can't be resolved).
   - **Currencies** — every currency and crest across the warband, with names, icons and cap progress.
   - **Titles** — every player title, who has earned it and what remains, with filters and search.
 

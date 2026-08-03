@@ -12,15 +12,21 @@ vi.mock("../lib/queries", async (importOriginal) => {
       queryKey: ["keystone-dungeons", "us"],
       queryFn: () => Promise.resolve(dungeonCatalogue),
     }),
+    currentAffixesQuery: () => ({
+      queryKey: ["current-affixes", "us"],
+      queryFn: () => Promise.resolve(affixRotation),
+    }),
   };
 });
 
 import { WarbandKeystoneBoard } from "./WarbandKeystoneBoard";
 import type { InstanceLock, WarbandCharacter, WarbandData } from "../lib/warband";
 import type { KeystoneDungeon } from "../lib/queries";
+import type { AffixEntry } from "../lib/affixes";
 
 const WEEK_START = 1785164400;
 let dungeonCatalogue: KeystoneDungeon[] = [];
+let affixRotation: AffixEntry[] = [];
 
 function renderBoard(data: WarbandData | null) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -81,6 +87,7 @@ function data(characters: WarbandCharacter[]): WarbandData {
 describe("WarbandKeystoneBoard", () => {
   beforeEach(() => {
     dungeonCatalogue = [{ id: 507, name: "Altar of Fangs" }];
+    affixRotation = [];
   });
 
   it("names the keystone's dungeon once the catalogue resolves", async () => {
@@ -136,5 +143,23 @@ describe("WarbandKeystoneBoard", () => {
   it("says so when nothing is recorded", () => {
     renderBoard(data([character({ name: "Idle", weekly: null })]));
     expect(screen.getByText(/No keystones or lockouts recorded this week/)).toBeInTheDocument();
+  });
+
+  it("shows the week's affix rotation when it resolves", async () => {
+    affixRotation = [
+      { id: 10, name: "Fortified", startingLevel: 2 },
+      { id: 9, name: "Tyrannical", startingLevel: 7 },
+    ];
+    renderBoard(data([character({ name: "Keyholder" })]));
+    expect(await screen.findByText("Fortified · Tyrannical")).toBeInTheDocument();
+  });
+
+  it("renders the board unchanged when the affix chain yields nothing", async () => {
+    affixRotation = [];
+    renderBoard(data([character({ name: "Keyholder" })]));
+    // The affix line is decoration — its absence must not touch the board itself.
+    expect(await screen.findByText("Altar of Fangs")).toBeInTheDocument();
+    expect(screen.getByText("+12")).toBeInTheDocument();
+    expect(screen.queryByText(/Affixes this week/)).not.toBeInTheDocument();
   });
 });
