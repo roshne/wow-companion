@@ -11,6 +11,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import type { BlizzardClient, Region, paths } from "../vendor/battlenet-wow-client";
 import { aggregateRealmAuctions, aggregateCommodities, type AggregatedRow } from "./auctions";
+import { resolveAffixRotation, resolveCurrentPeriodId, type AffixEntry } from "./affixes";
 import type { ResolvedItem } from "./persist";
 
 const SECOND = 1000;
@@ -206,6 +207,7 @@ export const queryKeys = {
     ["realm-auctions", region, connectedRealmId] as const,
   commodities: (region: Region) => ["commodities", region] as const,
   keystoneDungeons: (region: Region) => ["keystone-dungeons", region] as const,
+  currentAffixes: (region: Region) => ["current-affixes", region] as const,
   /**
    * The account's own character index. Not a `bnet` read — it goes through Rust, since it needs the
    * user's token — but its cache identity belongs here with every other key, and it is region-scoped
@@ -264,6 +266,53 @@ export async function fetchKeystoneDungeons(bnet: BlizzardClient): Promise<Keyst
   return (body.dungeons ?? [])
     .flatMap((d) => (d.id != null && d.name ? [{ id: d.id, name: String(d.name) }] : []))
     .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * The current Mythic+ affix rotation — a global weekly fact the Game Data API exposes through no
+ * dedicated endpoint. Assembled from four best-effort dynamic-namespace reads: the current period,
+ * any connected realm to serve as a vehicle, one of that realm's current dungeons, and finally that
+ * dungeon's leaderboard, whose body carries `keystone_affixes` for the period.
+ *
+ * Every step degrades to an empty rotation rather than throwing: this is decoration on the keystone
+ * board, which must render unchanged when the chain fails. A realm and dungeon are needed only as a
+ * vehicle — the affixes are identical across every realm and dungeon in the period.
+ */
+export async function fetchCurrentAffixes(bnet: BlizzardClient): Promise<AffixEntry[]> {
+  const dynamic = { namespace: bnet.namespace("dynamic"), locale: "en_US" };
+  try {
+    const period = await bnet.api.GET("/data/wow/mythic-keystone/period/index", {
+      params: { query: dynamic },
+    });
+    const periodId = period.response.ok ? resolveCurrentPeriodId(period.data) : null;
+    if (periodId == null) return [];
+
+    const realms = await bnet.api.GET("/data/wow/search/connected-realm", {
+      params: { query: { namespace: bnet.namespace("dynamic"), orderby: "id", _page: 1 } },
+    });
+    const connectedRealmId = realms.response.ok
+      ? (realms.data?.results?.[0]?.data?.id ?? null)
+      : null;
+    if (connectedRealmId == null) return [];
+
+    const leaderboards = await bnet.api.GET(
+      "/data/wow/connected-realm/{connectedRealmId}/mythic-leaderboard/index",
+      { params: { path: { connectedRealmId }, query: dynamic } },
+    );
+    const dungeonId = leaderboards.response.ok
+      ? (leaderboards.data?.current_leaderboards?.[0]?.id ?? null)
+      : null;
+    if (dungeonId == null) return [];
+
+    const board = await bnet.api.GET(
+      "/data/wow/connected-realm/{connectedRealmId}/mythic-leaderboard/{dungeonId}/period/{period}",
+      { params: { path: { connectedRealmId, dungeonId, period: periodId }, query: dynamic } },
+    );
+    if (!board.response.ok) return [];
+    return resolveAffixRotation(board.data?.keystone_affixes);
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -688,6 +737,18 @@ export const keystoneDungeonsQuery = (bnet: BlizzardClient) =>
   queryOptions({
     queryKey: queryKeys.keystoneDungeons(bnet.region),
     queryFn: () => fetchKeystoneDungeons(bnet),
+    staleTime: 60 * MINUTE,
+  });
+
+/**
+ * The week's Mythic+ affix rotation. Global and changing only at the weekly reset, so it's cached
+ * hard — one assembly serves every view, and the four-request chain behind it (see
+ * `fetchCurrentAffixes`) runs at most hourly rather than per render or per realm.
+ */
+export const currentAffixesQuery = (bnet: BlizzardClient) =>
+  queryOptions({
+    queryKey: queryKeys.currentAffixes(bnet.region),
+    queryFn: () => fetchCurrentAffixes(bnet),
     staleTime: 60 * MINUTE,
   });
 

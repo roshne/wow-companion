@@ -5,7 +5,7 @@ import type { WarbandData } from "../lib/warband";
 import type { KeystoneRow } from "../lib/keystoneBoard";
 import { buildKeystoneBoard } from "../lib/keystoneBoard";
 import { makeClient } from "../lib/bnet";
-import { keystoneDungeonsQuery } from "../lib/queries";
+import { keystoneDungeonsQuery, currentAffixesQuery } from "../lib/queries";
 import { CLASS_COLORS } from "../lib/wow";
 
 /** Short difficulty labels, matching the addon's own vocabulary. */
@@ -57,11 +57,14 @@ function Lockouts({ row }: { row: KeystoneRow }) {
  * Keystones and lockouts across the warband — who's holding what key, how far into the week's M+
  * count they are, and what they're saved to.
  *
- * The one API join here is the keystone's dungeon **name**, resolved from the Mythic+ dungeon index:
+ * The main API join here is the keystone's dungeon **name**, resolved from the Mythic+ dungeon index:
  * the addon records a challenge-map id and that endpoint is keyed by the same ids. Lockout instance
  * ids are deliberately *not* joined to `journal-instance` — they come from `GetSavedInstanceInfo`, a
  * different id space, so the lookup would silently return the wrong instance. The addon already
  * stores each lockout's name, so its own value is used instead.
+ *
+ * A second, independent best-effort read surfaces the week's global affix rotation above the table;
+ * it's decoration, so any failure just omits the line and leaves the board untouched.
  *
  * As with the vault board, rows whose data predates the weekly reset are marked: a key recorded
  * before the reset has already been replaced in game.
@@ -76,6 +79,8 @@ export function WarbandKeystoneBoard({
   const bnet = useMemo(() => makeClient(region), [region]);
   // Best-effort enrichment: if this fails the board still renders, with dungeon ids instead of names.
   const { data: dungeons } = useQuery(keystoneDungeonsQuery(bnet));
+  // The week's affix rotation — a global fact, fetched best-effort and shown only if it resolves.
+  const { data: rotation } = useQuery(currentAffixesQuery(bnet));
   const board = useMemo(() => buildKeystoneBoard(data, dungeons), [data, dungeons]);
 
   if (board.rows.length === 0) {
@@ -100,6 +105,13 @@ export function WarbandKeystoneBoard({
         {when(board.lastRefresh)}
         {stale > 0 ? ` · ${stale} not seen since the reset` : ""}
       </p>
+
+      {rotation && rotation.length > 0 ? (
+        <p className="muted" style={{ marginTop: 0 }}>
+          {"Affixes this week: "}
+          <strong>{rotation.map((a) => a.name).join(" · ")}</strong>
+        </p>
+      ) : null}
 
       <div style={{ overflowX: "auto" }}>
         <table className="grid">

@@ -35,8 +35,10 @@ import {
   fetchCommodities,
   fetchItemName,
   fetchItemMedia,
+  fetchCurrentAffixes,
   realmAuctionsQuery,
   commoditiesQuery,
+  currentAffixesQuery,
 } from "./queries";
 import { mockBnet, mockResponse } from "../test/mocks";
 
@@ -631,6 +633,66 @@ describe("fetchItemMedia", () => {
   });
 });
 
+describe("fetchCurrentAffixes", () => {
+  const periodIndex = { current_period: { id: 1001 }, periods: [{ id: 1000 }, { id: 1001 }] };
+  const search = { results: [{ data: { id: 11 } }] };
+  const leaderboardIndex = { current_leaderboards: [{ id: 507, name: "Altar of Fangs" }] };
+  const leaderboard = {
+    keystone_affixes: [
+      { keystone_affix: { id: 9, name: "Tyrannical" }, starting_level: 7 },
+      { keystone_affix: { id: 10, name: "Fortified" }, starting_level: 2 },
+    ],
+  };
+
+  it("chains period → realm → dungeon → leaderboard and returns the resolved rotation", async () => {
+    const { bnet, get } = mockBnet("us");
+    get
+      .mockResolvedValueOnce({ data: periodIndex, response: mockResponse(200) })
+      .mockResolvedValueOnce({ data: search, response: mockResponse(200) })
+      .mockResolvedValueOnce({ data: leaderboardIndex, response: mockResponse(200) })
+      .mockResolvedValueOnce({ data: leaderboard, response: mockResponse(200) });
+    const rotation = await fetchCurrentAffixes(bnet);
+    expect(rotation).toEqual([
+      { id: 10, name: "Fortified", startingLevel: 2 },
+      { id: 9, name: "Tyrannical", startingLevel: 7 },
+    ]);
+    // The leaderboard read is keyed by the resolved realm, dungeon, and current period.
+    expect(get).toHaveBeenLastCalledWith(
+      "/data/wow/connected-realm/{connectedRealmId}/mythic-leaderboard/{dungeonId}/period/{period}",
+      {
+        params: {
+          path: { connectedRealmId: 11, dungeonId: 507, period: 1001 },
+          query: { namespace: "dynamic-us", locale: "en_US" },
+        },
+      },
+    );
+  });
+
+  it("degrades to an empty rotation when the current period can't be resolved", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValueOnce({ data: undefined, response: mockResponse(500) });
+    await expect(fetchCurrentAffixes(bnet)).resolves.toEqual([]);
+    // It bails before the realm lookup rather than blindly walking the rest of the chain.
+    expect(get).toHaveBeenCalledTimes(1);
+  });
+
+  it("degrades to an empty rotation when the leaderboard read fails", async () => {
+    const { bnet, get } = mockBnet();
+    get
+      .mockResolvedValueOnce({ data: periodIndex, response: mockResponse(200) })
+      .mockResolvedValueOnce({ data: search, response: mockResponse(200) })
+      .mockResolvedValueOnce({ data: leaderboardIndex, response: mockResponse(200) })
+      .mockResolvedValueOnce({ data: undefined, response: mockResponse(503) });
+    await expect(fetchCurrentAffixes(bnet)).resolves.toEqual([]);
+  });
+
+  it("degrades to an empty rotation when a network read throws", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockRejectedValueOnce(new Error("network down"));
+    await expect(fetchCurrentAffixes(bnet)).resolves.toEqual([]);
+  });
+});
+
 describe("query-option factories", () => {
   it("carry the region-scoped key and per-endpoint staleTime", () => {
     const { bnet } = mockBnet("kr");
@@ -649,6 +711,8 @@ describe("query-option factories", () => {
     expect(characterMediaQuery(bnet, "r", "n").staleTime).toBe(30 * 60_000);
     expect(realmIndexQuery(bnet).queryKey).toEqual(["realm-index", "kr"]);
     expect(realmIndexQuery(bnet).staleTime).toBe(60 * 60_000);
+    expect(currentAffixesQuery(bnet).queryKey).toEqual(["current-affixes", "kr"]);
+    expect(currentAffixesQuery(bnet).staleTime).toBe(60 * 60_000);
     expect(characterEquipmentQuery(bnet, "r", "n").queryKey).toEqual([
       "character-equipment",
       "kr",
