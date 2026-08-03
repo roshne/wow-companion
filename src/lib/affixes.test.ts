@@ -2,11 +2,13 @@ import { describe, it, expect } from "vitest";
 import { resolveAffixRotation, resolveCurrentPeriodId } from "./affixes";
 
 describe("resolveCurrentPeriodId", () => {
-  it("prefers the explicit current_period", () => {
+  it("prefers the explicit current_period over a higher period id", () => {
+    // A scheduled/future period can sit in the list above the current one (e.g. around a reset), so
+    // the current_period pointer must win over "highest id" — the fixture forces the two to disagree.
     expect(
       resolveCurrentPeriodId({
         current_period: { id: 1001 },
-        periods: [{ id: 1000 }, { id: 1001 }],
+        periods: [{ id: 1000 }, { id: 1002 }, { id: 1001 }],
       }),
     ).toBe(1001);
   });
