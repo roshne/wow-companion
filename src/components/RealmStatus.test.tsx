@@ -4,10 +4,20 @@ import { screen, fireEvent, waitFor } from "@testing-library/react";
 // RealmStatus reads the local warband export via the `get_warband` Tauri command; mock it.
 vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
 
+// Spy on the connected-realms factory, delegating to the real impl so query behavior is unchanged,
+// to guard the consumer boundary: reverting RealmStatus's `{ poll: true }` call would otherwise
+// silently disable the 5-min auto-refresh with every other test still green (the factory-level tests
+// in queries.test.ts pin the option, not that this component opts in).
+vi.mock("../lib/queries", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../lib/queries")>();
+  return { ...actual, connectedRealmsQuery: vi.fn(actual.connectedRealmsQuery) };
+});
+
 import { RealmStatus } from "./RealmStatus";
 import { renderWithClient } from "../test/utils";
 import { mockBnet, mockResponse } from "../test/mocks";
 import { invoke } from "@tauri-apps/api/core";
+import { connectedRealmsQuery } from "../lib/queries";
 
 const mockInvoke = vi.mocked(invoke);
 
@@ -22,6 +32,15 @@ describe("RealmStatus", () => {
     localStorage.clear();
     mockInvoke.mockReset();
     mockInvoke.mockResolvedValue(emptyWarband);
+  });
+
+  it("opts into the 5-min auto-refresh poll for realm status", async () => {
+    const { bnet, get } = mockBnet();
+    get.mockResolvedValue(page([]));
+    renderWithClient(<RealmStatus bnet={bnet} />);
+    await screen.findByText("No connected realms found.");
+    // Consumer boundary: reverting to `connectedRealmsQuery(bnet)` silently kills the feature.
+    expect(vi.mocked(connectedRealmsQuery)).toHaveBeenCalledWith(bnet, { poll: true });
   });
 
   it("auto-fetches on mount, renders rows, and filters them", async () => {

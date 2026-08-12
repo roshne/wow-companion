@@ -22,13 +22,17 @@ function distinctJoin(values: (string | undefined)[]): string {
 }
 
 /**
- * Realm status via the connected-realm search (dynamic namespace). Auto-fetches on mount and whenever
- * the region changes (region is in the queryKey). Names come back localized — read with `loc()`.
+ * Realm status via the connected-realm search (dynamic namespace). Auto-fetches on mount, whenever
+ * the region changes (region is in the queryKey), and every 5 min while the tab is focused — it opts
+ * into `connectedRealmsQuery`'s poll (other consumers keep the default one-shot fetch). Names come
+ * back localized — read with `loc()`.
  */
 export function RealmStatus({ bnet }: { bnet: BlizzardClient }) {
   const [filter, setFilter] = useState("");
   const [realmFavorites, setRealmFavorites] = useState<FavoriteRealm[]>(loadFavoriteRealms);
-  const { data, isFetching, isError, error, refetch } = useQuery(connectedRealmsQuery(bnet));
+  const { data, isFetching, isError, error, refetch } = useQuery(
+    connectedRealmsQuery(bnet, { poll: true }),
+  );
   const warband = useQuery(warbandQuery());
   const rows = data ?? [];
 
