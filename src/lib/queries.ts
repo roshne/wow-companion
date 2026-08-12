@@ -721,11 +721,20 @@ export const tokenQuery = (bnet: BlizzardClient) =>
     staleTime: 5 * MINUTE,
   });
 
-export const connectedRealmsQuery = (bnet: BlizzardClient) =>
+export const connectedRealmsQuery = (
+  bnet: BlizzardClient,
+  { poll = false }: { poll?: boolean } = {},
+) =>
   queryOptions({
     queryKey: queryKeys.connectedRealms(bnet.region),
     queryFn: () => fetchConnectedRealms(bnet),
     staleTime: 5 * MINUTE,
+    // Realm Status opts in (poll: true) so a realm going up/down (or a login queue forming) shows
+    // without a manual Refresh; other consumers (e.g. the Auction House realm picker) keep the
+    // default one-shot fetch. The interval resets on every fetch — mount, region switch, or a Refresh
+    // click — so the next auto-refresh is always ~5 min after the last refresh. Foreground-only: the
+    // default refetchIntervalInBackground=false means a backgrounded tab doesn't fetch and burn quota.
+    refetchInterval: poll ? 5 * MINUTE : false,
   });
 
 /**

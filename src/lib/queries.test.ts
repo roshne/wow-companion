@@ -700,6 +700,10 @@ describe("query-option factories", () => {
     expect(tokenQuery(bnet).staleTime).toBe(5 * 60_000);
     expect(connectedRealmsQuery(bnet).queryKey).toEqual(["connected-realms", "kr"]);
     expect(connectedRealmsQuery(bnet).staleTime).toBe(5 * 60_000);
+    // The shared factory does NOT poll by default, so consumers like the Auction House realm picker
+    // keep a one-shot fetch; Realm Status opts in with { poll: true } for a 5-min auto-refresh.
+    expect(connectedRealmsQuery(bnet).refetchInterval).toBe(false);
+    expect(connectedRealmsQuery(bnet, { poll: true }).refetchInterval).toBe(5 * 60_000);
     expect(characterQuery(bnet, "r", "n").queryKey).toEqual(["character", "kr", "r", "n"]);
     expect(characterQuery(bnet, "r", "n").staleTime).toBe(60_000);
     expect(characterMediaQuery(bnet, "r", "n").queryKey).toEqual([
