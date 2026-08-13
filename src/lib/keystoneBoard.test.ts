@@ -50,6 +50,8 @@ function character(overrides: Partial<WarbandCharacter> = {}): WarbandCharacter 
     },
     locks: [],
     titles: null,
+    mail: null,
+    auctions: null,
     ...overrides,
   };
 }
