@@ -132,6 +132,46 @@ export interface TitleCatalog {
   scannedBy: string | null;
 }
 
+/**
+ * A character's mailbox snapshot, from the addon's `mail` broker.
+ *
+ * Only written when the player opens a mailbox, so `scannedAt` here can trail the character's
+ * `lastRefresh` by weeks — date any mail claim by this block's own timestamp, not the character-level
+ * one, or an "expires in 2 days" off a month-old scan reads as fact. `hasMail` is the exception: from
+ * `HasNewMail()`, kept current without a mailbox visit, so it stays trustworthy when `count`/
+ * `expiries` are stale. All amounts are **copper**.
+ */
+export interface WarbandMail {
+  /** Server time this block was last written — its own freshness anchor, not `lastRefresh`. */
+  scannedAt: number | null;
+  /** Messages in the mailbox. Null when unwritten; 0 is a real empty box — not the same thing. */
+  count: number | null;
+  /** Absolute server-time expiry epochs, ascending. Empty when nothing is expiring. */
+  expiries: number[];
+  /** Attached gold summed across the mailbox, in copper. */
+  money: number | null;
+  /** `HasNewMail()` — unread mail waiting; trustworthy even when the counts above are stale. */
+  hasMail: boolean | null;
+}
+
+/**
+ * A character's own posted auctions, from the addon's `auctions` broker.
+ *
+ * Same freshness caveat as {@link WarbandMail}: only written when the auction house is opened, so
+ * `scannedAt` is this block's own anchor rather than the character's `lastRefresh`. Amounts are
+ * **copper**.
+ */
+export interface WarbandAuctions {
+  /** Server time this block was last written — its own freshness anchor, not `lastRefresh`. */
+  scannedAt: number | null;
+  /** Active auctions posted. Null when unwritten; 0 is a real none. */
+  count: number | null;
+  /** Absolute server-time expiry epochs, ascending. Empty when none. */
+  expiries: number[];
+  /** Gold tied up in active auctions (buyout/bid), in copper. */
+  value: number | null;
+}
+
 /** One character from the Warbandeer addon export (via the `get_warband` Rust command). */
 export interface WarbandCharacter {
   name: string;
@@ -166,6 +206,10 @@ export interface WarbandCharacter {
   locks: InstanceLock[];
   /** Earned titles and the featured one. Null for a character the addon hasn't seen since v37. */
   titles: CharacterTitles | null;
+  /** Mailbox snapshot. Null until the character has opened a mailbox (distinct from an empty box). */
+  mail: WarbandMail | null;
+  /** Posted-auctions snapshot. Null until the character has opened the auction house. */
+  auctions: WarbandAuctions | null;
 }
 
 /** The full warband export: account label, source path, the character list, and account-wide wealth. */

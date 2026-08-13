@@ -34,6 +34,8 @@ function character(overrides: Partial<WarbandCharacter> = {}): WarbandCharacter 
     weekly: null,
     locks: [],
     titles: null,
+    mail: null,
+    auctions: null,
     ...overrides,
   };
 }

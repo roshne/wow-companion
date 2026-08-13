@@ -26,6 +26,8 @@ function character(name: string, titles: CharacterTitles | null): WarbandCharact
     weekly: null,
     locks: [],
     titles,
+    mail: null,
+    auctions: null,
   };
 }
 

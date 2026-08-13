@@ -50,6 +50,8 @@ function addonCharacter(overrides: Partial<WarbandCharacter> = {}): WarbandChara
     weekly: null,
     locks: [],
     titles: null,
+    mail: null,
+    auctions: null,
     ...overrides,
   };
 }

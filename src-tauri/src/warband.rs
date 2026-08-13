@@ -168,6 +168,52 @@ pub struct TitleCatalog {
     pub scanned_by: Option<String>,
 }
 
+/// A character's mailbox snapshot, from the addon's `mail` broker (its schema v20).
+///
+/// **Only written when the player opens a mailbox**, so `scanned_at` here can trail the character's
+/// `last_refresh` by weeks. That is the whole reason this block carries its own timestamp: an
+/// "expires in 2 days" derived from a month-old scan isn't merely stale, it's wrong, so every mail
+/// claim must be dated by this block rather than the character-level anchor.
+///
+/// `has_mail` is the exception worth calling out — it comes from `HasNewMail()`, which the client
+/// keeps current *without* a mailbox visit, so it stays trustworthy when `count`/`expiries` have
+/// gone stale. All amounts are copper.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WarbandMail {
+    /// Server time this block was last written (a mailbox was opened) — its own freshness anchor.
+    pub scanned_at: Option<i64>,
+    /// Messages in the mailbox at the scan. `None` when unwritten; `Some(0)` is a real empty box —
+    /// the distinction a consumer needs, so it's never collapsed to a bare zero.
+    pub count: Option<i64>,
+    /// Absolute server-time expiry epochs, ascending as the addon writes them. Empty when nothing is
+    /// expiring (the common live shape) — an empty list, never absent-as-zero.
+    pub expiries: Vec<i64>,
+    /// Attached gold summed across the mailbox, in copper.
+    pub money: Option<i64>,
+    /// `HasNewMail()` — true while unread mail waits. Maintained without opening a mailbox, so it's
+    /// trustworthy even when the counts above have gone stale.
+    pub has_mail: Option<bool>,
+}
+
+/// A character's own posted auctions, from the addon's `auctions` broker (its schema v22).
+///
+/// Same freshness caveat as [`WarbandMail`]: only written when the auction house is opened, so
+/// `scanned_at` is this block's own anchor rather than the character's `last_refresh`. All amounts
+/// are copper.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WarbandAuctions {
+    /// Server time this block was last written (the AH was opened) — its own freshness anchor.
+    pub scanned_at: Option<i64>,
+    /// Active auctions posted by this character. `None` when unwritten; `Some(0)` is a real none.
+    pub count: Option<i64>,
+    /// Absolute server-time expiry epochs, ascending as the addon writes them. Empty when none.
+    pub expiries: Vec<i64>,
+    /// Gold tied up in active auctions (buyout/bid), in copper.
+    pub value: Option<i64>,
+}
+
 /// One character extracted from `WarbandeerCharDB.characters[name]`. Most fields are
 /// optional — not every alt has every field populated.
 #[derive(Debug, Serialize)]
@@ -209,6 +255,12 @@ pub struct WarbandCharacter {
     /// Earned titles and the featured one. `None` for a character the addon hasn't seen since it
     /// began recording titles.
     pub titles: Option<CharacterTitles>,
+    /// The mailbox snapshot. `None` until the character has opened a mailbox — distinct from an empty
+    /// mailbox, which is a present block with `count: Some(0)`.
+    pub mail: Option<WarbandMail>,
+    /// Posted-auctions snapshot. `None` until the character has opened the auction house — distinct
+    /// from having none posted, which is a present block with `count: Some(0)`.
+    pub auctions: Option<WarbandAuctions>,
 }
 
 /// Result of a warband read: which account/file it came from, the characters, and account-wide wealth.
@@ -408,6 +460,31 @@ struct RawTitle {
     name: Option<String>,
 }
 
+/// `characters[name].mail` — the addon's mailbox broker (its schema v20).
+#[derive(Debug, Deserialize)]
+struct RawMail {
+    #[serde(rename = "scannedAt")]
+    scanned_at: Option<f64>,
+    count: Option<f64>,
+    /// A Lua array. Read via `sub_tree` (a direct `from_value`, not an untagged wrapper) so it
+    /// deserializes through `deserialize_seq` — which makes an empty `expiries` table an empty
+    /// sequence rather than a parse failure.
+    expiries: Option<Vec<f64>>,
+    money: Option<f64>,
+    #[serde(rename = "hasMail")]
+    has_mail: Option<bool>,
+}
+
+/// `characters[name].auctions` — the addon's posted-auctions broker (its schema v22).
+#[derive(Debug, Deserialize)]
+struct RawAuctions {
+    #[serde(rename = "scannedAt")]
+    scanned_at: Option<f64>,
+    count: Option<f64>,
+    expiries: Option<Vec<f64>>,
+    value: Option<f64>,
+}
+
 /// `WarbandeerCharDB.titleCatalog` — account-wide, so it sits beside `characters`.
 #[derive(Debug, Deserialize)]
 struct RawTitleCatalog {
@@ -454,6 +531,8 @@ struct CharacterSubTrees {
     weekly: Option<WarbandWeekly>,
     locks: Vec<InstanceLock>,
     titles: Option<CharacterTitles>,
+    mail: Option<WarbandMail>,
+    auctions: Option<WarbandAuctions>,
 }
 
 fn build_character(
@@ -519,6 +598,8 @@ fn build_character(
         weekly: subs.weekly,
         locks: subs.locks,
         titles: subs.titles,
+        mail: subs.mail,
+        auctions: subs.auctions,
     }
 }
 
@@ -545,6 +626,38 @@ fn build_titles(raw: RawCharacterTitles) -> CharacterTitles {
         known,
         current: raw.current.map(|n| n as i64),
         current_name: raw.current_name,
+    }
+}
+
+/// Fold a raw expiry list to the payload edge: cast to `i64`, defaulting a missing list to empty so
+/// a present block always reports a list, never a nil. Order is preserved — ascending, as the addon
+/// writes them, like the vault slots and wealth history — rather than re-sorted. Shared by mail and
+/// auctions, whose expiry handling is identical.
+fn build_expiries(raw: Option<Vec<f64>>) -> Vec<i64> {
+    raw.unwrap_or_default()
+        .into_iter()
+        .map(|n| n as i64)
+        .collect()
+}
+
+/// Fold the raw `mail` broker into the public payload.
+fn build_mail(raw: RawMail) -> WarbandMail {
+    WarbandMail {
+        scanned_at: raw.scanned_at.map(|n| n as i64),
+        count: raw.count.map(|n| n as i64),
+        expiries: build_expiries(raw.expiries),
+        money: raw.money.map(|n| n as i64),
+        has_mail: raw.has_mail,
+    }
+}
+
+/// Fold the raw `auctions` broker into the public payload.
+fn build_auctions(raw: RawAuctions) -> WarbandAuctions {
+    WarbandAuctions {
+        scanned_at: raw.scanned_at.map(|n| n as i64),
+        count: raw.count.map(|n| n as i64),
+        expiries: build_expiries(raw.expiries),
+        value: raw.value.map(|n| n as i64),
     }
 }
 
@@ -762,11 +875,18 @@ fn parse_from_lua(content: &str) -> Result<ParsedDb, String> {
                 weekly: sub_tree::<RawWeeklies>(&lua, t, "weeklies").map(build_weekly),
                 locks: build_locks(sub_tree::<RawInstances>(&lua, t, "instances")),
                 titles: sub_tree::<RawCharacterTitles>(&lua, t, "titles").map(build_titles),
+                // `mail` and `auctions` are only written when the player opens a mailbox / the AH, so
+                // each carries its own `scannedAt`; read via `sub_tree` for the same reason as the
+                // others — a shape we don't recognise costs its own section, not the character.
+                mail: sub_tree::<RawMail>(&lua, t, "mail").map(build_mail),
+                auctions: sub_tree::<RawAuctions>(&lua, t, "auctions").map(build_auctions),
             },
             None => CharacterSubTrees {
                 weekly: None,
                 locks: Vec::new(),
                 titles: None,
+                mail: None,
+                auctions: None,
             },
         };
         out.push(build_character(name_key, raw, subs));
@@ -961,6 +1081,27 @@ mod tests {
                     [23] = { ["name"] = "Altar of Fangs", ["total"] = 4, ["progress"] = 4 },
                   },
                 },
+              },
+              -- Written only when a mailbox / the AH is opened, so each carries its own scannedAt,
+              -- distinct from (and here older than) the character's lastRefresh of 1785200000.
+              ["mail"] = {
+                ["scannedAt"] = 1785100000,
+                ["count"] = 3,
+                ["money"] = 4560000,
+                ["hasMail"] = true,
+                ["expiries"] = { 1785500000, 1785600000, 1785900000 },
+                -- `items` (mail) and `bids` (auctions) are written by the real addon but are out of
+                -- scope for #162. They're included here so the parse tests pin that unmodelled keys
+                -- are ignored without disturbing the parsed fields — a `deny_unknown_fields` tightening
+                -- would then fail the read. `items` is integer-keyed, the trickier shape to skip.
+                ["items"] = { [190395] = 2, [210796] = 1 },
+              },
+              ["auctions"] = {
+                ["scannedAt"] = 1785150000,
+                ["count"] = 2,
+                ["value"] = 250000000,
+                ["expiries"] = { 1785400000, 1785800000 },
+                ["bids"] = 1,
               },
             },
             ["Altchar"] = {
@@ -1524,6 +1665,127 @@ mod tests {
         );
     }
 
+    #[test]
+    fn reads_mail_and_auctions_blocks() {
+        let chars = parse_from_lua(FIXTURE).expect("parse").characters;
+        let k = chars
+            .iter()
+            .find(|c| c.name == "Testchar")
+            .expect("Testchar");
+
+        // The fixture's blocks also carry the addon's out-of-scope `items`/`bids` keys; that these
+        // blocks parse at all (rather than failing on the unmodelled keys) proves they're ignored.
+        let mail = k.mail.as_ref().expect("mail");
+        assert_eq!(mail.count, Some(3));
+        assert_eq!(mail.money, Some(4560000));
+        assert_eq!(mail.has_mail, Some(true));
+        // Absolute server-time epochs, ascending as the addon writes them.
+        assert_eq!(mail.expiries, [1785500000, 1785600000, 1785900000]);
+
+        let auctions = k.auctions.as_ref().expect("auctions");
+        assert_eq!(auctions.count, Some(2));
+        assert_eq!(auctions.value, Some(250000000));
+        assert_eq!(auctions.expiries, [1785400000, 1785800000]);
+
+        // The point of the issue as much as the counts: each block is dated by its *own* scannedAt,
+        // not the character's lastRefresh (1785200000) — a mail block can be far staler than login.
+        assert_eq!(mail.scanned_at, Some(1785100000));
+        assert_eq!(auctions.scanned_at, Some(1785150000));
+        assert_ne!(mail.scanned_at, k.last_refresh);
+        assert_ne!(auctions.scanned_at, k.last_refresh);
+    }
+
+    #[test]
+    fn a_character_without_mail_or_auctions_reads_as_absent() {
+        // Never opened a mailbox / the AH: the blocks read as absent, not as an empty-but-present
+        // zero — the distinction the consuming views depend on.
+        let chars = parse_from_lua(FIXTURE).expect("parse").characters;
+        let alt = chars.iter().find(|c| c.name == "Altchar").expect("Altchar");
+        assert!(alt.mail.is_none());
+        assert!(alt.auctions.is_none());
+    }
+
+    // The live shape the issue calls out: hasMail can be set while count is 0 and no expiry exists,
+    // because HasNewMail() is maintained without opening a mailbox.
+    const FIXTURE_LIVE_SHAPE_MAIL: &str = r#"
+        WarbandeerCharDB = {
+          ["characters"] = {
+            ["Waiting"] = {
+              ["realm"] = "Testrealm",
+              ["mail"] = {
+                ["scannedAt"] = 1785000000,
+                ["count"] = 0,
+                ["money"] = 0,
+                ["hasMail"] = true,
+                ["expiries"] = {},
+              },
+              -- An auctions block that omits `expiries` *entirely* (vs mail's empty `{}` above),
+              -- exercising the build's default-to-empty path rather than the empty-sequence one.
+              ["auctions"] = {
+                ["scannedAt"] = 1785000000,
+                ["count"] = 0,
+                ["value"] = 0,
+              },
+            },
+          },
+        }
+    "#;
+
+    #[test]
+    fn hasmail_parses_independently_of_count_and_empty_expiries_is_a_list() {
+        let chars = parse_from_lua(FIXTURE_LIVE_SHAPE_MAIL)
+            .expect("parse")
+            .characters;
+        let mail = chars[0].mail.as_ref().expect("mail");
+        // hasMail stands on its own: true even though the mailbox scanned as empty.
+        assert_eq!(mail.has_mail, Some(true));
+        // A real empty box: count is Some(0), distinct from an absent block's None.
+        assert_eq!(mail.count, Some(0));
+        // An empty `expiries` table yields an empty list rather than failing the parse.
+        assert!(mail.expiries.is_empty());
+
+        // A block that omits `expiries` altogether still yields an empty list — the build defaults
+        // it rather than panicking or dropping the block.
+        let auctions = chars[0].auctions.as_ref().expect("auctions");
+        assert_eq!(auctions.count, Some(0));
+        assert!(auctions.expiries.is_empty());
+    }
+
+    // `mail` is the wrong shape entirely; the readable `auctions` sibling must still come through.
+    const FIXTURE_ODD_MAIL_AUCTIONS: &str = r#"
+        WarbandeerCharDB = {
+          ["characters"] = {
+            ["Odd"] = {
+              ["realm"] = "Testrealm",
+              ["mail"] = "not-a-table",
+              ["auctions"] = {
+                ["scannedAt"] = 1785000000, ["count"] = 1, ["value"] = 100,
+                ["expiries"] = { 1785500000 },
+              },
+            },
+          },
+        }
+    "#;
+
+    #[test]
+    fn a_malformed_mail_or_auctions_block_costs_only_itself() {
+        // Same guarantee as the weekly/lock case: an unrecognised block is absorbed to None and
+        // costs its own section, never the character or its sibling blocks.
+        let chars = parse_from_lua(FIXTURE_ODD_MAIL_AUCTIONS)
+            .expect("parse")
+            .characters;
+        assert_eq!(chars.len(), 1);
+        let c = &chars[0];
+        assert_eq!(c.name, "Odd");
+        // The bad mail costs the mail section only...
+        assert!(c.mail.is_none());
+        // ...and its readable auctions sibling survives intact.
+        let auctions = c.auctions.as_ref().expect("auctions");
+        assert_eq!(auctions.count, Some(1));
+        assert_eq!(auctions.value, Some(100));
+        assert_eq!(auctions.expiries, [1785500000]);
+    }
+
     /// Opt-in smoke test against a real install: reads the live SavedVariables via the
     /// full `get_warband` pipeline. Runs only when `WARBAND_TEST_LIVE` is set, so it
     /// never runs in CI (no WoW install there).
@@ -1595,6 +1857,37 @@ mod tests {
             .filter(|c| c.level.is_some() && c.level == cap)
             .count();
         eprintln!("LIVE levels: cap {cap:?}, {at_cap} character(s) at it");
+        // The manual cross-check for #162: mail/auctions are only written on a mailbox/AH visit, so
+        // on the current install most blocks are absent and every count is 0 (see the issue's
+        // live-data caveat). This reports what actually parsed.
+        let with_mail = data.characters.iter().filter(|c| c.mail.is_some()).count();
+        let with_auctions = data
+            .characters
+            .iter()
+            .filter(|c| c.auctions.is_some())
+            .count();
+        let has_new_mail = data
+            .characters
+            .iter()
+            .filter(|c| c.mail.as_ref().and_then(|m| m.has_mail).unwrap_or(false))
+            .count();
+        let mail_expiries: usize = data
+            .characters
+            .iter()
+            .filter_map(|c| c.mail.as_ref())
+            .map(|m| m.expiries.len())
+            .sum();
+        let auction_expiries: usize = data
+            .characters
+            .iter()
+            .filter_map(|c| c.auctions.as_ref())
+            .map(|a| a.expiries.len())
+            .sum();
+        eprintln!(
+            "LIVE mail/auctions: {with_mail} with a mail block ({has_new_mail} with HasNewMail set, \
+             {mail_expiries} expiries total), {with_auctions} with an auctions block \
+             ({auction_expiries} expiries total)"
+        );
         for c in data.characters.iter().take(3) {
             eprintln!(
                 "  {} - {} | lvl {:?} | ilvl {:?} | {:?} | gold {:?} | {} currencies | key {:?} | {} locks",
