@@ -629,36 +629,34 @@ fn build_titles(raw: RawCharacterTitles) -> CharacterTitles {
     }
 }
 
+/// Fold a raw expiry list to the payload edge: cast to `i64`, defaulting a missing list to empty so
+/// a present block always reports a list, never a nil. Order is preserved — ascending, as the addon
+/// writes them, like the vault slots and wealth history — rather than re-sorted. Shared by mail and
+/// auctions, whose expiry handling is identical.
+fn build_expiries(raw: Option<Vec<f64>>) -> Vec<i64> {
+    raw.unwrap_or_default()
+        .into_iter()
+        .map(|n| n as i64)
+        .collect()
+}
+
 /// Fold the raw `mail` broker into the public payload.
-///
-/// Expiries pass through in the addon's ascending order (like the vault slots and wealth history),
-/// and a missing list becomes an empty one — so a present block always reports a list, never a nil.
 fn build_mail(raw: RawMail) -> WarbandMail {
     WarbandMail {
         scanned_at: raw.scanned_at.map(|n| n as i64),
         count: raw.count.map(|n| n as i64),
-        expiries: raw
-            .expiries
-            .unwrap_or_default()
-            .into_iter()
-            .map(|n| n as i64)
-            .collect(),
+        expiries: build_expiries(raw.expiries),
         money: raw.money.map(|n| n as i64),
         has_mail: raw.has_mail,
     }
 }
 
-/// Fold the raw `auctions` broker into the public payload. Same expiry handling as [`build_mail`].
+/// Fold the raw `auctions` broker into the public payload.
 fn build_auctions(raw: RawAuctions) -> WarbandAuctions {
     WarbandAuctions {
         scanned_at: raw.scanned_at.map(|n| n as i64),
         count: raw.count.map(|n| n as i64),
-        expiries: raw
-            .expiries
-            .unwrap_or_default()
-            .into_iter()
-            .map(|n| n as i64)
-            .collect(),
+        expiries: build_expiries(raw.expiries),
         value: raw.value.map(|n| n as i64),
     }
 }
@@ -1092,12 +1090,18 @@ mod tests {
                 ["money"] = 4560000,
                 ["hasMail"] = true,
                 ["expiries"] = { 1785500000, 1785600000, 1785900000 },
+                -- `items` (mail) and `bids` (auctions) are written by the real addon but are out of
+                -- scope for #162. They're included here so the parse tests pin that unmodelled keys
+                -- are ignored without disturbing the parsed fields — a `deny_unknown_fields` tightening
+                -- would then fail the read. `items` is integer-keyed, the trickier shape to skip.
+                ["items"] = { [190395] = 2, [210796] = 1 },
               },
               ["auctions"] = {
                 ["scannedAt"] = 1785150000,
                 ["count"] = 2,
                 ["value"] = 250000000,
                 ["expiries"] = { 1785400000, 1785800000 },
+                ["bids"] = 1,
               },
             },
             ["Altchar"] = {
@@ -1669,6 +1673,8 @@ mod tests {
             .find(|c| c.name == "Testchar")
             .expect("Testchar");
 
+        // The fixture's blocks also carry the addon's out-of-scope `items`/`bids` keys; that these
+        // blocks parse at all (rather than failing on the unmodelled keys) proves they're ignored.
         let mail = k.mail.as_ref().expect("mail");
         assert_eq!(mail.count, Some(3));
         assert_eq!(mail.money, Some(4560000));
@@ -1713,6 +1719,13 @@ mod tests {
                 ["hasMail"] = true,
                 ["expiries"] = {},
               },
+              -- An auctions block that omits `expiries` *entirely* (vs mail's empty `{}` above),
+              -- exercising the build's default-to-empty path rather than the empty-sequence one.
+              ["auctions"] = {
+                ["scannedAt"] = 1785000000,
+                ["count"] = 0,
+                ["value"] = 0,
+              },
             },
           },
         }
@@ -1730,6 +1743,12 @@ mod tests {
         assert_eq!(mail.count, Some(0));
         // An empty `expiries` table yields an empty list rather than failing the parse.
         assert!(mail.expiries.is_empty());
+
+        // A block that omits `expiries` altogether still yields an empty list — the build defaults
+        // it rather than panicking or dropping the block.
+        let auctions = chars[0].auctions.as_ref().expect("auctions");
+        assert_eq!(auctions.count, Some(0));
+        assert!(auctions.expiries.is_empty());
     }
 
     // `mail` is the wrong shape entirely; the readable `auctions` sibling must still come through.

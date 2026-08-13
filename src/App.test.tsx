@@ -120,6 +120,8 @@ describe("App", () => {
                 weekly: null,
                 locks: [],
                 titles: null,
+                mail: null,
+                auctions: null,
               })),
               wealth: null,
               titleCatalog: null,
