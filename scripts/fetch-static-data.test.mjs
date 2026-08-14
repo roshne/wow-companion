@@ -4,6 +4,7 @@ import {
   EXIT,
   TAG_PREFIX,
   bundleBuild,
+  bundleProblem,
   selectAssetUrl,
   selectBundleRelease,
 } from "./fetch-static-data.mjs";
@@ -104,5 +105,28 @@ describe("bundleBuild", () => {
     expect(bundleBuild("{ truncated", "app-static-data-v9-bbbbbbbb")).toBe(
       "app-static-data-v9-bbbbbbbb",
     );
+  });
+});
+
+describe("bundleProblem", () => {
+  const ok = { currencies: { 1792: { name: "Honor" } }, currencyFields: { HeroDawncrest: 3345 } };
+
+  it("accepts a bundle with currencies and a non-empty field bridge", () => {
+    expect(bundleProblem(ok)).toBeNull();
+  });
+
+  it("refuses a bundle with no currencies", () => {
+    expect(bundleProblem({ ...ok, currencies: {} })).toBe("has no currencies");
+  });
+
+  it("refuses a bundle whose currencyFields bridge is empty", () => {
+    // `{}` is a valid Record<string, number>, so the consumer typechecks and its tests pass vacuously;
+    // the bridge would then resolve nothing and blank every column, so it has to be caught here.
+    expect(bundleProblem({ ...ok, currencyFields: {} })).toBe("has no currencyFields");
+  });
+
+  it("tolerates a malformed payload instead of throwing", () => {
+    expect(bundleProblem(null)).toBe("has no currencies");
+    expect(bundleProblem({})).toBe("has no currencies");
   });
 });

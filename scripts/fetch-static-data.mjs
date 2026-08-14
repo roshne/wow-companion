@@ -83,6 +83,21 @@ export function bundleBuild(json, tagName = "unknown") {
   }
 }
 
+/**
+ * Reason to refuse writing a parsed bundle, or null when it is usable.
+ *
+ * Guards the two things this app consumes and cannot render without: the `currencies` metadata and
+ * the `currencyFields` key→id bridge (src/lib/currencies.ts reads the latter as CURRENCY_IDS). An
+ * EMPTY `currencyFields` is rejected as firmly as empty `currencies`: `{}` is a valid
+ * `Record<string, number>`, so it slips past the consumer's typecheck and passes its tests vacuously,
+ * and a generator regression that emptied it would otherwise land silently and blank every column.
+ */
+export function bundleProblem(parsed) {
+  if (Object.keys(parsed?.currencies ?? {}).length === 0) return "has no currencies";
+  if (Object.keys(parsed?.currencyFields ?? {}).length === 0) return "has no currencyFields";
+  return null;
+}
+
 /** Normalize to LF so a re-fetch is deterministic regardless of platform. */
 function normalize(text) {
   return text.replace(/\r\n/g, "\n");
@@ -135,8 +150,9 @@ async function main() {
     process.exit(EXIT.BROKEN);
   }
   const count = Object.keys(parsed?.currencies ?? {}).length;
-  if (count === 0) {
-    console.error("Downloaded bundle has no currencies - refusing to write.");
+  const problem = bundleProblem(parsed);
+  if (problem) {
+    console.error(`Downloaded bundle ${problem} - refusing to write.`);
     process.exit(EXIT.BROKEN);
   }
 

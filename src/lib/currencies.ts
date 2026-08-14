@@ -15,8 +15,10 @@ import { isStale } from "./vaultBoard";
  *
  * That makes it season-proof, which is the whole point: when a new season's crest adds a field, a
  * re-vendor teaches this bridge automatically — no code change, and no chance of drifting from the
- * addon the way a hand-copied list would. There is deliberately no `?? {}` fallback: a bundle missing
- * `currencyFields` is a broken vendor that should fail the build loudly, not silently empty the bridge.
+ * addon the way a hand-copied list would. There is deliberately no `?? {}` fallback, so a broken
+ * bundle surfaces loudly instead of silently emptying the bridge: a *missing* `currencyFields` fails
+ * the typecheck right here, and an *empty* one is refused at vendor time (scripts/fetch-static-data.mjs)
+ * and by the bridge test.
  *
  * A key absent here is a supported outcome, not a bug — see {@link resolveCurrency}. The live database
  * already contains `AdventurerCrest` and `Manaflux`, written by older addon versions and no longer in

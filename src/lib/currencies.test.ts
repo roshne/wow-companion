@@ -74,12 +74,16 @@ describe("the key → id bridge", () => {
   it("resolves every field the bundle publishes to its id and a real currency", () => {
     // The two halves of the bundle are generated together but could still disagree — a field pointing
     // at a missing or renamed currency id would render a blank column — so this asserts they line up.
-    for (const [key, id] of Object.entries(bundle.currencyFields)) {
+    const fields = Object.entries(bundle.currencyFields);
+    // Guard against a vacuous pass: an empty bridge (an upstream regression) must not read as all-green.
+    expect(fields.length).toBeGreaterThan(0);
+    for (const [key, id] of fields) {
       const r = resolveCurrency(key);
       expect(r.id, `${key} did not resolve to its bundle id`).toBe(id);
       expect(r.known, `${key} (id ${id}) missing from the bundle's currencies`).toBe(true);
       expect(r.name, `${key} resolved to an empty name`).toMatch(/\S/);
-      expect(r.icon, `${key} resolved without an icon`).toMatch(/\S/);
+      // Not asserting an icon: BundleEntry.icon is legitimately null for many currencies (see id 830)
+      // and the header renders a fallback for that, so a null-icon crest field is valid, not a failure.
     }
   });
 
