@@ -76,7 +76,8 @@ describe("WarbandExpiryBoard", () => {
       <WarbandExpiryBoard data={data([character({ mail: mail({ count: 0, expiries: [] }) })])} />,
     );
     expect(screen.getByText("Nothing expiring, and no mail waiting.")).toBeInTheDocument();
-    expect(screen.queryByText(/has never been scanned/)).toBeNull();
+    // The other branch's copy must be genuinely absent — the two empty states are mutually exclusive.
+    expect(screen.queryByText(/No mailbox or auction house has been scanned yet/)).toBeNull();
   });
 
   it("surfaces characters with mail waiting", () => {
@@ -152,8 +153,46 @@ describe("WarbandExpiryBoard", () => {
       />,
     );
     expect(screen.getByText("Already expired")).toBeInTheDocument();
-    expect(screen.getByText(/all elapsed since it was scanned 40d ago/)).toBeInTheDocument();
+    expect(screen.getByText(/auction expiries all elapsed/)).toBeInTheDocument();
+    // Marked by its scan date, not counted down.
+    expect(screen.getByText(/scanned 40d ago/)).toBeInTheDocument();
     // No "Expiring soon" table — there is nothing future to count.
     expect(screen.queryByText("Expiring soon")).toBeNull();
+  });
+
+  it("reads grammatically when an all-elapsed block has no scan time", () => {
+    render(
+      <WarbandExpiryBoard
+        data={data([
+          character({
+            name: "Timeless",
+            mail: mail({ scannedAt: null, count: 1, expiries: [NOW - DAY] }),
+          }),
+        ])}
+      />,
+    );
+    expect(screen.getByText(/all elapsed · scan time unknown/)).toBeInTheDocument();
+  });
+
+  it("gives distinct keys to two expiries sharing an epoch second (no duplicate-key warning)", () => {
+    // Same-batch mail/auctions carry the same duration, so their absolute expiry epochs can collide;
+    // the row key must still be unique. A React duplicate-key clash surfaces as a console.error.
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    render(
+      <WarbandExpiryBoard
+        data={data([
+          character({
+            name: "Batch",
+            guid: null,
+            mail: mail({ count: 2, expiries: [NOW + DAY, NOW + DAY] }),
+          }),
+        ])}
+      />,
+    );
+    // Both rows render...
+    expect(screen.getAllByText("1d")).toHaveLength(2);
+    // ...with no "same key" warning.
+    expect(errorSpy.mock.calls.some((args) => String(args[0]).includes("same key"))).toBe(false);
+    errorSpy.mockRestore();
   });
 });

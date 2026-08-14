@@ -104,8 +104,8 @@ export function WarbandExpiryBoard({ data }: { data: WarbandData | null }) {
                 </tr>
               </thead>
               <tbody>
-                {upcoming.map((e) => (
-                  <tr key={rowKey(e)}>
+                {upcoming.map((e, i) => (
+                  <tr key={`${rowKey(e)}-${i}`}>
                     <td style={{ whiteSpace: "nowrap" }}>
                       <CharacterName character={e.character} />
                     </td>
@@ -136,17 +136,20 @@ export function WarbandExpiryBoard({ data }: { data: WarbandData | null }) {
         <section>
           <h3 style={{ margin: "0 0 0.35rem" }}>Already expired</h3>
           <ul className="muted" style={{ margin: 0, paddingLeft: "1.2rem" }}>
-            {expired.map((e) => (
-              <li key={rowKey(e)}>
+            {expired.map((e, i) => (
+              <li key={`${rowKey(e)}-${i}`}>
                 <CharacterName character={e.character} /> · {KIND_LABEL[e.kind]} expired ·{" "}
                 {scannedAgo(e.scannedAt, now)}
               </li>
             ))}
             {stale.map((b) => (
-              <li key={staleKey(b)} title={`Scan too old to count down — ${when(b.scannedAt)}`}>
+              <li
+                key={staleKey(b)}
+                title={`Every recorded expiry has elapsed — shown by scan date rather than a countdown (${when(b.scannedAt)}).`}
+              >
                 <CharacterName character={b.character} /> · {b.count}{" "}
                 {KIND_LABEL[b.kind].toLowerCase()} {plural(b.count, "expiry", "expiries")} all
-                elapsed since it was {scannedAgo(b.scannedAt, now)}
+                elapsed · {scannedAgo(b.scannedAt, now)}
               </li>
             ))}
           </ul>
@@ -156,7 +159,9 @@ export function WarbandExpiryBoard({ data }: { data: WarbandData | null }) {
   );
 }
 
-/** Stable per-entry key: character + kind + the epoch (two items on one character can't share one). */
+// Character + kind + epoch, disambiguated at the call site with the array index — two items in one
+// block can genuinely share an expiry second (same-batch mail/auctions all carry the same duration),
+// so the epoch alone is not unique.
 function rowKey(e: ExpiryEntry): string {
   return `${e.character.guid ?? `${e.character.name}-${e.character.realm}`}-${e.kind}-${e.expiresAt}`;
 }
