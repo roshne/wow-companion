@@ -1369,6 +1369,23 @@ button.doll-slot:focus-visible {
   white-space: nowrap;
 }
 
+/* Mail & auction expiry roll-up (#163): the mail-waiting pill mirrors .vault-badge but in the accent
+   colour — it's a heads-up, not a completed reward — and a countdown inside a day turns urgent-red. */
+.expiry-badge {
+  display: inline-block;
+  padding: 0 0.35rem;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.expiry-urgent {
+  color: var(--down);
+  font-weight: 600;
+}
+
 /* Currencies board: a characters × currencies matrix. Icons are decorative (the name carries the
    meaning), so a failed icon load hides the image and leaves the label intact. */
 .currency-board {

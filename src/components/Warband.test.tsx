@@ -232,9 +232,29 @@ describe("Warband", () => {
     render(<Warband onOpenCharacter={onOpen} region="us" />);
 
     await screen.findByText("Testchar");
-    for (const view of ["Roster", "All characters", "Gear board", "Great Vault", "Titles"]) {
+    for (const view of [
+      "Roster",
+      "All characters",
+      "Gear board",
+      "Great Vault",
+      "Titles",
+      "Mail & auctions",
+    ]) {
       expect(screen.getByRole("button", { name: view })).toBeInTheDocument();
     }
+  });
+
+  it("toggles to the mail & auctions board", async () => {
+    // With nothing scanned, the board shows its never-scanned empty state — enough to prove it mounted.
+    mockInvoke.mockResolvedValue(warband([character({ name: "Testchar" })]));
+    render(<Warband onOpenCharacter={onOpen} region="us" />);
+
+    await screen.findByText("Testchar");
+    fireEvent.click(screen.getByRole("button", { name: "Mail & auctions" }));
+    expect(
+      screen.getByText(/No mailbox or auction house has been scanned yet/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Testchar")).toBeNull();
   });
 
   it("toggles to the account view and back", async () => {

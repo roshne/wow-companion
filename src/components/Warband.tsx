@@ -9,6 +9,7 @@ import { WarbandKeystoneBoard } from "./WarbandKeystoneBoard";
 import { WarbandCurrencies } from "./WarbandCurrencies";
 import { WarbandWealth } from "./WarbandWealth";
 import { WarbandTitles } from "./WarbandTitles";
+import { WarbandExpiryBoard } from "./WarbandExpiryBoard";
 import { WarbandAllCharacters } from "./WarbandAllCharacters";
 
 const ROLE_LABEL: Record<string, string> = {
@@ -61,7 +62,7 @@ export function Warband({
   // mounts — and only then fetches every alt's equipment — when selected, so that fetch stays lazy.
   // The vault board needs no fetch at all: it reads the same local export the roster already has.
   const [view, setView] = useState<
-    "roster" | "all" | "board" | "vault" | "keys" | "currencies" | "titles"
+    "roster" | "all" | "board" | "vault" | "keys" | "currencies" | "titles" | "expiry"
   >("roster");
 
   async function load() {
@@ -213,6 +214,13 @@ export function Warband({
               >
                 Titles
               </button>
+              <button
+                className={shownView === "expiry" ? "" : "ghost"}
+                aria-pressed={shownView === "expiry"}
+                onClick={() => setView("expiry")}
+              >
+                Mail &amp; auctions
+              </button>
             </>
           )}
         </div>
@@ -263,6 +271,10 @@ export function Warband({
 
       {!error && shownView === "titles" && data && data.characters.length > 0 && (
         <WarbandTitles data={data} />
+      )}
+
+      {!error && shownView === "expiry" && data && data.characters.length > 0 && (
+        <WarbandExpiryBoard data={data} />
       )}
 
       {!error && shownView === "roster" && rows.length > 0 && (
