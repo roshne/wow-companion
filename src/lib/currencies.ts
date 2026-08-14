@@ -6,27 +6,24 @@ import { isStale } from "./vaultBoard";
 /**
  * The Warbandeer field key → Blizzard currency id bridge.
  *
- * Needed because the two halves are keyed differently and neither can be changed: the addon saves
- * currencies under its **own field names** (`characters[n].currency.HeroDawncrest`) and never writes
- * an id, while the vendored static-data bundle is keyed by **numeric currency id**. The ids live only
- * in the addon's `data/currency.lua` field definitions, which is where these come from.
+ * Needed because the two halves are keyed differently: the addon saves currencies under its **own
+ * field names** (`characters[n].currency.HeroDawncrest`) and never writes an id, while the bundle's
+ * `currencies` are keyed by **numeric currency id**. The mapping between them lives in the addon's
+ * `data/currency.lua` field definitions — and the static-data generator now publishes exactly that as
+ * the bundle's `currencyFields`, so the bridge is sourced straight from the bundle rather than
+ * hand-maintained here.
  *
- * A key absent here is a supported outcome, not a bug — see {@link resolveCurrency}. The live
- * database already contains `AdventurerCrest` and `Manaflux`, written by older addon versions and no
- * longer in its field list, so the unknown-key path is exercised in practice from day one.
+ * That makes it season-proof, which is the whole point: when a new season's crest adds a field, a
+ * re-vendor teaches this bridge automatically — no code change, and no chance of drifting from the
+ * addon the way a hand-copied list would. There is deliberately no `?? {}` fallback: a bundle missing
+ * `currencyFields` is a broken vendor that should fail the build loudly, not silently empty the bridge.
+ *
+ * A key absent here is a supported outcome, not a bug — see {@link resolveCurrency}. The live database
+ * already contains `AdventurerCrest` and `Manaflux`, written by older addon versions and no longer in
+ * the addon's field list, so the unknown-key path is exercised in practice from day one — and a brand
+ * new season's crest lands the same way until the bundle carrying it is vendored in.
  */
-export const CURRENCY_IDS: Record<string, number> = {
-  RestoredCofferKey: 3028,
-  CofferKeyShard: 3310,
-  Catalyst: 3378,
-  HeroDawncrest: 3345,
-  MythDawncrest: 3347,
-  NebulousVoidcore: 3418,
-  UntaintedManaCrystal: 3356,
-  ShardOfDundun: 3376,
-  FieldAccolade: 3405,
-  UnalloyedAbundance: 3377,
-};
+export const CURRENCY_IDS: Record<string, number> = bundle.currencyFields;
 
 /** Entries are partial by design: some currencies in the bundle carry a null icon (e.g. id 830). */
 interface BundleEntry {

@@ -72,6 +72,10 @@ Two upstream details this depends on:
       "quality": 3
     }
   },
+  "currencyFields": {
+    "HeroDawncrest": 3345, // addon field key -> currency id (from the addon's data/currency.lua)
+    "MythDawncrest": 3347
+  },
   "achievements": {
     "62386": {
       "name": "Light Up the Night",
@@ -84,6 +88,12 @@ Two upstream details this depends on:
   }
 }
 ```
+
+`currencyFields` **is** consumed here — it is the addon-field-key → currency-id bridge that
+`src/lib/currencies.ts` reads directly as `CURRENCY_IDS`. Sourcing it from the bundle keeps the bridge
+from drifting from the addon and lets a new season's crest keys arrive automatically on the next
+re-vendor. It is generated from the same `data/currency.lua` field definitions the addon writes its
+`characters[n].currency.*` keys from.
 
 `achievements` and `achievementGroups` are **not consumed here** — achievement names and icons
 resolve through the REST client in `src/lib/achievements.ts`, which the Game Data API does cover,
