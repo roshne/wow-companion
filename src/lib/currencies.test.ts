@@ -7,6 +7,7 @@ import {
   iconUrl,
   resolveCurrency,
 } from "./currencies";
+import bundle from "../vendor/wow-static-data/static-data.json";
 import type { WarbandCharacter, WarbandCurrency, WarbandData } from "./warband";
 
 const WEEK_START = 1785164400;
@@ -63,14 +64,26 @@ function data(characters: WarbandCharacter[]): WarbandData {
 }
 
 describe("the key → id bridge", () => {
-  it("resolves every key the addon currently writes against the vendored bundle", () => {
-    // The bridge and the bundle are maintained independently — the addon's Lua defines the ids, the
-    // bundle is vendored from a release feed — so this asserts they still agree.
-    for (const key of Object.keys(CURRENCY_IDS)) {
+  it("is sourced from the bundle, not a hand-maintained copy", () => {
+    // The generator publishes the addon's field-key → id map as `currencyFields`; the bridge is that
+    // object itself. Asserting identity (not merely equality) is the point: it fails the instant
+    // anyone re-introduces a hardcoded literal, which would silently drift from the addon each season.
+    expect(CURRENCY_IDS).toBe(bundle.currencyFields);
+  });
+
+  it("resolves every field the bundle publishes to its id and a real currency", () => {
+    // The two halves of the bundle are generated together but could still disagree — a field pointing
+    // at a missing or renamed currency id would render a blank column — so this asserts they line up.
+    const fields = Object.entries(bundle.currencyFields);
+    // Guard against a vacuous pass: an empty bridge (an upstream regression) must not read as all-green.
+    expect(fields.length).toBeGreaterThan(0);
+    for (const [key, id] of fields) {
       const r = resolveCurrency(key);
-      expect(r.known, `${key} (id ${CURRENCY_IDS[key]}) missing from the bundle`).toBe(true);
+      expect(r.id, `${key} did not resolve to its bundle id`).toBe(id);
+      expect(r.known, `${key} (id ${id}) missing from the bundle's currencies`).toBe(true);
       expect(r.name, `${key} resolved to an empty name`).toMatch(/\S/);
-      expect(r.icon, `${key} resolved without an icon`).toMatch(/\S/);
+      // Not asserting an icon: BundleEntry.icon is legitimately null for many currencies (see id 830)
+      // and the header renders a fallback for that, so a null-icon crest field is valid, not a failure.
     }
   });
 
