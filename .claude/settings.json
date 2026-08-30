@@ -7,8 +7,6 @@
       "Bash(git clean -f*)",
       "Bash(git checkout -- *)"
     ],
-    "ask": [
-      "Bash(git restore *)"
-    ]
+    "ask": ["Bash(git restore *)"]
   }
 }
