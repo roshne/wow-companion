@@ -106,11 +106,14 @@ with a **debug/prod switch** when you configure more than one bot. It's **hidden
 with an `ops.json`, and — unlike the data tabs — it's **reachable without connecting Battle.net
 credentials** (it has nothing to do with the API).
 
-It drives the bot through a versioned helper on the box (`bot-ops.sh`, shipped in the
-[`nazumods/wow`](https://github.com/nazumods/wow/tree/main/apps/warbandeer-discord/ops) repo) invoked
-over SSH: the Rust side only shells `ssh` with fixed subcommands, so **bot secrets never cross the
-wire** and the editable-key whitelist is enforced on the box. Secrets (tokens) are never read or
-written from here.
+It drives the bot through a versioned `bot-ops.sh` helper on the box, invoked over SSH: the Rust
+side only shells `ssh` with fixed subcommands, so **bot secrets never cross the wire** and the
+editable-key whitelist is enforced on the box. Secrets (tokens) are never read or written from
+here. Two differently-shaped copies of that helper exist now — the debug bot's own
+[`roshne/rackbops-discord-bot`](https://github.com/roshne/rackbops-discord-bot/blob/main/ops/bot-ops.sh)
+fork (what the `debug` target below talks to) and
+[`nazumods/wow`'s original](https://github.com/nazumods/wow/tree/main/apps/warbandeer-discord/ops)
+(unmigrated) — see the vendored module's own docs for the full divergence.
 
 **Everything under the panel is vendored, not written here.** `nazumods/wow`'s own desktop app ships
 the same tab, so the backend, the wire types and the editable-key whitelist live once in that repo's
@@ -138,9 +141,12 @@ at a file) listing the bot(s) to manage:
     {
       "name": "debug",
       "ssh": "roshne@192.168.7.48",
-      "remoteDir": "~/repos/wow-debug/apps/warbandeer-discord",
-      "project": "warbandeer-discord-debug",
-      "container": "warbandeer-discord"
+      "remoteDir": "/opt/rackbops-discord-bot/bin",
+      "project": "rackbops-discord-bot-debug",
+      "container": "rackbops-discord-bot-debug",
+      "configDir": "/opt/rackbops-discord-bot/debug",
+      "composeFile": "/opt/stacks/rackbops-discord-bot-debug/docker-compose.yml",
+      "scriptPath": "/opt/rackbops-discord-bot/bin/bot-ops.sh"
     },
     {
       "name": "prod",
@@ -153,12 +159,15 @@ at a file) listing the bot(s) to manage:
 }
 ```
 
-`project`/`container` are optional (default to debug's). The old single-bot shape
-(`{ "ssh": "...", "remoteDir": "..." }`) still works as one `debug` target. Key-based SSH to each
-host must work (the app reuses your key), and that host must have the helper at
-`<remoteDir>/ops/bot-ops.sh`. The `prod` entry above is a placeholder — see the helper's
-[README](https://github.com/nazumods/wow/tree/main/apps/warbandeer-discord/ops) for the full format
-and prod setup breadcrumbs.
+`project`/`container` are optional (default to debug's). `configDir`/`composeFile`/`scriptPath` are
+also optional, but must be set **together** (all three, or none) — they're for a target on the
+newer `bot-ops.sh` contract (like `debug` above), which requires them and deploys the script to a
+fixed path rather than `<remoteDir>/ops/bot-ops.sh`; a target that omits them (like the `prod`
+placeholder above) is read the old way. The old single-bot shape (`{ "ssh": "...", "remoteDir":
+"..." }`) still works as one `debug` target, but only against the _old_ contract. Key-based SSH to
+each host must work (the app reuses your key). The `prod` entry above is a placeholder for
+`nazumods/wow`'s own bot — see the vendored module's own README for the full field format and prod
+setup breadcrumbs.
 
 ## Requirements
 
