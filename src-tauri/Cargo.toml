@@ -34,7 +34,7 @@ serde_json = "1"
 reqwest = { version = "0.12", features = ["json"] }
 # Cryptographic randomness for the OAuth `state` nonce. A guessable state would defeat the
 # CSRF protection it exists to provide, so a timestamp is not an acceptable substitute.
-getrandom = "0.2"
+getrandom = "0.4"
 # Read the Warbandeer addon's SavedVariables (a Lua table literal) via an embedded, sandboxed
 # Lua VM. `vendored` builds Lua from source (no system Lua needed); `serialize` enables
 # `LuaSerdeExt::from_value` for declarative deserialization into typed structs.
