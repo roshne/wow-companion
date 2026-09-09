@@ -56,7 +56,7 @@ pub enum Callback {
 /// a callback for a code we never asked for, and a guessable value defeats the point of having it.
 pub fn new_state() -> Result<String, String> {
     let mut bytes = [0u8; 16];
-    getrandom::getrandom(&mut bytes).map_err(|e| format!("could not generate state: {e}"))?;
+    getrandom::fill(&mut bytes).map_err(|e| format!("could not generate state: {e}"))?;
     Ok(bytes.iter().map(|b| format!("{b:02x}")).collect())
 }
 
