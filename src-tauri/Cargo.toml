@@ -45,20 +45,20 @@ mlua = { version = "0.10", features = ["lua54", "vendored", "serialize"] }
 # session), so a single unconditional feature set can't cover more than one OS.
 [target.'cfg(windows)'.dependencies]
 # Windows Credential Manager.
-keyring = { version = "3", features = ["windows-native"] }
+keyring = { version = "4", features = ["windows-native"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 # Secret Service over D-Bus (GNOME Keyring / KWallet). `crypto-rust` supplies the session
 # cipher in pure Rust; the sync-secret-service backend links the system libdbus-1, so the
 # Linux CI jobs install `libdbus-1-dev`.
-keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
+keyring = { version = "4", features = ["sync-secret-service", "crypto-rust"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 # macOS Keychain via the Security framework. Note: this backend is not exercised by our CI
 # (self-hosted Windows + Linux only) and macOS is not yet a build/release target, so it's
 # validated only at dependency-resolution time, not compiled or run.
-keyring = { version = "3", features = ["apple-native"] }
+keyring = { version = "4", features = ["apple-native"] }
 
 # Any other target falls back to the in-memory mock store so the crate still compiles.
 [target.'cfg(not(any(windows, target_os = "linux", target_os = "macos")))'.dependencies]
-keyring = "3"
+keyring = "4"
