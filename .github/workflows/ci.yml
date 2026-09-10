@@ -26,6 +26,14 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: Assert tsc is TypeScript 7 (side-by-side alias guard)
+        run: |
+          v="$(npx tsc --version)"
+          echo "$v"
+          case "$v" in
+            "Version 7."*) ;;
+            *) echo "::error::tsc resolved to '$v', not TypeScript 7. The @typescript/native devDependency must stay, and its name must sort before @typescript/old (npm links the first top-level tsc bin by name)."; exit 1 ;;
+          esac
       - run: npm run lint
       - run: npm run format:check
       - run: npx tsc --noEmit
