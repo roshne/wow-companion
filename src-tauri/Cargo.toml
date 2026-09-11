@@ -26,12 +26,12 @@ tauri-plugin-opener = "2"
 # Data-API requests are made from Rust (via the HTTP plugin) so they bypass webview CORS.
 tauri-plugin-http = "2"
 # In-app updates: check a signed manifest, download + install the next installer, then relaunch.
-tauri-plugin-updater = "2"
+tauri-plugin-updater = { version = "2", default-features = false, features = ["native-tls", "system-proxy", "zip"] }
 tauri-plugin-process = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 # OAuth token exchange (the client secret never leaves Rust).
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.13", default-features = false, features = ["json", "form", "native-tls", "http2", "system-proxy"] }
 # Cryptographic randomness for the OAuth `state` nonce. A guessable state would defeat the
 # CSRF protection it exists to provide, so a timestamp is not an acceptable substitute.
 getrandom = "0.4"
