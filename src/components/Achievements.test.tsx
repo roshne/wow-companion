@@ -16,10 +16,19 @@ const achievementsDoc = {
 
 describe("Achievements", () => {
   const originalHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetHeight");
+  const originalClientHeight = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    "clientHeight",
+  );
 
-  // Give the virtualizer a measurable scroll viewport so its rows mount in jsdom.
+  // Give the virtualizer a measurable scroll viewport so its rows mount in jsdom. @tanstack/virtual-core
+  // 3.19+ reads the viewport from clientHeight; earlier releases read offsetHeight, so stub both.
   beforeEach(() => {
     Object.defineProperty(HTMLElement.prototype, "offsetHeight", {
+      configurable: true,
+      value: 480,
+    });
+    Object.defineProperty(HTMLElement.prototype, "clientHeight", {
       configurable: true,
       value: 480,
     });
@@ -28,6 +37,8 @@ describe("Achievements", () => {
     vi.restoreAllMocks();
     if (originalHeight)
       Object.defineProperty(HTMLElement.prototype, "offsetHeight", originalHeight);
+    if (originalClientHeight)
+      Object.defineProperty(HTMLElement.prototype, "clientHeight", originalClientHeight);
   });
 
   it("renders the totals and the earned-achievement rows, most-recent first", async () => {
