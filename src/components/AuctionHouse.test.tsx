@@ -72,10 +72,16 @@ function route(get: ReturnType<typeof mockBnet>["get"], opts: RouteOpts = {}) {
 }
 
 describe("AuctionHouse", () => {
-  // jsdom does no layout, so offsetWidth/offsetHeight are 0 and @tanstack/react-virtual (which measures
-  // the scroll element via those) would render no rows. Give every element a real box for these tests.
+  // jsdom does no layout, so the box sizes are 0 and @tanstack/react-virtual (which measures the scroll
+  // element via them) would render no rows. Give every element a real box for these tests. virtual-core
+  // 3.19+ reads clientWidth/clientHeight; earlier releases read offsetWidth/offsetHeight, so stub both.
   const originalHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetHeight");
   const originalWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetWidth");
+  const originalClientHeight = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    "clientHeight",
+  );
+  const originalClientWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "clientWidth");
 
   beforeEach(() => {
     localStorage.clear();
@@ -84,6 +90,11 @@ describe("AuctionHouse", () => {
       value: 480,
     });
     Object.defineProperty(HTMLElement.prototype, "offsetWidth", { configurable: true, value: 400 });
+    Object.defineProperty(HTMLElement.prototype, "clientHeight", {
+      configurable: true,
+      value: 480,
+    });
+    Object.defineProperty(HTMLElement.prototype, "clientWidth", { configurable: true, value: 400 });
   });
 
   afterEach(() => {
@@ -91,6 +102,10 @@ describe("AuctionHouse", () => {
     if (originalHeight)
       Object.defineProperty(HTMLElement.prototype, "offsetHeight", originalHeight);
     if (originalWidth) Object.defineProperty(HTMLElement.prototype, "offsetWidth", originalWidth);
+    if (originalClientHeight)
+      Object.defineProperty(HTMLElement.prototype, "clientHeight", originalClientHeight);
+    if (originalClientWidth)
+      Object.defineProperty(HTMLElement.prototype, "clientWidth", originalClientWidth);
   });
 
   /** Rendered item-cell text in DOM (== sorted) order. */
