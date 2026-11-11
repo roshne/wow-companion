@@ -121,6 +121,23 @@ published yet" (no analogue for bot-ops, whose module is committed source).
 
 ---
 
+## npm overrides
+
+- **`minimatch` → `^11.0.1`** (`package.json` `overrides`) clears GHSA-g3hv-75wg-m249, a
+  denial of service in `minimatch` 7.0.0 to 11.0.0 with no 10.x fix.
+  - It is dev-only: `minimatch` comes in through `eslint`, `@eslint/config-array` and
+    `@typescript-eslint/typescript-estree`, and every one of them still declares `^10` as of
+    `eslint` 10.14.0 and `typescript-eslint` 8.72.2.
+  - They only call `new Minimatch(pattern, { dot, flipNegate })`, `.match(path[, partial])`,
+    `.pattern` and `minimatch(path, pattern, { dot })`. All of these still exist in 11, which
+    removed `makeRe`, `regexp`, `matchOne` and `debug`.
+  - **Drop the override** once all three depend on `minimatch` 11, i.e. when
+    `npm view <pkg> dependencies.minimatch` reports `^11` for each of them.
+  - Nothing in CI runs `npm audit`, so Dependabot is the only automated check that it is still
+    needed.
+
+---
+
 ## Open questions
 
 - **macOS keyring backend** — `Cargo.toml` declares an `apple-native` keyring feature, but macOS is
